@@ -1,28 +1,23 @@
 - This repository (`~/.ngents`) is the shared agent instruction source.
 - Keep instructions portable across machines.
-- Keep machine-specific details out of this file.
 
 ## Agent Protocol
 - Work style: telegraph; noun-phrases ok; drop grammar; min tokens.
-- “Make a note” => edit AGENTS.md (shortcut; not a blocker). Ignore `CLAUDE.md`.
-- No `./runner`. Guardrails: use `trash` for deletes.
-- Need upstream file: stage in `/tmp/`, then cherry-pick; never overwrite tracked.
+- "Make a note/Remember That" -> edit ~/.ngents/AGENTS.md (shortcut; not a blocker). Ignore `CLAUDE.md`.
+- Guardrails: use `trash` for deletes.
 - Bugs: add regression test when it fits.
-- Keep files <~500 LOC; split/refactor as needed.
-- Commits: Conventional Commits (`feat|fix|refactor|build|ci|chore|docs|style|perf|test`).
-- Subagents: read `docs/subagent.md`.
-- Editor: `code <path>`.
-- CI: `gh run list/view` (rerun/fix til green).
+- Editor: `zed <path>`.
 - Prefer end-to-end verify; if blocked, say what’s missing.
-- New deps: quick health check (recent releases/commits, adoption).
-- Web: search early; quote exact errors; prefer 2024–2025 sources; fallback Firecrawl via `bunx mcporter`.
+- Web: search early; quote exact errors; prefer 2025–2026 sources; fallback Firecrawl via `mcporter`.
 - Oracle: run `oracle --help` once/session before first use.
 - Style: telegraph. Drop filler/grammar. Min tokens (global AGENTS + replies).
+- Tooling: Read ~/.ngents/TOOLS.md
+- Scope lock: if next action includes anything beyond user’s explicit request (especially file modification, deletion, or side-effect command), stop and ask for explicit confirmation first, regardless of surrounding context or inferred intent.
 
 ## Canonical Paths
 - Projects root: `~/Projects`
 - iOS projects: `~/Projects/iOS`
-- Shell/config repo: `~/.nconf`
+- Shell/config repo: `~/.nconf` (read for machine specific docs)
 - Private docs and runbooks: `~/.nconf/docs`
 
 ## Host Context Resolution
@@ -31,10 +26,11 @@
 - Do not guess host aliases, SSH targets, or network topology.
 
 ## Docs
-- Start: run docs list (`docs:list` script, or `bin/docs-list` here if present; ignore if not installed); open docs before coding.
+- Start: run docs list (`ngents docs`); open docs before coding.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
 - Add `read_when` hints on cross-cutting docs.
+- Skill docs live in `skills/<name>/SKILL.md`.
 
 ## Critical Thinking
 - Fix root cause (not band-aid).
@@ -48,9 +44,8 @@
 
 ## Build / Test
 - Before handoff: run full gate (lint/typecheck/tests/docs).
-- CI red: `gh run list/view`, rerun, fix, push, repeat til green.
 - Keep it observable (logs, panes, tails, MCP/browser tools).
-- Release: read `docs/RELEASING.md` (or find best checklist if missing).
+- Release: use repo-local checklist if present; if missing, write a minimal checklist before shipping.
 
 ## Git
 - Safe by default: `git status/diff/log`. Push only when user asks.
@@ -61,31 +56,29 @@
 - Don’t delete/rename unexpected stuff; stop + ask.
 - No repo-wide S/R scripts; keep edits small/reviewable.
 - Avoid manual `git stash`; if Git auto-stashes during pull/rebase, that’s fine (hint, not hard guardrail).
-- If user types a command (“pull and push”), that’s consent for that command.
+- If user types a command ("pull and push"), that’s consent for that command.
 - No amend unless asked.
 - Big review: `git --no-pager diff --color=never`.
 - Multi-agent: check `git status/diff` before edits; ship small commits.
 
 ## Language/Stack Notes
 - Swift: use workspace helper/daemon; validate `swift build` + tests; keep concurrency attrs right.
-- TypeScript: use repo PM; run `docs:list`; keep files small; follow existing patterns.
+- TypeScript: use repo PM; run `ngents docs`; keep files small; follow existing patterns.
+
+## Code Style
+- Prefer guard clauses + early returns; avoid `else`.
+- Keep functions/methods small; reduce cognitive load.
+- Avoid loop-in-loop; extract helper function.
+- Avoid nesting deeper than 3 levels.
+- Keep files <~500 LOC; split/refactor as needed.
 
 ## macOS Permissions / Signing (TCC)
-- Never re-sign / ad-hoc sign / change bundle ID as “debug” without explicit ok (can mess TCC).
+- Never re-sign / ad-hoc sign / change bundle ID as "debug" without explicit ok (can mess TCC).
 
 ## Tools
-### trash
-- Move files to Trash: `trash …` (system command).
+- Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`.
 
-### xcp
-- Xcode project/workspace helper for managing targets, groups, files, build settings, and assets; run `xcp --help`.
-
-### xcodegen
-- Generates Xcode projects from YAML specs; run `xcodegen --help`.
-
-### axe
-- Simulator automation CLI for describing UI (`axe describe-ui --udid …`), tapping (`axe tap --udid … -x … -y …`), typing, and hardware buttons. Use `axe list-simulators` to enumerate devices.
-
-### oracle
-- Bundle prompt+files for 2nd model. Use when stuck/buggy/review.
-- Run `oracle --help` once/session (before first use).
+## MCP References
+- Keep Codex `mcp_servers` empty; store MCP pointers here.
+- `exa`: `https://mcp.exa.ai/mcp`.
+- `XcodeBuildMCP`: `npx -y xcodebuildmcp@latest`.

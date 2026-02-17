@@ -49,10 +49,22 @@ Bundle prompt + files for second-model review.
 
 ## mcporter
 
-MCP server launcher/caller.
+Single MCP path for this repo.
 
-- Prefer persisted home config servers over one-off long flags.
-- Prefer short selectors like `server.tool`.
-- Examples:
-  - `mcporter call exa.web_search_exa ...`
+- Policy:
+  - no Codex MCP servers
+  - use `mcporter` only
+  - prefer local configured servers + `server.tool` selectors
+
+- Workflow:
+  - list local servers: `mcporter list`
+  - view local config detail: `mcporter config list --json`
+  - inspect a server’s tools/schema: `mcporter list <server> --schema`
+  - call a tool: `mcporter call <server.tool> key=value`
+  - use function-call syntax when clearer: `mcporter call '<server.tool>(arg: "value")'`
+  - prefer machine-readable output for scripts: `--output json`
+  - auth when needed: `mcporter auth <server>`
+
+- Quick local examples:
+  - `mcporter call exa.web_search_exa query="OpenAI URL" numResults=1`
   - `mcporter call xcodebuild.list_sims`

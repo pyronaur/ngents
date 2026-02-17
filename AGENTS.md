@@ -83,7 +83,9 @@
 - Use only when you need persistence/interaction (debugger/server).
 - Quick refs: `tmux new -d -s codex-shell`, `tmux attach -t codex-shell`, `tmux list-sessions`, `tmux kill-session -t codex-shell`.
 
-## MCP References
-- Keep Codex `mcp_servers` empty; store MCP pointers here.
-- `exa`: `https://mcp.exa.ai/mcp`.
-- `XcodeBuildMCP`: `npx -y xcodebuildmcp@latest`.
+### MCP Access
+- Not using MCPs in Codex; use `mcporter` instead.
+  - `exa`: web research/search
+  - `xcodebuild`: Apple platform build/sim/debug
+- `mcporter list <server> [--schema]` / `mcporter call <server.tool> [key=value]`
+- Usage/source of truth: `TOOLS.md` (`mcporter`).

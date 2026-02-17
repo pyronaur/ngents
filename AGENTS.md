@@ -16,7 +16,7 @@
 - Prefer end-to-end verify; if blocked, say what’s missing.
 - New deps: quick health check (recent releases/commits, adoption).
 - Web: search early; quote exact errors; prefer 2024–2025 sources; fallback Firecrawl via `bunx mcporter`.
-- Oracle: run `npx -y @steipete/oracle --help` once/session before first use.
+- Oracle: run `oracle --help` once/session before first use.
 - Style: telegraph. Drop filler/grammar. Min tokens (global AGENTS + replies).
 
 ## Canonical Paths
@@ -88,4 +88,4 @@
 
 ### oracle
 - Bundle prompt+files for 2nd model. Use when stuck/buggy/review.
-- Run `npx -y @steipete/oracle --help` once/session (before first use).
+- Run `oracle --help` once/session (before first use).

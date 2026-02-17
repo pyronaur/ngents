@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prompting"
+  short_description: "Teach high-signal coding-agent prompting."
+  default_prompt: "Use $prompting to review and improve this coding-agent prompt for scope, tool usage, and verification quality."

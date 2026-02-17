@@ -41,6 +41,7 @@
 
 ## Flow & Runtime
 - Use repo’s package manager/runtime; no swaps w/o approval.
+- Use Codex background for long jobs; tmux only for interactive/persistent (debugger/server).
 
 ## Build / Test
 - Before handoff: run full gate (lint/typecheck/tests/docs).
@@ -77,6 +78,10 @@
 
 ## Tools
 - Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`.
+
+### tmux
+- Use only when you need persistence/interaction (debugger/server).
+- Quick refs: `tmux new -d -s codex-shell`, `tmux attach -t codex-shell`, `tmux list-sessions`, `tmux kill-session -t codex-shell`.
 
 ## MCP References
 - Keep Codex `mcp_servers` empty; store MCP pointers here.

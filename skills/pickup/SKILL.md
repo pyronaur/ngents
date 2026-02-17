@@ -21,8 +21,10 @@ Steps:
 - Inspect PR comments/files/checks if PR exists.
 
 4. Check process context
-- List tmux sessions.
-- Attach/capture when live sessions exist.
+- List tmux sessions: `tmux list-sessions`.
+- If sessions exist, inspect with one of:
+  - `tmux attach -t codex-shell`
+  - `tmux capture-pane -p -J -t codex-shell:0.0 -S -200`
 
 5. Check test context
 - Identify what already ran.

@@ -22,8 +22,10 @@ Include, in order:
 - Include CI status if known.
 
 4. Running processes
-- List tmux sessions/panes.
-- Include attach/capture commands.
+- List tmux sessions: `tmux list-sessions`.
+- Include copy/paste commands to inspect live sessions:
+  - `tmux attach -t codex-shell`
+  - `tmux capture-pane -p -J -t codex-shell:0.0 -S -200`
 
 5. Tests/checks
 - List commands already run.

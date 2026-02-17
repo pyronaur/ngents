@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Package current work state for next agent handoff."
+  default_prompt: "Create a concise handoff with status, git/PR context, sessions, checks, next steps, and risks."

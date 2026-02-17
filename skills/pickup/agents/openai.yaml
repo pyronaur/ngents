@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pickup"
+  short_description: "Rehydrate context quickly before execution."
+  default_prompt: "Run a pickup checklist: docs, repo/branch/commits, PR/CI, live sessions, test context, and immediate next actions."

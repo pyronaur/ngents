@@ -2,15 +2,15 @@
 summary: "How script paths map to bunmagic command names in this repo"
 read_when:
   - Adding or renaming bunmagic scripts in `~/.ngents`.
-  - Confused about `ngents docs` versus global `docs`.
+  - Need to confirm how bunmagic resolves script path -> command name.
 ---
 
 # bunmagic Command Mapping
 
-In this repo, command names come from script paths.
+In this repo, bunmagic command names come from script paths.
 
-- `scripts/docs.ts` maps to `ngents docs`
-- It does not create or replace global `docs`
+- `scripts/<name>.ts` maps to `ngents <name>`
+- Nested script paths map to nested command names
 
 This is namespace-based mapping for this repo workflow.
 

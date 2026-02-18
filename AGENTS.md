@@ -1,5 +1,7 @@
-- This repository (`~/.ngents`) is the shared agent instruction source.
-- Keep instructions portable across machines.
+# NGENTS
+- ngents is a set of tools, docs, instructions, protocols to improve your workflow.
+- `~/.ngents/AGENTS.md` is symlinked to `~/.agents.md/AGENTS.md`.
+- Instructions portable across machines.
 
 ## Agent Protocol
 - Work style: telegraph; noun-phrases ok; drop grammar; min tokens.
@@ -27,6 +29,7 @@
 
 ## Docs
 - Start: run docs list (`ngents docs`); open docs before coding.
+- Order: docs -> source -> execute. No deep search before docs scan.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
 - Add `read_when` hints on cross-cutting docs.

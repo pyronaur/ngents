@@ -47,6 +47,18 @@ Bundle prompt + files for second-model review.
 - Use when stuck, for design checks, or bug cross-validation.
 - Run `oracle --help` once per session before first use.
 
+## k browser
+
+Browser-backed web fetch for JS-heavy pages.
+
+- Prefer `k browser` when normal fetch/search hits a JavaScript wall.
+- Firecrawl via `mcporter` is fallback only, used when `k browser` fails.
+- Keep repo docs portable: do not add internal hosts or endpoint details.
+- Golden paths:
+  - `k browser <url>`
+  - `k browser <url> --markdown`
+  - `k browser --help`
+
 ## mcporter
 
 Single MCP path for this repo.

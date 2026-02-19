@@ -7,6 +7,10 @@ read_when:
 
 # Quick bunmagic Reference
 
+See also:
+- Command discovery model: `docs/bunmagic/reference/08-command-discovery.md`
+- SAF deprecation/migration: `docs/bunmagic/migrations/saf-to-files.md`
+
 ## First-Hop CLI Commands
 - `bunmagic list` - show scripts already available on this machine.
 - `bunmagic which <command-or-namespace>` - resolve command or namespace to its source path quickly.

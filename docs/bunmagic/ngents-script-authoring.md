@@ -9,6 +9,7 @@ read_when:
 
 This guide is specific to `ngents` scripts in `~/.ngents/scripts`.
 For core concepts, see `docs/bunmagic/bunmagic-101.md`.
+For generic bunmagic command discovery, see `docs/bunmagic/reference/08-command-discovery.md`.
 
 ## Command Routing Rules
 
@@ -62,7 +63,48 @@ export default async function () {
 
 ## Reload and Bins
 
-- See `docs/bunmagic/command-mapping.md` for bin wiring and when `bunmagic reload` is actually needed.
+`ngents` scripts are discovered via a namespaced source entry in `~/.bunmagic/config.json`:
+
+```json
+{ "namespace": "ngents", "dir": "~/.ngents/scripts" }
+```
+
+This means:
+- Scripts are invoked as `ngents <slug>`.
+- Discovery is top-level only for `~/.ngents/scripts` (non-recursive).
+
+### Discovery Rules
+
+Scripts are discovered from:
+- `*.ts`
+- `*.js`
+- `*.mjs`
+
+Ignored entries:
+- Files starting with `_`
+- `*.d.ts`
+
+### Reload Behavior
+
+`ngents` is namespaced. Once `~/.bunmagic/bin/ngents` exists, adding a new script file under `~/.ngents/scripts` usually does not require `bunmagic reload`.
+
+Run `bunmagic reload` when bin wiring changes, for example:
+- A source is added or removed
+- The namespace changes
+- The namespace bin is missing or stale
+- Global alias bins (`@global`) need to be created or refreshed
+
+### Fast Verification
+
+Run these when mapping feels off:
+
+```bash
+bunmagic list ngents --info
+bunmagic which ngents
+bunmagic which "ngents docs"
+cat ~/.bunmagic/bin/ngents
+cat ~/.bunmagic/config.json
+```
 
 ## Non-Interactive Safety
 

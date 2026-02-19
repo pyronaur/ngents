@@ -5,274 +5,153 @@ read_when:
   - Need subcommands(), typed factories, or command validation patterns.
 ---
 
-Bunmagic provides a powerful subcommands system that allows you to create CLI tools with multiple commands, similar to how git has `git add`, `git commit`, etc. The system includes automatic help generation, command validation, and TypeScript support.
-
 ## Basic Usage
 
-```typescript
-import { subcommands } from 'bunmagic/extras';
+```ts
+import { subcommands } from 'bunmagic/extras'
 
-// Define your subcommands
 const commands = subcommands({
   add: async () => {
-    const file = args[0];
-    console.log(`Adding ${file}...`);
+    const file = args[0]
+    console.log(`Adding ${file}...`)
   },
-  
   remove: async () => {
-    const file = args[0];
-    console.log(`Removing ${file}...`);
+    const file = args[0]
+    console.log(`Removing ${file}...`)
   },
-  
   list: async () => {
-    console.log('Listing all items...');
-  }
-});
+    console.log('Listing all items...')
+  },
+})
 
-// Automatically handle --help flag
-commands.maybeHelp(); // Shows available commands if --help is passed
+commands.maybeHelp()
 
-// Get the command from arguments
-const commandName = args.shift();
-const command = commands.get(commandName, 'list'); // 'list' is the fallback
-
-// Execute the command
-await command();
+// args.shift() mutates global args (consumes command token globally)
+const commandName = args.shift() || 'list'
+const command = commands.get(commandName)
+await command()
 ```
 
 ## API Reference
 
 ### `subcommands(config)`
 
-Creates a new subcommands handler with the provided command configuration.
+Creates a subcommands handler around a command map.
 
-```typescript
-const commands = subcommands({
-  commandName: async () => { /* implementation */ },
-  // ... more commands
-});
-```
+### `commands.get(name?, fallback?)`
 
-### `.get(name?, fallback?)`
+Retrieves a command callback.
 
-Retrieves a command by name with optional fallback.
+Behavior:
 
-```typescript
-// Get specific command (throws if not found)
-const addCommand = commands.get('add');
+- Valid `name` returns that command.
+- `fallback` is used only when `name` is `undefined`.
+- Invalid names still throw, even with `fallback`.
+- Empty-string names are invalid.
 
-// Get with fallback
-const command = commands.get(args[0], 'help');
+### `commands.name(commandName)`
 
-// Get fallback when no name provided
-const defaultCommand = commands.get(undefined, 'help');
-```
+Validates and returns a typed command name.
 
-### `.name(commandName)`
+### `commands.commands`
 
-Validates and returns a command name. Throws an error with available commands if invalid.
+Array of available command names.
 
-```typescript
-try {
-  const validName = commands.name(userInput);
-  console.log(`Running ${validName} command`);
-} catch (error) {
-  console.error(error.message); // Shows valid commands
-}
-```
+### `commands.maybeHelp()`
 
-### `.commands`
+Prints command list and exits when `--help` is set.
 
-Returns an array of all available command names.
+Note: `maybeHelp()` checks `flags.help`; it does not trigger on `-h` (`flags.h`).
 
-```typescript
-console.log('Available commands:', commands.commands.join(', '));
-```
+## Typed Subcommands
 
-### `.maybeHelp()`
+```ts
+import { subcommandFactory } from 'bunmagic/extras'
 
-Automatically handles the `--help` flag by displaying available commands and exiting.
+const typed = subcommandFactory<string, void>()
 
-```typescript
-// Call this early in your script
-commands.maybeHelp();
-
-// If --help was passed, it will print:
-// Available commands:
-//   • add
-//   • remove
-//   • list
-// And exit with code 0
-```
-
-## Advanced: Typed Subcommands
-
-For commands that accept specific arguments and return values, use the typed factory:
-
-```typescript
-import { subcommandFactory } from 'bunmagic/extras';
-
-// Create a typed subcommands factory
-// First type parameter: arguments array
-// Second type parameter: return value
-const typedCommands = subcommandFactory<[string, number], void>();
-
-const commands = typedCommands({
-  process: async (name: string, count: number) => {
-    console.log(`Processing ${name} ${count} times`);
+const commands = typed({
+  echo: async (...parts: string[]) => {
+    console.log(parts.join(' '))
   },
-  
-  analyze: async (data: string, threshold: number) => {
-    console.log(`Analyzing ${data} with threshold ${threshold}`);
-  }
-});
-
-// TypeScript ensures correct argument types
-const processCmd = commands.get('process');
-await processCmd('data.csv', 5); // ✓ Correct types
+})
 ```
 
 ## Complete Example: Todo CLI
 
-Here's a complete example of a todo list manager with subcommands:
-
-```typescript
+```ts
 #!/usr/bin/env bunmagic
-import { subcommands } from 'bunmagic/extras';
+import { subcommands } from 'bunmagic/extras'
 
 interface Todo {
-  id: number;
-  text: string;
-  done: boolean;
+  id: number
+  text: string
+  done: boolean
 }
 
-const todosFile = SAF.from('~/.todos.json');
-let todos: Todo[] = [];
+const todosPath = '~/.todos.json'
+let todos: Todo[] = []
 
-// Load todos
-if (await todosFile.exists()) {
-  todos = await todosFile.readJSON();
+if (await files.pathExists(todosPath)) {
+  todos = JSON.parse(await files.readFile(todosPath)) as Todo[]
 }
 
-// Save todos
 async function saveTodos() {
-  await todosFile.writeJSON(todos);
+  await files.outputFile(todosPath, `${JSON.stringify(todos, null, 2)}\n`)
 }
 
-// Define commands
 const commands = subcommands({
   add: async () => {
-    const text = args.join(' ');
-    if (!text) die('Please provide todo text');
-    
-    const todo: Todo = {
-      id: Date.now(),
-      text,
-      done: false
-    };
-    
-    todos.push(todo);
-    await saveTodos();
-    console.log(ansis.green('✓ Added:'), text);
+    const text = args.join(' ')
+    if (!text) die('Please provide todo text')
+
+    todos.push({ id: Date.now(), text, done: false })
+    await saveTodos()
+    console.log(ansis.green('Added:'), text)
   },
-  
+
   list: async () => {
     if (todos.length === 0) {
-      console.log(ansis.dim('No todos yet!'));
-      return;
+      console.log(ansis.dim('No todos yet'))
+      return
     }
-    
-    todos.forEach(todo => {
-      const status = todo.done ? ansis.green('✓') : ansis.red('○');
-      console.log(`${status} [${todo.id}] ${todo.text}`);
-    });
+
+    for (const todo of todos) {
+      const status = todo.done ? ansis.green('✓') : ansis.red('○')
+      console.log(`${status} [${todo.id}] ${todo.text}`)
+    }
   },
-  
+
   done: async () => {
-    const id = parseInt(args[0]);
-    const todo = todos.find(t => t.id === id);
-    
-    if (!todo) die(`Todo ${id} not found`);
-    
-    todo.done = true;
-    await saveTodos();
-    console.log(ansis.green('✓ Completed:'), todo.text);
+    const id = Number.parseInt(args[0] ?? '', 10)
+    const todo = todos.find(t => t.id === id)
+    if (!todo) die(`Todo ${id} not found`)
+
+    todo.done = true
+    await saveTodos()
+    console.log(ansis.green('Completed:'), todo.text)
   },
-  
-  remove: async () => {
-    const id = parseInt(args[0]);
-    const index = todos.findIndex(t => t.id === id);
-    
-    if (index === -1) die(`Todo ${id} not found`);
-    
-    const [removed] = todos.splice(index, 1);
-    await saveTodos();
-    console.log(ansis.red('✗ Removed:'), removed.text);
-  }
-});
+})
 
-// Handle help
-commands.maybeHelp();
+commands.maybeHelp()
 
-// Get and execute command
-const commandName = args.shift() || 'list';
+const commandName = args.shift() || 'list'
 try {
-  const command = commands.get(commandName);
-  await command();
+  await commands.get(commandName)()
 } catch (error) {
-  console.error(ansis.red(error.message));
-  console.log('\nUse --help to see available commands');
-  exit(1);
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(ansis.red(message))
+  throw new Exit(1)
 }
 ```
-
-## JSDoc Integration
-
-You can document subcommands in your script's JSDoc header using the `@subcommand` tag:
-
-```typescript
-/**
- * Todo list manager
- * @autohelp
- * @usage todo <command> [args]
- * @subcommand add <text> - Add a new todo
- * @subcommand list - List all todos
- * @subcommand done <id> - Mark todo as complete
- * @subcommand remove <id> - Remove a todo
- */
-```
-
-This integrates with Bunmagic's automatic help generation system.
 
 ## Best Practices
 
-1. **Always call `.maybeHelp()`** early in your script to handle the help flag
-2. **Provide a fallback command** when using `.get()` to handle missing arguments
-3. **Use the typed factory** when your commands have specific parameter requirements
-4. **Validate arguments** within each command handler
-5. **Show helpful error messages** that include available commands
+1. Call `maybeHelp()` early.
+2. Consume command token once with `args.shift()`.
+3. Prefer explicit fallback (`args.shift() || 'list'`).
+4. Use `die(...)` or `throw new Exit(...)` for user-facing failures.
 
-## Error Handling
+## SAF Note
 
-The subcommands system provides helpful error messages automatically:
-
-```typescript
-try {
-  const command = commands.get('invalid');
-} catch (error) {
-  console.error(error.message);
-  // Output: "Invalid command. Valid commands are: add, remove, list"
-}
-```
-
-## Comparison with Simple Scripts
-
-| Feature | Simple Script | With Subcommands |
-|---------|--------------|------------------|
-| Multiple actions | Use flags (`--add`, `--remove`) | Use commands (`add`, `remove`) |
-| Help generation | Manual | Automatic with `.maybeHelp()` |
-| Command validation | Manual | Automatic |
-| TypeScript support | Basic | Full typing with factory |
-| User experience | `script --add item` | `script add item` |
-
-The subcommands pattern is ideal when your script has distinct operations that would feel more natural as separate commands rather than flags.
+Avoid `SAF` in new subcommand examples. It is deprecated in `1.4.x` and planned for removal in `1.5.0`.

@@ -301,10 +301,14 @@ console.log(slug6) // "camelcase-and-snakecase"
 ### copyToClipboard()
 **Usage:** `copyToClipboard(text: string): Promise<void>`
 
-Copies text to the system clipboard.
+Copies text to the system clipboard on macOS.
 
 **Parameters:**
 - `text` - String to copy to clipboard
+
+**Behavior:**
+- On macOS (`process.platform === "darwin"`), pipes the provided text to `pbcopy`.
+- On non-macOS platforms, performs no action (no-op).
 
 **Examples:**
 ```ts

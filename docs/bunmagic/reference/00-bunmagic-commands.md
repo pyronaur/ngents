@@ -5,153 +5,144 @@ read_when:
   - Managing script lifecycle (create/edit/list/remove/reload/link).
 ---
 
-Bunmagic is a script management tool that makes it easy to create, manage, and run Bun-based shell scripts. These commands help you manage your scripts - creating new ones, editing existing ones, and keeping everything organized.
-
 **Usage:** `bunmagic <command> [arguments]`
-
-:::tip[Script Management Workflow]
-1. **Create** a script: `bunmagic create my-script`
-2. **Edit** it: `bunmagic edit my-script` (or auto-opens after creation)
-3. **Run** it directly: `my-script`
-
-The commands below help you manage this workflow.
-:::
 
 ## Quick Reference
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `doctor` | | Check if Bunmagic is set up correctly |
-| `help` | | Display the full list of available commands |
-| `install` | | Install Bunmagic and set up your environment |
-| `unlink` | | Remove a directory from the script source list |
-| [`edit`](#edit) | | Edit scripts |
-| [`remove`](#remove) | `rm` | Remove and unlink a script |
-| [`reload`](#reload) | | Reload script files |
-| [`symlink`](#symlink) | | Create symlinks to Bunmagic root |
-| [`create`](#create) | `new` | Create a new script |
-| [`version`](#version) | `-v` | Display version information |
-| `clean` | | Remove orphaned bin files |
-| [`list`](#list) | `ls` | List all scripts |
-| `update` | | Update Bunmagic |
-| `link` | | Add script source directory |
+| Command | Alias | Usage | Description |
+| --- | --- | --- | --- |
+| `doctor` | | `bunmagic doctor` | Validate setup and environment health |
+| `help` | | `bunmagic help [command]` | Show global help or help for one command |
+| `which` | | `bunmagic which <script-name>` | Show source location for script/namespace |
+| `install` | | `bunmagic install` | Install and configure bunmagic |
+| `unlink` | | `bunmagic unlink [directory]` | Remove source directory from config |
+| `types` | `init`, `add-types` | `bunmagic types` | Copy `bunmagic.d.ts` to current directory |
+| `edit` | | `bunmagic edit [script-name]` | Edit one script or all scripts |
+| `remove` | `rm` | `bunmagic remove <script-name>` | Remove script and linked binary |
+| `exec` | `x` | `bunmagic exec <file> [args...]` | Execute file with bunmagic globals |
+| `reload` | | `bunmagic reload [--force]` | Rebuild script bins from configured sources |
+| `symlink` | | `bunmagic symlink` | Symlink sources into bunmagic root |
+| `create` | `new` | `bunmagic create <script-name>` | Create a new script |
+| `cleantest` | | `bunmagic cleantest` | Internal/dev command in source checkouts |
+| `version` | `-v` | `bunmagic version` | Print bunmagic version |
+| `clean` | | `bunmagic clean` | Remove orphaned bin files |
+| `list` | `ls` | `bunmagic list [filter]` | List scripts (optional fuzzy filter) |
+| `update` | | `bunmagic update` | Update bunmagic to latest version |
+| `link` | | `bunmagic link [directory]` | Add source directory to config |
+| `exec-args-forwardingtest` | | internal | Internal/dev command in source checkouts |
 
 ## Detailed Command Reference
 
-### edit
-**Usage:** `bunmagic edit [script-name]`
+### `doctor`
 
-Edit scripts in your default editor. If no script name is provided, opens all scripts and the `~/.bunmagic` directory.
+- Usage: `bunmagic doctor`
+- Runs setup checks (`$PATH`, sources, aliases) and attempts follow-up fixes when possible.
 
-**Examples:**
-```bash
-# Edit a specific script
-bunmagic edit hello-world
+### `help`
 
-# Open all scripts for editing
-bunmagic edit
-```
+- Usage: `bunmagic help [command]`
+- Examples:
+  - `bunmagic help`
+  - `bunmagic help exec`
+  - `bunmagic exec --help`
 
-### remove
-**Usage:** `bunmagic remove <script-name>` (alias: `rm`)
+### `which`
 
-Remove a script and its corresponding symlink.
+- Usage: `bunmagic which <script-name>`
+- Prints source location for script or namespace.
 
-**Examples:**
-```bash
-# Remove a script
-bunmagic remove hello-world
+### `install`
 
-# Using the alias
-bunmagic rm old-script
-```
+- Usage: `bunmagic install`
+- Installs/configures bunmagic, script source directory, and shell setup.
+- Also supports uninstall flow:
+  - `bunmagic install --remove`
+  - `bunmagic install --uninstall`
+  - `bunmagic install remove`
+  - `bunmagic install uninstall`
 
-### reload
-**Usage:** `bunmagic reload [--force]`
+### `unlink`
 
-Reload all script files and ensure they have executable bin files.
+- Usage: `bunmagic unlink [directory]`
+- Removes source directory from bunmagic config.
 
-**Parameters:**
-- `--force` - Force creation of bin files even if they already exist
+### `types` (`init`, `add-types`)
 
-**Examples:**
-```bash
-# Reload all scripts
-bunmagic reload
+- Usage: `bunmagic types`
+- Copies prebuilt `bunmagic.d.ts` to `./bunmagic.d.ts`.
 
-# Force recreation of all bin files
-bunmagic reload --force
-```
+### `edit`
 
-### symlink
-**Usage:** `bunmagic symlink [options]`
+- Usage: `bunmagic edit [script-name]`
+- No argument: opens all scripts and `~/.bunmagic`.
 
-Create symlinks from your script sources to the Bunmagic root directory for easy access.
+### `remove` (`rm`)
 
-**Parameters:**
-- `--target` - Specify the target directory (Default: `~/.bunmagic`)
-- `--remove` - Remove existing symlinks
+- Usage: `bunmagic remove <script-name>`
+- Removes script and corresponding linked binary.
 
-**Examples:**
-```bash
-# Create symlinks using default target
-bunmagic symlink
+### `exec` (`x`)
 
-# Create symlinks in a custom directory
-bunmagic symlink --target ~/scripts
+- Usage: `bunmagic exec <file> [args...]`
+- Flags:
+  - `--namespace <name>` set namespace for executed script (testing)
 
-# Remove existing symlinks
-bunmagic symlink --remove
-```
+### `reload`
 
-### create
-**Usage:** `bunmagic create <script-name>` (alias: `new`)
+- Usage: `bunmagic reload [--force]`
+- Rebuilds bins from current source definitions.
+- `--force` forces bin recreation.
 
-Create a new script with the specified name. Opens the script in your default editor after creation.
+### `symlink`
 
-**Examples:**
-```bash
-# Create a new script
-bunmagic create project-setup
+- Usage: `bunmagic symlink`
+- Flags:
+  - `--target <directory>` set symlink target (default `~/.bunmagic`)
+  - `--remove` remove existing symlinks
 
-# Using the alias
-bunmagic new git-cleanup
-```
+### `create` (`new`)
 
-### version
-**Usage:** `bunmagic version` (alias: `-v`)
+- Usage: `bunmagic create <script-name>`
+- Creates script and opens editor.
 
-Display the current version of Bunmagic.
+### `cleantest`
 
-**Examples:**
-```bash
-# Check version
-bunmagic version
+- Internal/dev command used in source checkouts.
 
-# Using the alias
-bunmagic -v
-```
+### `version` (`-v`)
 
-### list
-**Usage:** `bunmagic list [filter] [options]` (alias: `ls`)
+- Usage: `bunmagic version`
+- Also available via `bunmagic -v`.
 
-List all scripts with their status and description.
+### `clean`
 
-**Parameters:**
-- `[filter]` - Optional fuzzy match filter for script paths
-- `--info` or `-i` - Display more detailed information about each script
+- Usage: `bunmagic clean`
+- Removes orphaned binaries from bunmagic bin directory.
 
-**Examples:**
-```bash
-# List all scripts
-bunmagic list
+### `list` (`ls`)
 
-# Filter scripts containing "git"
-bunmagic list git
+- Usage: `bunmagic list [filter]`
+- Flags:
+  - `--info`, `-i` show extended script metadata
 
-# Show detailed information
-bunmagic list --info
+### `update`
 
-# Using the alias with filter
-bunmagic ls project
-```
+- Usage: `bunmagic update`
+- Runs global update and reports version change.
+
+### `link`
+
+- Usage: `bunmagic link [directory]`
+- Adds a new script source directory.
+
+### Internal/Dev-only Commands
+
+- `exec-args-forwardingtest`
+- `cleantest`
+
+These appear in source-checkout help output and are not part of typical end-user workflow.
+
+## Notes
+
+- `bunmagic --help` and `bunmagic help` are equivalent entry points.
+- In strict mode (`BUNMAGIC_STRICT=1`), unknown commands fail instead of prompting script creation.

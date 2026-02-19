@@ -6,7 +6,7 @@ read_when:
 
 ## NPM Package Imports
 
-Bunmagic supports dynamic npm package imports without requiring prior installation.
+When a bunmagic script is executed via `bunmagic exec`, it is run with Bun’s `--install=fallback` mode. This allows npm package imports to work without pre-installing dependencies.
 
 **Examples:**
 ```ts
@@ -22,4 +22,4 @@ const html = marked('# Hello')
 console.log(chalk.blue(html))
 ```
 
-Bun will automatically install the required packages the first time they're imported.
+Bun will automatically install the required packages the first time they're imported (when running with `--install=fallback`).

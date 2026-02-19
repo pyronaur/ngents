@@ -10,16 +10,19 @@ Bunmagic provides utilities for creating interactive command-line interfaces, ma
 ## Interactive Prompts
 
 ### ack()
-**Usage:** `ack(question: string, defaultOption?: 'y' | 'n'): boolean`
+**Usage:** `ack(question: string, defaultAnswer: 'y' | 'n' = 'y'): boolean`
 
 Asks a Yes/No question and waits for user input synchronously.
 
+The prompt shows `[Y/n]` when the default answer is `'y'`, and `[y/N]` when the default answer is `'n'`.
+
 **Parameters:**
 - `question` - The question text to display
-- `defaultOption` - Optional default selection ('y' or 'n')
+- `defaultAnswer` - Default answer to use when the user provides no input
 
 **Returns:**
-- `true` for Yes or `false` for No
+- `true` if the user enters `y` (case-insensitive)
+- `false` otherwise
 
 **Examples:**
 ```ts
@@ -39,22 +42,33 @@ if (overwrite) {
 
 // In a workflow
 if (ack("Add remote origin?", "y")) {
-  const remote = await input("Enter remote URL:")
+  const remote = await ask("Enter remote URL:")
   await $`git remote add origin ${remote}`
 }
 ```
 
 ### ask()
-**Usage:** `ask(question: string, defaultValue?: string): Promise<string>`
+**Usage:** `ask(question: string, defaultAnswer?: string, handle?: 'required' | 'use_default' | ((answer: string | undefined) => Promise<string>)): Promise<string>`
 
 Prompts the user for text input.
 
+The prompt text supports a small CLI markdown subset:
+- `**bold**`
+- `__dim__`
+
 **Parameters:**
 - `question` - The prompt text to display
-- `defaultValue` - Optional default value to use if user provides no input
+- `defaultAnswer` - Placeholder text shown in the input line (default: `''`)
+- `handle` - Response handling mode:
+  - `'required'` - Rejects empty or whitespace-only answers
+  - `'use_default'` - Returns `answer ?? defaultAnswer`
+  - Async function - Receives the current answer and returns the final value (or throws to reject)
 
 **Returns:**
-- Promise resolving to the user's input string
+- Promise resolving to the final answer string
+
+**Errors:**
+- Throws `Exit` when interrupted (Ctrl+C)
 
 **Examples:**
 ```ts
@@ -62,22 +76,25 @@ Prompts the user for text input.
 const name = await ask("What is your name?")
 console.log(`Hello, ${name}!`)
 
-// With default value
-const branch = await ask("Branch name:", "main")
+// Require non-empty input
+const branch = await ask("Branch name", "", "required")
 await $`git checkout -b ${branch}`
 
-// Using the input in a command
-const commitMsg = await ask("Commit message:")
+// Treat empty input as default via a custom handler
+const commitMsg = await ask("Commit message", "wip", async (answer) => {
+  const trimmed = answer?.trim()
+  return trimmed ? trimmed : "wip"
+})
 await $`git commit -m ${commitMsg}`
 ```
 
 ### getPassword()
-**Usage:** `getPassword(prompt?: string): Promise<string>`
+**Usage:** `getPassword(message: string): Promise<string>`
 
-Securely prompts the user for a password with masked input.
+Prompts the user for a password with masked input.
 
 **Parameters:**
-- `prompt` - The prompt text to display (default: "Password:")
+- `message` - The prompt text to display
 
 **Returns:**
 - Promise resolving to the entered password
@@ -85,35 +102,47 @@ Securely prompts the user for a password with masked input.
 **Examples:**
 ```ts
 // Basic password input
-const password = await getPassword()
+const password = await getPassword("Password:")
 
 // Custom prompt
 const apiKey = await getPassword("Enter API key:")
 
 // Authentication flow
 const username = await ask("Username:")
-const password = await getPassword("Password:")
-const success = await authenticate(username, password)
+const password2 = await getPassword("Password:")
+const success = await authenticate(username, password2)
 ```
 
 ### select()
-**Usage:** `select(question: string, options: string[]): Promise<string>`
+**Usage:** `select<T extends string>(message: string, options: T[] | { value: T; label: string }[]): Promise<T>`
 
-Displays an interactive selection menu and returns the selected option.
+Displays an interactive selection menu and returns the selected value.
 
 **Parameters:**
-- `question` - The prompt text to display
-- `options` - Array of string options to choose from
+- `message` - The prompt text to display
+- `options` - Options to choose from:
+  - String options: the string is displayed and returned
+  - `{ value, label }` options: `label` is displayed and `value` is returned
 
 **Returns:**
-- Promise resolving to the selected option string
+- Promise resolving to the selected option value
+
+**Errors:**
+- Throws `Exit` when interrupted (Ctrl+C)
+- Throws `Error` when cancelled (Escape)
 
 **Examples:**
 ```ts
 // Basic selection
-const options = ["typescript", "javascript", "python"]
+const options = ["typescript", "javascript", "python"] as const
 const language = await select("Choose a language:", options)
 console.log(`Selected ${language}`)
+
+// Return stable values with custom labels
+const target = await select("Deploy target:", [
+  { value: "prod", label: "Production" },
+  { value: "staging", label: "Staging" }
+] as const)
 
 // Dynamic options
 const branches = (await $`git branch`.text()).split("\n")
@@ -142,9 +171,12 @@ switch (action) {
 ```
 
 ### autoselect()
-**Usage:** `autoselect(message: string, options: T[], flag: string): Promise<T>`
+**Usage:** `autoselect<T extends string>(message: string, options: T[], flag: string): Promise<T>`
 
-Displays an interactive selection menu with auto-complete functionality. If the specified flag is set via command-line arguments, that value is returned instead of prompting the user.
+Returns an option without prompting when possible:
+- If the specified `flag` is set via command-line arguments, that value is returned.
+- If there is exactly one option, that option is returned.
+- Otherwise, prompts using `select()`.
 
 **Parameters:**
 - `message` - The prompt text to display
@@ -156,8 +188,8 @@ Displays an interactive selection menu with auto-complete functionality. If the 
 
 **Examples:**
 ```ts
-// Basic auto-complete selection
-const commands = ["install", "update", "remove", "list", "help"]
+// Basic selection with flag override
+const commands = ["install", "update", "remove", "list", "help"] as const
 const action = await autoselect("What would you like to do?", commands, "action")
 
 // With dynamic options
@@ -165,14 +197,89 @@ const files = await glob("**/*.ts")
 const fileToEdit = await autoselect("Select file to edit:", files, "file")
 await openEditor(fileToEdit)
 
-// Using auto-complete for long lists
-const countries = ["Afghanistan", "Albania", "Algeria", /* ... */]
+// Using for long lists
+const countries = ["Afghanistan", "Albania", "Algeria" /* ... */]
 const country = await autoselect("Select your country:", countries, "country")
 
 // Flag override example - if --action=install is passed, skips selection
-const action = await autoselect("Choose action:", ["install", "remove"], "action")
+const action2 = await autoselect("Choose action:", ["install", "remove"], "action")
 // Returns "install" without prompting if --action=install was provided
 ```
+
+## Command Output
+
+### $get()
+**Usage:** `$get(...args: Parameters<typeof $>): Promise<string>`
+
+Runs a shell command and returns the result as text.
+
+Like `$`, this throws on non-zero exit codes.
+
+If stdout is non-empty, `$get()` returns stdout; otherwise it returns stderr.
+
+**Parameters:**
+- `args` - Arguments passed through to `$` (same call forms as `$`)
+
+**Returns:**
+- Promise resolving to command output as a string (stdout or stderr)
+
+**Examples:**
+```ts
+// Read stdout as text
+const head = await $get`git rev-parse HEAD`
+console.log(head.trim())
+
+// On command failure, it throws (same as $)
+try {
+  await $get`ls /path/that/does/not/exist`
+} catch (error) {
+  console.error("Command failed")
+}
+
+// Non-throwing capture (Bun shell API)
+const result = await $`ls /path/that/does/not/exist`.quiet().nothrow()
+const output = result.stdout.length > 0 ? result.stdout.toString() : result.stderr.toString()
+console.log(output)
+```
+
+## Error Handling
+
+### die()
+**Usage:** `die(output: unknown): never`
+
+Throws an `Exit` error, printing a formatted message and terminating the process.
+
+**Parameters:**
+- `output` - Error or message to print before exiting
+
+**Returns:**
+- Never returns (terminates the process)
+
+**Examples:**
+```ts
+// Exit with an error message
+if (!(await pathExists("./config.json"))) {
+  die("Missing config.json")
+}
+
+// Format Bun shell errors (stdout/stderr) when available
+try {
+  await $`git push`
+} catch (err) {
+  die(err)
+}
+
+// Exit successfully
+die(0)
+```
+
+### Exit
+**Usage:** `new Exit(error?: unknown)`
+
+Formats common error shapes (including Bun shell errors containing `stdout`/`stderr`) and terminates the process.
+
+**Parameters:**
+- `error` - Optional error value to format and print
 
 ## Progress Indicators
 
@@ -226,6 +333,19 @@ try {
 }
 ```
 
+## Timing
+
+### sleep()
+**Usage:** `sleep(ms: number): Promise<void>`
+
+Sleeps for the given number of milliseconds.
+
+**Parameters:**
+- `ms` - Milliseconds to sleep
+
+**Returns:**
+- Promise resolving after the delay
+
 ## Terminal Styling
 
 Bunmagic includes [ansis](https://www.npmjs.com/package/ansis) as a global utility for terminal text styling. The `chalk` alias is also available for backwards compatibility.
@@ -272,6 +392,28 @@ function logStatus(status) {
 
 The `CLI` object provides low-level terminal control utilities for building interactive command-line interfaces, progress indicators, and custom user experiences.
 
+### Terminal Output
+
+#### CLI.stdout()
+**Usage:** `CLI.stdout(content: string): Promise<number>`
+
+Writes raw content to stdout (no automatic newline).
+
+**Parameters:**
+- `content` - Text to write to stdout
+
+**Returns:**
+- Promise resolving to the result of `Bun.write()`
+
+**Examples:**
+```ts
+// Write without a newline
+await CLI.stdout("Working...")
+
+// Rewrite the current line using carriage return
+await CLI.stdout("\rDone!\n")
+```
+
 ### Cursor Movement
 
 #### CLI.moveUp()
@@ -314,21 +456,21 @@ await CLI.moveDown()   // Move cursor down 1 line (default)
 await CLI.moveLeft(5)  // Move cursor left 5 characters
 await CLI.moveRight(3) // Move cursor right 3 characters
 
-// Building a simple menu navigation
+// Building a simple menu navigation (redraw in place)
+const options = ["Option 1", "Option 2", "Option 3"]
+let hasDrawn = false
+
 async function drawMenu(selectedIndex: number) {
-  const options = ["Option 1", "Option 2", "Option 3"]
-  
-  // Clear previous menu
-  await CLI.clearLines(options.length)
-  
-  // Draw menu items
+  if (hasDrawn) {
+    // Cursor is below the previously drawn menu
+    await CLI.clearUp(options.length + 1)
+  }
+  hasDrawn = true
+
   for (let i = 0; i < options.length; i++) {
     const marker = i === selectedIndex ? ">" : " "
     console.log(`${marker} ${options[i]}`)
   }
-  
-  // Move cursor back to top of menu
-  await CLI.moveUp(options.length)
 }
 ```
 
@@ -342,18 +484,18 @@ Clears the current line completely.
 #### CLI.clearLines()
 **Usage:** `CLI.clearLines(count?: number): Promise<void>`
 
-Clears multiple lines starting from the current cursor position, moving up.
+Moves the cursor up by `count` lines, then clears the current line.
 
 **Parameters:**
-- `count` - Number of lines to clear (default: 1)
+- `count` - Number of lines to move up before clearing (default: 1)
 
 #### CLI.clearUp()
 **Usage:** `CLI.clearUp(count?: number): Promise<void>`
 
-Clears lines above the current cursor position.
+Clears the current line and the `count - 1` lines above it, then restores the cursor to its starting row.
 
 **Parameters:**
-- `count` - Number of lines to clear above (default: 1)
+- `count` - Number of lines to clear, including the current line (default: 1)
 
 #### CLI.clearFrame()
 **Usage:** `CLI.clearFrame(frame: string, wipe?: boolean): Promise<void>`
@@ -367,33 +509,38 @@ Clears a multi-line frame or block of text.
 #### CLI.replaceLine()
 **Usage:** `CLI.replaceLine(...messages: string[]): Promise<void>`
 
-Replaces the current line with new content.
+Clears the current line, writes the joined `messages`, and appends a newline (`\n`).
 
 **Parameters:**
-- `messages` - Text content to replace the line with
+- `messages` - Text content to write (joined with spaces)
 
 **Examples:**
 ```ts
-// Progress indicator with line replacement
+// Progress indicator that redraws a single line
 async function showProgress(items: string[]) {
   for (let i = 0; i < items.length; i++) {
     await CLI.replaceLine(`Processing ${items[i]}... (${i + 1}/${items.length})`)
+    await CLI.moveUp(1)
+
     await processItem(items[i])
     await sleep(100)
   }
+
   await CLI.replaceLine("✅ All items processed!")
 }
 
-// Dynamic status updates
+// Dynamic status updates (single status line)
 async function deployApplication() {
   console.log("Starting deployment...")
-  
+
   await CLI.replaceLine("📦 Building application...")
   await $`npm run build`
-  
+
+  await CLI.moveUp(1)
   await CLI.replaceLine("🚀 Uploading files...")
   await $`rsync -av dist/ server:/var/www/`
-  
+
+  await CLI.moveUp(1)
   await CLI.replaceLine("✅ Deployment complete!")
 }
 
@@ -406,7 +553,7 @@ const loadingFrame = `
 
 console.log(loadingFrame)
 await sleep(2000)
-await CLI.clearFrame(loadingFrame)
+await CLI.clearFrame(loadingFrame, true)
 console.log("✅ Loading complete!")
 ```
 
@@ -436,14 +583,17 @@ Enables or disables raw mode for stdin, allowing character-by-character input.
 async function spinner(duration: number) {
   const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
   let frameIndex = 0
-  
+
   await CLI.hideCursor()
-  
-  const interval = setInterval(async () => {
-    await CLI.replaceLine(`${frames[frameIndex]} Loading...`)
-    frameIndex = (frameIndex + 1) % frames.length
+
+  const interval = setInterval(() => {
+    void (async () => {
+      await CLI.replaceLine(`${frames[frameIndex]} Loading...`)
+      await CLI.moveUp(1)
+      frameIndex = (frameIndex + 1) % frames.length
+    })()
   }, 100)
-  
+
   setTimeout(async () => {
     clearInterval(interval)
     await CLI.showCursor()
@@ -454,33 +604,38 @@ async function spinner(duration: number) {
 // Interactive key handler
 async function handleKeyInput() {
   console.log("Press 'q' to quit, arrow keys to move")
-  await CLI.raw(true)
-  
-  for await (const chunk of CLI.stream().start()) {
-    const key = chunk.toString()
-    
-    if (key === 'q') {
-      break
-    } else if (key === '\u001b[A') { // Up arrow
-      await CLI.moveUp()
-      console.log("Moved up")
-    } else if (key === '\u001b[B') { // Down arrow
-      await CLI.moveDown()
-      console.log("Moved down")
+
+  const input = CLI.stream()
+
+  try {
+    for await (const chunk of input.start()) {
+      const key = chunk.toString()
+
+      if (key === 'q') {
+        break
+      } else if (key === '\u001b[A') { // Up arrow
+        await CLI.moveUp()
+        console.log("Moved up")
+      } else if (key === '\u001b[B') { // Down arrow
+        await CLI.moveDown()
+        console.log("Moved down")
+      }
     }
+  } finally {
+    input.stop()
+    console.log("Exiting...")
   }
-  
-  await CLI.raw(false)
-  console.log("Exiting...")
 }
 ```
 
 ### Input Streaming
 
 #### CLI.stream()
-**Usage:** `CLI.stream(): { start(): AsyncGenerator<Uint8Array>, stop(): void }`
+**Usage:** `CLI.stream(): { start(): AsyncGenerator<Uint8Array>; stop(): void }`
 
-Creates a raw input stream for reading keyboard input character by character.
+Creates a stdin input stream that yields `Uint8Array` chunks.
+
+`start()` enables raw mode while the generator is running and disables raw mode when it finishes.
 
 **Returns:**
 - Object with `start()` method returning an async generator and `stop()` method to abort
@@ -490,18 +645,18 @@ Creates a raw input stream for reading keyboard input character by character.
 // Real-time keyboard input processing
 async function interactiveMode() {
   console.log("Interactive mode - press keys (ESC to exit)")
-  
+
   const inputStream = CLI.stream()
-  
+
   try {
     for await (const chunk of inputStream.start()) {
       const char = chunk.toString()
-      
+
       // ESC key to exit
       if (char === '\u001b') {
         break
       }
-      
+
       // Handle specific keys
       switch (char) {
         case ' ':
@@ -525,13 +680,19 @@ async function simpleGame() {
   let playerX = 5
   let playerY = 5
   const mapSize = 10
-  
-  const stream = CLI.stream()
+
+  const input = CLI.stream()
   await CLI.hideCursor()
-  await CLI.raw(true)
-  
-  function drawMap() {
-    CLI.clearLines(mapSize + 2)
+
+  let hasDrawn = false
+
+  async function drawMap() {
+    // Cursor is below the previously drawn map
+    if (hasDrawn) {
+      await CLI.clearUp(mapSize + 3)
+    }
+    hasDrawn = true
+
     console.log("Use WASD to move, Q to quit")
     for (let y = 0; y < mapSize; y++) {
       let line = ""
@@ -541,13 +702,13 @@ async function simpleGame() {
       console.log(line)
     }
   }
-  
-  drawMap()
-  
+
+  await drawMap()
+
   try {
-    for await (const chunk of stream.start()) {
+    for await (const chunk of input.start()) {
       const key = chunk.toString().toLowerCase()
-      
+
       switch (key) {
         case 'w':
           if (playerY > 0) playerY--
@@ -564,14 +725,13 @@ async function simpleGame() {
         case 'q':
           throw new Error("Quit")
       }
-      
-      drawMap()
+
+      await drawMap()
     }
   } catch (error) {
     // Game ended
   } finally {
-    stream.stop()
-    await CLI.raw(false)
+    input.stop()
     await CLI.showCursor()
     console.log("Game over!")
   }
@@ -585,29 +745,35 @@ async function simpleGame() {
 async function fileBrowser() {
   const files = await glob("*")
   let selectedIndex = 0
-  
-  const stream = CLI.stream()
+
+  const input = CLI.stream()
   await CLI.hideCursor()
-  await CLI.raw(true)
-  
-  function drawBrowser() {
-    CLI.clearLines(files.length + 3)
+
+  let hasDrawn = false
+
+  async function drawBrowser() {
+    if (hasDrawn) {
+      // Cursor is below the previously drawn browser
+      await CLI.clearUp(files.length + 4)
+    }
+    hasDrawn = true
+
     console.log("📁 File Browser (↑↓ to navigate, Enter to select, Q to quit)")
     console.log("─".repeat(50))
-    
+
     for (let i = 0; i < files.length; i++) {
       const marker = i === selectedIndex ? ">" : " "
       const icon = files[i].endsWith("/") ? "📁" : "📄"
       console.log(`${marker} ${icon} ${files[i]}`)
     }
   }
-  
-  drawBrowser()
-  
+
+  await drawBrowser()
+
   try {
-    for await (const chunk of stream.start()) {
+    for await (const chunk of input.start()) {
       const key = chunk.toString()
-      
+
       switch (key) {
         case '\u001b[A': // Up arrow
           selectedIndex = Math.max(0, selectedIndex - 1)
@@ -622,12 +788,11 @@ async function fileBrowser() {
         case 'Q':
           throw new Error("Quit")
       }
-      
-      drawBrowser()
+
+      await drawBrowser()
     }
   } finally {
-    stream.stop()
-    await CLI.raw(false)
+    input.stop()
     await CLI.showCursor()
   }
 }

@@ -35,7 +35,7 @@ const [inputFile, outputFile] = args
 ```
 
 ### flags
-**Type:** `Record<string, string | boolean | number>`
+**Type:** `Record<string, string | boolean | number | undefined>`
 
 Object containing all flag arguments passed to the script.
 
@@ -51,9 +51,9 @@ if (flags.verbose) {
 ```
 
 ### argv
-**Type:** `{ _: string[], [key: string]: any }`
+**Type:** `Record<string, string | number | boolean | string[] | undefined>`
 
-Combined object containing both arguments and flags in a minimist-like format.
+Combined object containing both arguments and flags in a minimist-like format. Positional arguments are available under the `_` key.
 
 **Examples:**
 ```ts
@@ -78,6 +78,11 @@ Parses command line arguments into structured format with flags and arguments. U
 - Handles flag values with space syntax (`--port 3000`)
 - Automatically type casts values (strings "true"/"false" become booleans, numeric strings become integers)
 - Flags without values default to `true`
+- Flag values are greedy: after `--key value` or `--key=value`, additional non-flag tokens are merged until the next flag
+- Repeated flags keep the last parsed value
+- Short-flag grouping (`-abc`) is not split; it is parsed as a single key `abc`
+- `--` is not treated as a minimist terminator; it is parsed as an empty key in flags
+- `--no-*` is treated as a literal key (for example `no-color`), not automatic boolean inversion
 
 **Examples:**
 ```ts
@@ -163,9 +168,8 @@ export default async function() {
   // Show help for unknown commands
   const command = args[0]
   if (!['process', 'validate', 'convert'].includes(command)) {
-    console.error(`Unknown command: ${command}\n`)
     await showHelp()
-    throw new Exit(1)
+    throw new Exit(`Unknown command: ${command}`)
   }
   
   // ... rest of script
@@ -231,42 +235,33 @@ await $`find . -type f -name "*.ts" | grep -v "node_modules"`
 ### $get()
 **Usage:** `$get(...properties: Parameters<typeof $>): Promise<string>`
 
-Runs a shell command and returns the result as text, even if the command fails. Unlike the regular `$` command which throws on errors, `$get` always returns a string containing either stdout or stderr.
+Runs a shell command and returns the result as text. If stdout is non-empty, it returns stdout text; otherwise it returns stderr text.
+
+`$get` throws if the command exits with a non-zero status (same behavior as `$`).
 
 **Parameters:**
 - `...properties` - Same parameters as the `$` command (template literal or command string)
 
 **Returns:**
-- Promise resolving to stdout text if command succeeds, or stderr text if command fails
+- Promise resolving to stdout text if stdout is non-empty, otherwise stderr text
 
 **Examples:**
 ```ts
-// Get command output without error handling
+// Get command output as text (when the command succeeds)
 const gitBranch = await $get`git branch --show-current`
 console.log(`Current branch: ${gitBranch.trim()}`)
 
-// Handle commands that might fail
-const result = await $get`ls nonexistent-directory`
-console.log(result) // Will contain error message instead of throwing
-
-// Compare with regular $ command
+// $get throws on command failure
 try {
-  await $`command-that-fails` // This throws an error
+  await $get`ls nonexistent-directory`
 } catch (error) {
   console.error("Command failed")
 }
 
-// $get doesn't throw - always returns text
-const output = await $get`command-that-fails` // Returns error text
-console.log("Command output:", output)
-
-// Useful for checking command availability
-const which = await $get`which docker`
-if (which.includes("not found")) {
-  console.log("Docker is not installed")
-} else {
-  console.log(`Docker found at: ${which.trim()}`)
-}
+// Non-throwing output capture (Bun shell API)
+const result = await $`ls nonexistent-directory`.quiet().nothrow()
+const output = result.stdout.length > 0 ? result.stdout.toString() : result.stderr.toString()
+console.log(output)
 ```
 
 ## Process Control
@@ -274,19 +269,24 @@ if (which.includes("not found")) {
 ### Exit
 **Type:** `class`
 
-Utility for cleanly exiting a script with an optional message.
+Utility for exiting a script.
+
+- `throw new Exit(0)` exits with status code `0`.
+- `throw new Exit(<value>)` exits with status code `1` and prints `<value>`.
 
 **Examples:**
 ```ts
-// Exit with a message
-throw new Exit("Operation completed successfully")
+// Exit successfully
+throw new Exit(0)
 
-// Exit with a status code
-throw new Exit("Configuration error", 1)
+// Exit with an error message (status code 1)
+throw new Exit("Configuration error")
 
-// Exit when a condition is met
-if (!await isDirectory(targetDir)) {
-  throw new Exit("Target directory doesn't exist")
+// Exit with an underlying error object (status code 1)
+try {
+  await $`command-that-might-fail`
+} catch (error) {
+  throw new Exit(error)
 }
 ```
 

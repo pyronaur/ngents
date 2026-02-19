@@ -85,7 +85,24 @@ tmux -f /dev/null -L "$SOCKET" attach -t "$SESSION"
 tmux -f /dev/null -L "$SOCKET" kill-session -t "$SESSION"
 ```
 
-## 7) Failure mode: "server exited unexpectedly"
+## 7) Automation-safe targeting (send-keys/capture)
+
+When driving tmux programmatically, do not assume pane ids like `:1.1`.
+Verify first, then target an existing pane (usually `:0.0` in fresh sessions).
+
+```bash
+SOCKET=debugsock
+SESSION=debug-session
+
+tmux -f /dev/null -L "$SOCKET" list-windows -t "$SESSION"
+tmux -f /dev/null -L "$SOCKET" list-panes -t "$SESSION"
+tmux -f /dev/null -L "$SOCKET" send-keys -t "$SESSION":0.0 -- "echo ok" Enter
+```
+
+For secret-handling flows, avoid immediate pane capture after paste/send of
+credentials or OTP values.
+
+## 8) Failure mode: "server exited unexpectedly"
 
 Symptoms:
 - `tmux start-server` fails.

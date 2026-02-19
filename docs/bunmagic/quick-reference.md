@@ -1,8 +1,8 @@
 ---
-summary: "Quick bunmagic API and script-authoring reference"
+summary: "Bunmagic 101: Dense overview of Bunmagic APIs"
 read_when:
-  - Writing or updating bunmagic scripts.
-  - Need bunmagic globals, flags, prompts, or SAF usage quickly.
+  - Working with bunmagic scripts.
+  - Need an overview of Bunmagic APIs like fs, interaction, glob, shell, etc
 ---
 
 # Quick bunmagic Reference
@@ -26,7 +26,7 @@ await $`echo "Hello $USER, your random number is ${randomNumber}"`;
 ```
 
 ## Process Control
-- `die(message: string): void` (print + exit 1)
+- `throw new Exit(0 | message | error)` (controlled exit)
 
 ## Paths and Files
 - `Bun.file(path).text()/bytes()/json()/exists()`
@@ -34,58 +34,57 @@ await $`echo "Hello $USER, your random number is ${randomNumber}"`;
 - `path.join(...)`, `path.resolve(...)`
 - `$HOME` global JS variable (like shell `$HOME`)
 - `resolveTilde(input: string): string`
-- `cd(path: string | SAF): void`
+- `cd(path: string): void`
 - `cwd(): Promise<string>`
 - `isDirectory(path: string): Promise<boolean>`
 - `ensureDirectory(path: string): Promise<boolean>`
 - `glob("**/*.ts", options?): Promise<string[]>`
 - `openEditor(path: string): Promise<boolean>`
 
-## Swiss Army File (SAF)
-Utility for safer file operations.
+## Files API
+Use `files.*` as the primary filesystem API.
 
 ```ts
-const file = SAF.from("path/to/file.txt"); // or SAF.from(dir, target)
-const out = await SAF.prepare("path/to/output.txt"); // safe, write-ready path
+const filePath = files.resolve("path/to/file.txt");
+await files.outputFile(filePath, "Hello, world!");
 
-await file.exists();
-await file.isFile();
-await file.isDirectory();
+const exists = await files.pathExists(filePath);
+const isFile = await files.isFile(filePath);
+const bytes = await files.readBytes(filePath);
 
-const name = file.name; // "file.txt"
-const dir = file.directory; // "/path/to"
-const ext = file.extension; // ".txt"
-const base = file.base; // "file"
-const path = file.path; // "/path/to/file.txt"
-
-const bytes = await file.bytes();
-const data = await file.json<{ hello: string }>();
-await file.json({ hello: "world" }); // write JSON
-await file.write("Hello, world!");
-await file.edit((content) => content.toUpperCase());
-await out.write("Output");
-
-// Safe mode: never overwrite on rename/move.
-// If target exists, picks next free name (e.g. "report__1.txt").
-file.safe();
-file.safeSeparator = "__";
-file.name = "report.txt";
-file.directory = "/tmp";
-file.extension = ".md";
-file.path = "/tmp/new.md";
-await file.update(); // apply path changes
-
-// Allow overwrites instead:
-file.unsafe();
-
-await file.ensureDirectory();
-await file.delete("clear_handle"); // clears SAF path handle after delete
-await file.delete("keep_handle"); // keeps path handle for reuse
+await files.editFile(filePath, (content) => content.toUpperCase());
+const safePath = await files.writeFileSafe("path/to/output.txt", bytes);
+console.log(safePath);
 ```
+
+Shortform API signatures:
+- `resolve(input: PathLike, ...rest: PathLike[]): string`
+- `stem(input: PathLike): string`
+- `pathExists(path: PathLike): Promise<boolean>`
+- `isFile(path: PathLike): Promise<boolean>`
+- `isDir(path: PathLike): Promise<boolean>`
+- `ensureDir(path: PathLike): Promise<string>`
+- `ensureFile(path: PathLike): Promise<string>`
+- `emptyDir(path: PathLike): Promise<string>`
+- `readFile(path: PathLike): Promise<string>`
+- `readBytes(path: PathLike): Promise<Uint8Array>`
+- `writeFile(path: PathLike, input: BlobInput, options?: WriteTextOptions): Promise<number>`
+- `outputFile(path: PathLike, input: BlobInput, options?: WriteTextOptions): Promise<number>`
+- `editFile(path: PathLike, updater: (content: string) => string | Promise<string>, options?: WriteTextOptions): Promise<string>`
+- `copy(source: PathLike, destination: PathLike, options?: MoveCopyOptions): Promise<string>`
+- `move(source: PathLike, destination: PathLike, options?: MoveCopyOptions): Promise<string>`
+- `remove(path: PathLike): Promise<string>`
+- `glob(pattern?: string, options?: GlobScanOptions): Promise<string[]>`
+- `ensureUniquePath(path: PathLike, options?: SuffixOptions): Promise<string>`
+- `writeFileSafe(path: PathLike, input: BlobInput, options?: WriteTextOptions & { suffix?: SuffixOptions }): Promise<string>`
+- `copySafe(source: PathLike, destination: PathLike, options?: MoveCopyOptions & { suffix?: SuffixOptions }): Promise<string>`
+- `moveSafe(source: PathLike, destination: PathLike, options?: MoveCopyOptions & { suffix?: SuffixOptions }): Promise<string>`
+
+Deprecated filesystem migration: [/migrations/saf-to-files/](/migrations/saf-to-files/)
 
 ## Prompts and UI
 - `ack(question: string, defaultOption?: "y" | "n"): boolean`
-- `ask(question: string, defaultValue?: string): Promise<string>`
+- `ask(question: string, defaultAnswer?: string, handle?: "required" | "use_default" | ((answer: string | undefined) => Promise<string>)): Promise<string>`
 - `getPassword(prompt?: string): Promise<string>`
 - `select(question: string, options: string[]): Promise<string>`
 - `autoselect<T extends string>(message: string, options: T[], flag: string): Promise<T>`
@@ -134,14 +133,14 @@ console.log(`Copied: ${ansis.bold(dir)}`);
  * @flag --copy Copy to clipboard instead of stdout
  */
 export default async function () {
-  const readme = SAF.from(import.meta.dir, "../README.md");
-  if (!(await readme.exists())) {
-    throw new Exit(`README not found: ${readme.path}`);
+  const readmePath = files.resolve(import.meta.dir, "../README.md");
+  if (!(await files.pathExists(readmePath))) {
+    throw new Exit(`README not found: ${readmePath}`);
   }
-  const contents = await readme.file.text();
+  const contents = await files.readFile(readmePath);
   if (flags.copy) {
     await copyToClipboard(contents);
-    console.log(ansis.green(`Copied ${readme.path} to clipboard`));
+    console.log(ansis.green(`Copied ${readmePath} to clipboard`));
     return;
   }
   console.log(contents);
@@ -175,13 +174,13 @@ function shouldWrite(rel: string, text: string, next: string, inputs: Inputs): b
 }
 
 async function replaceOne(rel: string, inputs: Inputs): Promise<boolean> {
-  const file = SAF.from(inputs.dir, rel);
-  const text = await file.file.text();
+  const filePath = files.resolve(inputs.dir, rel);
+  const text = await files.readFile(filePath);
   const next = text.replaceAll(inputs.from, inputs.to);
   if (!shouldWrite(rel, text, next, inputs)) {
     return false;
   }
-  await file.write(next);
+  await files.writeFile(filePath, next);
   return true;
 }
 

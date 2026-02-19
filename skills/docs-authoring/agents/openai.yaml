@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs Authoring"
+  short_description: "Create and maintain docs metadata for ngents docs output"
+  default_prompt: "Use this skill to create or update Markdown docs front matter (`summary`, optional `read_when`) and validate clean output with `ngents docs --repo`."

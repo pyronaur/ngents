@@ -183,9 +183,9 @@ const filtered = text
 console.log(filtered)
 
 // Command line usage examples:
-// echo "Hello, World!" | bunmagic run my-script
-// cat data.txt | bunmagic run process-data
-// curl -s https://api.example.com/data | bunmagic run parse-api
+// echo "Hello, World!" | bunmagic exec ./my-script.ts
+// cat data.txt | bunmagic exec ./process-data.ts
+// curl -s https://api.example.com/data | bunmagic exec ./parse-api.ts
 
 // Process CSV data from stdin
 const csvData = await $stdin()

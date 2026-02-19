@@ -7,6 +7,12 @@ read_when:
 
 # Quick bunmagic Reference
 
+## First-Hop CLI Commands
+- `bunmagic list` - show scripts already available on this machine.
+- `bunmagic which <command-or-namespace>` - resolve command or namespace to its source path quickly.
+- `bunmagic exec <file> [args...]` - run any script file with bunmagic globals, without registering it.
+- `bunmagic help` - optional command index.
+
 ## Args and Flags
 - `args: string[]` (positional args)
 - `flags: Record<string, any>` (parsed flags; e.g., `flags.verbose`)

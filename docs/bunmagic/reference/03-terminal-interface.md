@@ -7,6 +7,23 @@ read_when:
 
 Bunmagic provides utilities for creating interactive command-line interfaces, making your scripts more user-friendly and dynamic.
 
+## Non-Interactive / TTY Environments
+
+Interactive prompt helpers (`ask`, `select`, `getPassword`, `autoselect`) assume a TTY and raw terminal input.
+
+When stdin is not a TTY (for example CI, redirected input, or piped commands), guard prompt usage:
+
+```ts
+if (!process.stdin.isTTY) {
+  // Fallback for CI/non-interactive execution
+  const value = flags.value || "default"
+  console.log(value)
+  throw new Exit(0)
+}
+
+const value = await ask("Enter value", "default")
+```
+
 ## Interactive Prompts
 
 ### ack()

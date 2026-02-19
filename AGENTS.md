@@ -80,7 +80,8 @@
 - Never re-sign / ad-hoc sign / change bundle ID as "debug" without explicit ok (can mess TCC).
 
 ## Tools
-- Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`.
+- Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`
+- Bunmagic: Bun.js script-to-command framework with built-ins; use Bunmagic 101 for implementation details.
 
 ### tmux
 - Use only when you need persistence/interaction (debugger/server).

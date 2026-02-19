@@ -107,6 +107,29 @@ console.log(result)
 // { flags: { output: "result.txt", verbose: true }, args: ["file1.txt", "file2.txt"] }
 ```
 
+## Execution Model (Important)
+
+Bunmagic prepares CLI input before your script runs:
+
+1. It routes the command first.
+2. It parses the remaining input into `args`, `flags`, and `argv`.
+
+Inside the script, `args[0]` is the first CLI argument passed to that command, not the command name.
+
+**Example:**
+```ts
+// CLI invocation:
+// ngents foo bar --dry
+//
+// Inside scripts/foo.ts:
+console.log(args)  // ["bar"]
+console.log(flags) // { dry: true }
+```
+
+If `--help` is passed and the script has `@autohelp`, help output is shown and execution exits before the script's default function runs.
+
+Top-level module code still runs on import. Keep side effects inside your exported function for predictable behavior.
+
 ## Script Documentation & Help
 
 Bunmagic scripts can provide automatic help documentation using JSDoc comments. This makes your scripts self-documenting and provides built-in `--help` support.
@@ -145,6 +168,13 @@ export default async function() {
 - **`@usage <example>`** - Show usage examples in help output
 - **`@flag <name> <description>`** - Document command-line flags
 - **`@alias <name>`** - Create command aliases (can be used multiple times)
+- **`@global <name>`** - Create global aliases that can be used outside the namespace
+
+### Docblock Placement
+
+Place your script docblock as the first JSDoc comment near the top of the file.
+
+Bunmagic reads metadata from the leading script docblock. If the metadata block is missing or placed too late, tags like `@autohelp`, `@usage`, and aliases may not be detected.
 
 ### showHelp()
 **Type:** `Function`

@@ -7,45 +7,7 @@ read_when:
 
 ## Working Directory
 
-### cd()
-**Usage:** `cd(path: string | SAF): void`
-
-Changes the current working directory with support for tilde expansion.
-
-**Parameters:**
-- `path` - Target directory path (string) or SAF instance
-
-**Examples:**
-```ts
-// Change to home directory
-cd("~")
-
-// Change to project directory
-cd("~/projects/bunmagic")
-
-// Change to relative directory
-cd("./dist")
-```
-
-### cwd()
-**Usage:** `cwd(): Promise<string>`
-
-Gets the current working directory path.
-
-**Returns:**
-- Promise resolving to the current working directory path
-
-**Examples:**
-```ts
-// Get current directory
-const currentDir = await cwd()
-console.log(`Working in: ${currentDir}`)
-
-// Use in conditional logic
-if ((await cwd()).includes("projects")) {
-    console.log("Currently in projects folder")
-}
-```
+Filesystem working directory helpers are documented in [Filesystem Overview](/reference/filesystem/overview/).
 
 ## System Information
 

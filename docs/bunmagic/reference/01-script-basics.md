@@ -5,20 +5,19 @@ read_when:
   - Need exact behavior of args, flags, argv, notMinimist, autohelp, and shell helpers.
 ---
 
-## 🌍 Everything is Global!
+## Overview
 
-**This is the core concept of Bunmagic:** All the utilities documented below are available as global variables in your scripts. You don't need to import anything - just use them directly!
+In bunmagic scripts, common utilities are available as globals. This page describes the core globals used in most scripts: argument parsing, help output, shell execution, and process control.
 
 ```ts
-// No imports needed! Just use the globals:
-const files = await glob("*.ts")
-const choice = await select("Pick one:", files)
+const matches = await glob("*.ts")
+const choice = await select("Pick one:", matches)
 await $`echo "You picked ${choice}"`
 ```
 
 ## Command Arguments
 
-All argument parsing utilities are available as global variables:
+Argument parsing utilities are available as globals.
 
 ### args
 **Type:** `string[]`
@@ -107,22 +106,22 @@ console.log(result)
 // { flags: { output: "result.txt", verbose: true }, args: ["file1.txt", "file2.txt"] }
 ```
 
-## Execution Model (Important)
+## Execution Model
 
-Bunmagic prepares CLI input before your script runs:
+Bunmagic prepares command routing and argument parsing before your script runs.
 
-1. It routes the command first.
-2. It parses the remaining input into `args`, `flags`, and `argv`.
+- The command is routed first.
+- The remaining input is parsed into `args`, `flags`, and `argv`.
 
-Inside the script, `args[0]` is the first CLI argument passed to that command, not the command name.
+Inside the script, `args[0]` is the first CLI argument passed to the command, not the command name.
 
 **Example:**
 ```ts
 // CLI invocation:
-// ngents foo bar --dry
+// my-ns my-command input.txt --dry
 //
-// Inside scripts/foo.ts:
-console.log(args)  // ["bar"]
+// Inside the script:
+console.log(args)  // ["input.txt"]
 console.log(flags) // { dry: true }
 ```
 
@@ -132,10 +131,10 @@ Top-level module code still runs on import. Keep side effects inside your export
 
 ## Script Documentation & Help
 
-Bunmagic scripts can provide automatic help documentation using JSDoc comments. This makes your scripts self-documenting and provides built-in `--help` support.
+Scripts can provide automatic help output via JSDoc tags.
 
 ### @autohelp Tag
-Add `@autohelp` to your script's JSDoc comment to enable automatic `--help` handling. When users run your script with the `--help` flag, they'll see formatted documentation instead of the script executing.
+Add `@autohelp` to enable automatic `--help` handling.
 
 **Example:**
 ```ts
@@ -149,15 +148,12 @@ Add `@autohelp` to your script's JSDoc comment to enable automatic `--help` hand
  * @alias transform
  */
 export default async function() {
-  // When @autohelp is present, running "my-script --help" 
-  // will display the documentation instead of executing this code
-  
   const [input, output = "output.json"] = args
-  
+
   if (flags.verbose) {
     console.log(`Processing ${input}...`)
   }
-  
+
   // ... rest of script
 }
 ```
@@ -168,13 +164,13 @@ export default async function() {
 - **`@usage <example>`** - Show usage examples in help output
 - **`@flag <name> <description>`** - Document command-line flags
 - **`@alias <name>`** - Create command aliases (can be used multiple times)
-- **`@global <name>`** - Create global aliases that can be used outside the namespace
+- **`@global <name>`** - Create a global alias bin for a namespaced script
 
 ### Docblock Placement
 
 Place your script docblock as the first JSDoc comment near the top of the file.
 
-Bunmagic reads metadata from the leading script docblock. If the metadata block is missing or placed too late, tags like `@autohelp`, `@usage`, and aliases may not be detected.
+Bunmagic reads metadata from the first script docblock. If the metadata block is missing or placed too late, tags like `@autohelp`, `@usage`, and aliases may not be detected.
 
 ### showHelp()
 **Type:** `Function`
@@ -189,19 +185,17 @@ Display help information for the current script programmatically. Useful when yo
  * @flag --config <path> Configuration file path
  */
 export default async function() {
-  // Custom help logic
   if (args.length === 0 || flags.help) {
     await showHelp()
     throw new Exit(0)
   }
-  
-  // Show help for unknown commands
+
   const command = args[0]
   if (!['process', 'validate', 'convert'].includes(command)) {
     await showHelp()
     throw new Exit(`Unknown command: ${command}`)
   }
-  
+
   // ... rest of script
 }
 ```
@@ -239,8 +233,15 @@ When help is displayed (either via `@autohelp` or `showHelp()`), it shows:
 
 Bun's shell API is available globally as `$`, allowing you to execute shell commands directly from your scripts.
 
+**Behavior:**
+- Awaiting `$` throws on non-zero exit codes.
+- `.quiet()` suppresses live output.
+- `.nothrow()` disables throwing and returns an output object with `stdout`, `stderr`, and `exitCode`.
+- `.text()` captures stdout and returns it as a string (instead of streaming output).
+- `.json()` captures stdout and parses it as JSON. It can throw if stdout is not valid JSON.
+
 **Returns:**
-- Promise resolving to the command output
+- A Bun shell object. Await it to enforce exit status handling.
 
 **Examples:**
 ```ts
@@ -251,12 +252,21 @@ await $`ls -la`
 const gitStatus = await $`git status`.text()
 console.log(gitStatus)
 
+// Parsing JSON output
+const pkg = await $`cat package.json`.json()
+console.log(pkg.name)
+
 // Handling command errors
 try {
   await $`command-that-might-fail`
 } catch (error) {
   console.error(`Command failed: ${error.message}`)
 }
+
+// Non-throwing capture
+const result = await $`ls /path/that/does/not/exist`.quiet().nothrow()
+const output = result.stdout.length > 0 ? result.stdout.toString() : result.stderr.toString()
+console.log(result.exitCode, output)
 
 // Piping commands
 await $`find . -type f -name "*.ts" | grep -v "node_modules"` 
@@ -304,6 +314,11 @@ Utility for exiting a script.
 - `throw new Exit(0)` exits with status code `0`.
 - `throw new Exit(<value>)` exits with status code `1` and prints `<value>`.
 
+**Guidance:**
+- Return normally to continue execution.
+- Throw `Exit` to stop execution and set an exit code (and optionally print a message).
+- Prefer `throw new Exit("...")` for user-facing failures.
+
 **Examples:**
 ```ts
 // Exit successfully
@@ -317,27 +332,5 @@ try {
   await $`command-that-might-fail`
 } catch (error) {
   throw new Exit(error)
-}
-```
-
-### die()
-**Type:** `Function`
-
-Shorthand utility to exit with an error message.
-
-**Examples:**
-```ts
-// Simple error exit
-die("Fatal error occurred")
-
-// Conditional exit
-if (!configFile) {
-  die("Missing configuration file")
-}
-
-// With dynamic message
-const missing = checkMissingDependencies()
-if (missing.length > 0) {
-  die(`Missing dependencies: ${missing.join(", ")}`)
 }
 ```

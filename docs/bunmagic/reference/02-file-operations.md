@@ -5,6 +5,12 @@ read_when:
   - Need safe write/rename behavior via SAF.
 ---
 
+## Overview
+
+This page describes filesystem-related globals available in bunmagic scripts, compatibility globals, and SAF deprecation status.
+
+For the `files.*` API reference, see [Files API](/reference/filesystem/files-api/).
+
 ## Global Usage
 
 In bunmagic scripts, filesystem helpers are global.
@@ -36,7 +42,7 @@ Use `files.*` for new code.
 - Movement: `copy`, `move`, `remove`, `glob`
 - Collision-safe: `ensureUniquePath`, `writeFileSafe`, `copySafe`, `moveSafe`
 
-Detailed reference: [Files Helpers](/reference/07-files-helpers/)
+Detailed reference: [Files API](/reference/filesystem/files-api/)
 
 ## Compatibility Globals
 
@@ -55,17 +61,48 @@ Prefer `files.*` in new examples.
 
 User home directory path.
 
-### `resolveTilde(input)`
+**Type:** `string`
+
+### `resolveTilde()`
+**Usage:** `resolveTilde(input: string): string`
 
 Expands leading `~` in paths.
 
-### `cd(path)`
+**Parameters:**
+- `input` - Path string
 
-Changes current working directory. Accepts string paths and legacy `SAF` instances.
+**Returns:**
+- Path with a leading `~` expanded to `$HOME`
+
+**Examples:**
+```ts
+const p = resolveTilde("~/Projects")
+console.log(p)
+```
+
+### `cd()`
+**Usage:** `cd(path: string | SAF): void`
+
+Changes the current working directory.
+
+When `path` is a string, the value is passed through `resolveTilde(...)`. When `path` is a legacy `SAF` instance, bunmagic uses `path.path`.
+
+**Parameters:**
+- `path` - Target directory path (string) or legacy `SAF` instance
+
+**Examples:**
+```ts
+cd("~")
+cd("~/Projects/bunmagic")
+```
 
 ### `cwd()`
+**Usage:** `cwd(): Promise<string>`
 
 Returns the current working directory path.
+
+**Returns:**
+- Promise resolving to the current working directory path
 
 ## JSON Pattern (Current API)
 

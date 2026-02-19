@@ -9,6 +9,8 @@ read_when:
 
 `files.*` provides filesystem helpers for Bunmagic scripts and for imported modules.
 
+For filesystem globals, compatibility helpers, and SAF status, see [Filesystem Overview](/reference/filesystem/overview/).
+
 In Bunmagic scripts, `files` is a global:
 
 ```ts

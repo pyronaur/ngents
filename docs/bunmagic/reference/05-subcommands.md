@@ -103,7 +103,7 @@ async function saveTodos() {
 const commands = subcommands({
   add: async () => {
     const text = args.join(' ')
-    if (!text) die('Please provide todo text')
+    if (!text) throw new Exit('Please provide todo text')
 
     todos.push({ id: Date.now(), text, done: false })
     await saveTodos()
@@ -125,7 +125,7 @@ const commands = subcommands({
   done: async () => {
     const id = Number.parseInt(args[0] ?? '', 10)
     const todo = todos.find(t => t.id === id)
-    if (!todo) die(`Todo ${id} not found`)
+    if (!todo) throw new Exit(`Todo ${id} not found`)
 
     todo.done = true
     await saveTodos()
@@ -150,7 +150,7 @@ try {
 1. Call `maybeHelp()` early.
 2. Consume command token once with `args.shift()`.
 3. Prefer explicit fallback (`args.shift() || 'list'`).
-4. Use `die(...)` or `throw new Exit(...)` for user-facing failures.
+4. Use `throw new Exit(...)` for user-facing failures.
 
 ## SAF Note
 

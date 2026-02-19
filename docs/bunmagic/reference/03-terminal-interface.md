@@ -5,7 +5,15 @@ read_when:
   - Need prompt/spinner or low-level CLI rendering controls.
 ---
 
-Bunmagic provides utilities for creating interactive command-line interfaces, making your scripts more user-friendly and dynamic.
+## Overview
+
+This page describes terminal UI and prompt helpers available as globals in bunmagic scripts.
+
+## Common Behaviors
+
+- Prompt APIs require an interactive terminal. Behavior differs between APIs (see `**Errors:**` per entry).
+- `CLI` writes ANSI escape sequences to stdout. When stdout is not a TTY, the escape sequences are still written.
+- `CLI.raw()` and `CLI.stream()` call `process.stdin.setRawMode(...)`. When stdin is not a TTY, `setRawMode` may throw.
 
 ## Non-Interactive / TTY Environments
 
@@ -15,13 +23,11 @@ When stdin is not a TTY (for example CI, redirected input, or piped commands), g
 
 ```ts
 if (!process.stdin.isTTY) {
-  // Fallback for CI/non-interactive execution
-  const value = flags.value || "default"
-  console.log(value)
-  throw new Exit(0)
+  throw new Exit("Interactive prompt requires a TTY")
 }
 
 const value = await ask("Enter value", "default")
+console.log(value)
 ```
 
 ## Interactive Prompts
@@ -261,35 +267,6 @@ console.log(output)
 
 ## Error Handling
 
-### die()
-**Usage:** `die(output: unknown): never`
-
-Throws an `Exit` error, printing a formatted message and terminating the process.
-
-**Parameters:**
-- `output` - Error or message to print before exiting
-
-**Returns:**
-- Never returns (terminates the process)
-
-**Examples:**
-```ts
-// Exit with an error message
-if (!(await pathExists("./config.json"))) {
-  die("Missing config.json")
-}
-
-// Format Bun shell errors (stdout/stderr) when available
-try {
-  await $`git push`
-} catch (err) {
-  die(err)
-}
-
-// Exit successfully
-die(0)
-```
-
 ### Exit
 **Usage:** `new Exit(error?: unknown)`
 
@@ -297,6 +274,21 @@ Formats common error shapes (including Bun shell errors containing `stdout`/`std
 
 **Parameters:**
 - `error` - Optional error value to format and print
+
+**Examples:**
+```ts
+if (!(await files.pathExists("./config.json"))) {
+  throw new Exit("Missing config.json")
+}
+
+try {
+  await $`git push`
+} catch (err) {
+  throw new Exit(err)
+}
+
+throw new Exit(0)
+```
 
 ## Progress Indicators
 
@@ -543,22 +535,22 @@ async function showProgress(items: string[]) {
     await sleep(100)
   }
 
-  await CLI.replaceLine("✅ All items processed!")
+  await CLI.replaceLine("All items processed.")
 }
 
 // Dynamic status updates (single status line)
 async function deployApplication() {
   console.log("Starting deployment...")
 
-  await CLI.replaceLine("📦 Building application...")
+  await CLI.replaceLine("Building application...")
   await $`npm run build`
 
   await CLI.moveUp(1)
-  await CLI.replaceLine("🚀 Uploading files...")
+  await CLI.replaceLine("Uploading files...")
   await $`rsync -av dist/ server:/var/www/`
 
   await CLI.moveUp(1)
-  await CLI.replaceLine("✅ Deployment complete!")
+  await CLI.replaceLine("Deployment complete.")
 }
 
 // Clearing complex UI frames
@@ -571,7 +563,7 @@ const loadingFrame = `
 console.log(loadingFrame)
 await sleep(2000)
 await CLI.clearFrame(loadingFrame, true)
-console.log("✅ Loading complete!")
+console.log("Loading complete.")
 ```
 
 ### Terminal State Control
@@ -614,7 +606,7 @@ async function spinner(duration: number) {
   setTimeout(async () => {
     clearInterval(interval)
     await CLI.showCursor()
-    await CLI.replaceLine("✅ Complete!")
+    await CLI.replaceLine("Complete.")
   }, duration)
 }
 

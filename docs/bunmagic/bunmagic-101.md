@@ -10,6 +10,7 @@ read_when:
 See also:
 - Command discovery model: `docs/bunmagic/reference/08-command-discovery.md`
 - SAF deprecation/migration: `docs/bunmagic/migrations/saf-to-files.md`
+- Advanced arg parsing: `docs/bunmagic/advanced-argv.md`
 
 ## First-Hop CLI Commands
 - `bunmagic list` - show scripts already available on this machine.

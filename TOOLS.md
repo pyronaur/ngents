@@ -47,17 +47,20 @@ Bundle prompt + files for second-model review.
 - Use when stuck, for design checks, or bug cross-validation.
 - Run `oracle --help` once per session before first use.
 
-## k browser
+## kpw
 
-Browser-backed web fetch for JS-heavy pages.
+Session-safe Playwright wrapper for web browsing and extraction.
 
-- Prefer `k browser` when normal fetch/search hits a JavaScript wall.
-- Firecrawl via `mcporter` is fallback only, used when `k browser` fails.
+- Start with one bootstrap command per browsing run:
+  - `kpw session status`
+  - `kpw session open <url>`
+- Use `kpw read` for fast extraction:
+  - `kpw read <url> --markdown`
+  - `kpw read <url> --selector="main article" --markdown`
+- Use forward mode for direct Playwright actions:
+  - `kpw -- tab-list`
+  - `kpw -- snapshot`
 - Keep repo docs portable: do not add internal hosts or endpoint details.
-- Golden paths:
-  - `k browser <url>`
-  - `k browser <url> --markdown`
-  - `k browser --help`
 
 ## mcporter
 

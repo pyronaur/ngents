@@ -10,7 +10,8 @@
 - Bugs: add regression test when it fits.
 - Editor: `zed <path>`.
 - Prefer end-to-end verify; if blocked, say what’s missing.
-- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `k browser` for JS-based pages; for more browser tools, review `TOOLS.md`.
+- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; for more browser tools, review `TOOLS.md`.
+- Browser: `kpw --help`
 - Oracle: run `oracle --help` once/session before first use.
 - Style: telegraph. Drop filler/grammar. Min tokens (global AGENTS + replies).
 - Tooling: Read ~/.ngents/TOOLS.md

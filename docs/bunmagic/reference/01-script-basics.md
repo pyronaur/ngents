@@ -49,6 +49,45 @@ if (flags.verbose) {
 }
 ```
 
+### arg()
+**Usage:** `arg(index: number): TypedAccessor`
+
+Preferred typed accessor for positional arguments. Use this when you need defaults, required checks, or strict type assertions.
+
+**Examples:**
+```ts
+const input = arg(0).string().required()
+const retries = arg(1).int().default(3)
+const mode = arg(2).enum("fast", "safe").optional()
+const bounded = arg(3).int().validate(value => value > 30 && value < 100).required()
+```
+
+### flag()
+**Usage:** `flag(name: string): TypedAccessor`
+
+Preferred typed accessor for flags. Use this when you need safe defaults, required checks, or strict typed parsing.
+
+**Examples:**
+```ts
+const dry = flag("dry").boolean().default(false)
+const retries = flag("retries").int().default(3)
+const env = flag("env").enum("dev", "staging", "prod").required()
+const age = flag("age").int().validate(value => value > 30 && value < 100).required()
+```
+
+Typed helper methods available on both `arg()` and `flag()` accessors:
+- `.string()`
+- `.int()`
+- `.number()`
+- `.boolean()`
+- `.enum("a", "b", ...)`
+- `.validate((value) => boolean, message?)`
+
+Resolver methods:
+- `.default(value)` - return fallback when missing
+- `.required(message?)` - throw when missing
+- `.optional()` - return value or `undefined`
+
 ### argv
 **Type:** `Record<string, string | number | boolean | string[] | undefined>`
 

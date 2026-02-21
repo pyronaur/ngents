@@ -8,11 +8,11 @@ read_when:
 # Argv Playground
 
 Use this script to inspect Bunmagic parsing and compare:
-- normal path: `args` + `flags`
+- normal path: `args` + `flags` (or `arg()` / `flag()` when typed assertions/defaults are needed)
 - advanced path: raw `process.argv` parsing for `--` passthrough
 
 Rule of thumb:
-- Most scripts should use only `args` + `flags`.
+- Most scripts should use `args` + `flags`; prefer `arg()` / `flag()` for typed parsing and `.validate(...)`.
 - Use raw `process.argv` only for advanced passthrough patterns.
 
 Script path:

@@ -2,7 +2,7 @@
 summary: "Practical authoring guide for new `ngents` bunmagic scripts in this repo"
 read_when:
   - Creating a new script under `~/.ngents/scripts`.
-  - Need ngents-specific conventions for strict mode, args, and verification.
+  - Need ngents-specific conventions for strict mode, args/flags, typed accessors, and verification.
 ---
 
 # ngents Script Authoring
@@ -40,10 +40,7 @@ For generic bunmagic command discovery, see `docs/bunmagic/reference/08-command-
  * @flag --dry Preview behavior without writes
  */
 export default async function () {
-  const [input] = args
-  if (!input) {
-    throw new Exit("Usage: ngents my-command <input> [--dry]")
-  }
+  const input = arg(0).string().required("Usage: ngents my-command <input> [--dry]")
 
   if (flags.dry) {
     console.log(`Dry run: ${input}`)
@@ -58,6 +55,9 @@ export default async function () {
 
 - Bunmagic prepares command input before script logic runs
 - Inside the script, `args[0]` is the first CLI argument passed to that command
+- Prefer `arg(index)` / `flag(name)` for required/defaulted/validated values
+- Prefer raw `flags.dry` style for simple boolean toggles when no coercion/default/validation is needed
+- Use `.validate((value) => boolean, message?)` for bounded inputs
 - Keep side effects inside `export default async function () { ... }`
 - Use `@autohelp` + `@usage` + `@flag` for consistent help UX
 

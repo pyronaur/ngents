@@ -22,7 +22,21 @@ See also:
 - `args: string[]` (positional args)
 - `flags: Record<string, any>` (parsed flags; e.g., `flags.verbose`)
 - `argv: { _: string[], [key: string]: any }` (raw minimist-style)
-- `notMinimist(input: string[]): { flags: Record<string, any>, args: string[] }` (parse custom argv)
+- `arg(index)` and `flag(name)` (preferred typed accessors for required/defaulted values)
+
+Preferred typed pattern:
+
+```ts
+const input = arg(0).string().required();
+const retries = flag("retries").int().default(3);
+const mode = flag("mode").enum("fast", "safe").required();
+const age = flag("age")
+  .int()
+  .validate(value => value > 30 && value < 100, "age must be between 31 and 99")
+  .required();
+```
+
+Use `args`/`flags` for quick raw access and `arg`/`flag` when you need type assertions and defaults.
 
 ## Help and Docs
 - `showHelp(): void` (print autohelp and exit)

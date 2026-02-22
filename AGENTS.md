@@ -14,7 +14,9 @@
 - Browser: `kpw --help`
 - Oracle: run `oracle --help` once/session before first use.
 - Style: telegraph. Drop filler/grammar. Min tokens (global AGENTS + replies).
-- Tooling: Read ~/.ngents/TOOLS.md
+- Tooling:
+  - common: `trash`, `gh`, `zoxide`, `xcodegen`, `ast-grep`, `comby`.
+  - specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter` (read `~/.ngents/TOOLS.md` first for usage).
 - use zoxide to find paths on system
 - Scope lock: if next action includes anything beyond user’s explicit request (especially file modification, deletion, or side-effect command), stop and ask for explicit confirmation first, regardless of surrounding context or inferred intent.
 

@@ -20,6 +20,16 @@ GitHub CLI for PR/issues/actions/release checks.
 - Prefer `gh` over browser scraping for GitHub URLs.
 - CI triage baseline: `gh run list`, `gh run view <id>`.
 
+## zoxide
+
+Directory matcher; search without navigation.
+
+- Use `zoxide query <term>` for top match path.
+- Use `zoxide query -l <term>` to list matches.
+- Use `zoxide query -l -s <term>` to include scores.
+- Use `zoxide query -l --base-dir <path> <term>` to scope search.
+- `query` prints paths only; no directory change.
+
 ## xcp
 
 Xcode project/workspace helper.

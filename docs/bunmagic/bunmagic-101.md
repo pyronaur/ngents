@@ -10,6 +10,7 @@ read_when:
 See also:
 - Command discovery model: `docs/bunmagic/reference/08-command-discovery.md`
 - SAF deprecation/migration: `docs/bunmagic/migrations/saf-to-files.md`
+- Native Bun/Node FS compact reference: `docs/bun/file-system-compact.md`
 - Advanced arg parsing: `docs/bunmagic/advanced-argv.md`
 
 ## First-Hop CLI Commands
@@ -66,46 +67,28 @@ await $`echo "Hello $USER, your random number is ${randomNumber}"`;
 - `glob("**/*.ts", options?): Promise<string[]>`
 - `openEditor(path: string): Promise<boolean>`
 
-## Files API
-Use `files.*` as the primary filesystem API.
+## Files API (Legacy Compatibility)
+`files.*` is deprecated and planned for removal in `2.0.0` (except `glob`).
+Use native Bun/Node filesystem APIs for new code.
 
 ```ts
-const filePath = files.resolve("path/to/file.txt");
-await files.outputFile(filePath, "Hello, world!");
+import { mkdir, stat } from 'node:fs/promises'
 
-const exists = await files.pathExists(filePath);
-const isFile = await files.isFile(filePath);
-const bytes = await files.readBytes(filePath);
+const filePath = path.resolve("path/to/file.txt");
+await mkdir(path.dirname(filePath), { recursive: true })
+await Bun.write(filePath, "Hello, world!\n");
 
-await files.editFile(filePath, (content) => content.toUpperCase());
-const safePath = await files.writeFileSafe("path/to/output.txt", bytes);
-console.log(safePath);
+const file = Bun.file(filePath);
+const exists = await file.exists();
+const bytes = await file.bytes();
+
+if (exists && (await stat(filePath)).isFile()) {
+  const upper = (await file.text()).toUpperCase()
+  await Bun.write(filePath, upper)
+}
 ```
 
-Shortform API signatures:
-- `resolve(input: PathLike, ...rest: PathLike[]): string`
-- `stem(input: PathLike): string`
-- `pathExists(path: PathLike): Promise<boolean>`
-- `isFile(path: PathLike): Promise<boolean>`
-- `isDir(path: PathLike): Promise<boolean>`
-- `ensureDir(path: PathLike): Promise<string>`
-- `ensureFile(path: PathLike): Promise<string>`
-- `emptyDir(path: PathLike): Promise<string>`
-- `readFile(path: PathLike): Promise<string>`
-- `readBytes(path: PathLike): Promise<Uint8Array>`
-- `writeFile(path: PathLike, input: BlobInput, options?: WriteTextOptions): Promise<number>`
-- `outputFile(path: PathLike, input: BlobInput, options?: WriteTextOptions): Promise<number>`
-- `editFile(path: PathLike, updater: (content: string) => string | Promise<string>, options?: WriteTextOptions): Promise<string>`
-- `copy(source: PathLike, destination: PathLike, options?: MoveCopyOptions): Promise<string>`
-- `move(source: PathLike, destination: PathLike, options?: MoveCopyOptions): Promise<string>`
-- `remove(path: PathLike): Promise<string>`
-- `glob(pattern?: string, options?: GlobScanOptions): Promise<string[]>`
-- `ensureUniquePath(path: PathLike, options?: SuffixOptions): Promise<string>`
-- `writeFileSafe(path: PathLike, input: BlobInput, options?: WriteTextOptions & { suffix?: SuffixOptions }): Promise<string>`
-- `copySafe(source: PathLike, destination: PathLike, options?: MoveCopyOptions & { suffix?: SuffixOptions }): Promise<string>`
-- `moveSafe(source: PathLike, destination: PathLike, options?: MoveCopyOptions & { suffix?: SuffixOptions }): Promise<string>`
-
-Deprecated filesystem migration: [/migrations/saf-to-files/](/migrations/saf-to-files/)
+Migration details: `docs/bunmagic/migrations/saf-to-files.md`
 
 ## Prompts and UI
 - `ack(question: string, defaultOption?: "y" | "n"): boolean`
@@ -158,11 +141,12 @@ console.log(`Copied: ${ansis.bold(dir)}`);
  * @flag --copy Copy to clipboard instead of stdout
  */
 export default async function () {
-  const readmePath = files.resolve(import.meta.dir, "../README.md");
-  if (!(await files.pathExists(readmePath))) {
+  const readmePath = path.resolve(import.meta.dir, "../README.md");
+  const readmeFile = Bun.file(readmePath)
+  if (!(await readmeFile.exists())) {
     throw new Exit(`README not found: ${readmePath}`);
   }
-  const contents = await files.readFile(readmePath);
+  const contents = await readmeFile.text();
   if (flags.copy) {
     await copyToClipboard(contents);
     console.log(ansis.green(`Copied ${readmePath} to clipboard`));
@@ -199,13 +183,13 @@ function shouldWrite(rel: string, text: string, next: string, inputs: Inputs): b
 }
 
 async function replaceOne(rel: string, inputs: Inputs): Promise<boolean> {
-  const filePath = files.resolve(inputs.dir, rel);
-  const text = await files.readFile(filePath);
+  const filePath = path.resolve(inputs.dir, rel);
+  const text = await Bun.file(filePath).text();
   const next = text.replaceAll(inputs.from, inputs.to);
   if (!shouldWrite(rel, text, next, inputs)) {
     return false;
   }
-  await files.writeFile(filePath, next);
+  await Bun.write(filePath, next);
   return true;
 }
 
@@ -219,12 +203,12 @@ function parseInputs(): Inputs {
 
 export default async function () {
   const inputs = parseInputs();
-  const files = await glob("**/*.{md,txt}", { cwd: inputs.dir });
-  if (!files.length) {
+  const matches = await glob("**/*.{md,txt}", { cwd: inputs.dir });
+  if (!matches.length) {
     throw new Exit("No matching files");
   }
   let updated = 0;
-  for (const rel of files) {
+  for (const rel of matches) {
     if (await replaceOne(rel, inputs)) {
       updated += 1;
     }

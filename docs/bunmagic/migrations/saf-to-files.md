@@ -1,92 +1,88 @@
 ---
-summary: "Bridge SAF to files.* helpers during the 1.4.x deprecation sweep"
+summary: "Migration guide for deprecated SAF/files.* to Bun.file/Bun.write + node:fs/promises"
 read_when:
-  - "SAF warnings appear when running scripts in 1.4.x."
-  - "Need an implementation-verified SAF → files.* mapping."
+  - SAF or files.* deprecation warnings appear in Bunmagic scripts.
+  - Migrating legacy Bunmagic FS helpers to native Bun/Node APIs.
 ---
+
+## Note on Filename
+
+This doc path keeps its historical name (`saf-to-files`) for continuity.
+Current migration target is native Bun + Node FS APIs, not `files.*`.
 
 ## Status
 
-- `SAF` is deprecated in `1.4.x`.
-- `SAF` is scheduled for removal in `2.0.0`.
-- New code should use `files.*`.
+- `SAF`: deprecated, removal planned in `2.0.0`
+- `files.*`: deprecated, removal planned in `2.0.0` (except `glob`)
+- New code should use `Bun.file`, `Bun.write`, and `node:fs/promises`
 
-Current warning message:
+## Warning Strings (Current Direction)
 
-`[bunmagic] SAF is deprecated and will be removed in v2.0.0. Use files.* helpers. See docs: https://bunmagic.com/migrations/saf-to-files`
+Warnings point to Bun/Node FS docs:
 
-Temporarily silence deprecation warnings with:
-
-```bash
-BUNMAGIC_SILENCE_DEPRECATIONS=1
-```
+- `https://bun.sh/docs/runtime/file-io`
+- `https://nodejs.org/api/fs.html`
 
 ## Quick Mapping
 
-| SAF | files.* replacement |
+| Legacy | Native replacement |
 | --- | --- |
-| `SAF.from(path)` | `files.resolve(path)` |
-| `SAF.from(dir, target)` | `files.resolve(dir, target)` |
-| `await saf.exists()` | `await files.pathExists(path)` |
-| `await saf.isFile()` | `await files.isFile(path)` |
-| `await saf.isDirectory()` | `await files.isDir(path)` |
-| `await saf.write(data)` | `await files.writeFile(path, data)` |
-| `await saf.bytes()` | `await files.readBytes(path)` |
-| `await saf.edit(fn)` | `await files.editFile(path, fn)` |
-| `await saf.ensureDirectory()` | `await files.ensureDir(path.dirname(files.resolve(path)))` |
-| `await saf.delete()` | `await files.remove(path)` |
-| `await SAF.prepare(path)` | `await files.ensureUniquePath(path)` |
-| `const t = await SAF.prepare(path); await t.write(data)` | `await files.writeFileSafe(path, data)` |
+| `SAF.from(path)` | `path.resolve(path)` + `Bun.file(...)` |
+| `await saf.exists()` | `await Bun.file(path).exists()` |
+| `await saf.isFile()` | `stat(path).isFile()` |
+| `await saf.isDirectory()` | `stat(path).isDirectory()` |
+| `await saf.write(data)` | `await Bun.write(path, data)` |
+| `await saf.bytes()` | `await Bun.file(path).bytes()` |
+| `await saf.edit(fn)` | `const next = fn(await Bun.file(path).text()); await Bun.write(path, next)` |
+| `await saf.ensureDirectory()` | `await mkdir(dirname(path), { recursive: true })` |
+| `await saf.delete()` | `await rm(path, { recursive: true, force: true })` |
+| `await SAF.prepare(path)` | explicit unique-path suffix function |
+| `files.outputFile(path, data)` | `mkdir(dirname(path), { recursive: true })` + `Bun.write(path, data)` |
 
-## JSON Rewrite Pattern
+## Rewrite Example (JSON)
 
 ```ts
-// Before
-const saf = SAF.from('./state.json')
-const state = await saf.json<{ count?: number }>()
-await saf.json({ count: (state.count ?? 0) + 1 })
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 
-// After
 const p = './state.json'
-const state = await files.pathExists(p)
-  ? (JSON.parse(await files.readFile(p)) as { count?: number })
+const file = Bun.file(p)
+
+const state = (await file.exists())
+  ? (await file.json() as { count?: number })
   : {}
 
 state.count = (state.count ?? 0) + 1
-await files.outputFile(p, `${JSON.stringify(state, null, 2)}\n`)
+await mkdir(path.dirname(p), { recursive: true })
+await Bun.write(p, `${JSON.stringify(state, null, 2)}\n`)
 ```
 
-## Safe Collision Pattern
+## Collision-safe Write Example
 
 ```ts
-// Before
-const target = await SAF.prepare('./report.txt')
-await target.write('report')
+import { stat } from 'node:fs/promises'
 
-// After
-const target = await files.writeFileSafe('./report.txt', 'report')
-console.log(target)
+async function uniquePath(base: string): Promise<string> {
+  let i = 0
+  let candidate = base
+  while (true) {
+    try {
+      await stat(candidate)
+      i += 1
+      const dot = base.lastIndexOf('.')
+      candidate = dot >= 0
+        ? `${base.slice(0, dot)}_${i}${base.slice(dot)}`
+        : `${base}_${i}`
+    } catch {
+      return candidate
+    }
+  }
+}
+
+const target = await uniquePath('./report.txt')
+await Bun.write(target, 'report')
 ```
 
-## Move / Rename Pattern
+## Keep Using `glob()`
 
-```ts
-// Before
-const file = SAF.from('./data/report.json')
-file.directory = './out'
-file.extension = '.txt'
-await file.update()
-
-// After
-const source = files.resolve('./data/report.json')
-const destination = files.resolve('./out/report.txt')
-await files.moveSafe(source, destination)
-```
-
-## Notes
-
-- `files.editFile(...)` returns updated content (`string`), not a file handle.
-- `files.remove(...)` removes files or directories recursively.
-- `files.outputFile(...)` should be used when parent directories may not exist.
-- Use `flag: 'wx'` when you want writes to fail if destination exists.
-- Prefer `ensureUniquePath` / `*Safe` helpers for suffix-based collision handling.
+`glob()` remains the Bunmagic helper exception because it aligns with Bun shell cwd behavior and is still convenient in scripts.

@@ -277,7 +277,7 @@ Formats common error shapes (including Bun shell errors containing `stdout`/`std
 
 **Examples:**
 ```ts
-if (!(await files.pathExists("./config.json"))) {
+if (!(await Bun.file("./config.json").exists())) {
   throw new Exit("Missing config.json")
 }
 

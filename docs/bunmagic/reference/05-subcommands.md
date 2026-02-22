@@ -84,6 +84,7 @@ const commands = typed({
 ```ts
 #!/usr/bin/env bunmagic
 import { subcommands } from 'bunmagic/extras'
+import { mkdir } from 'node:fs/promises'
 
 interface Todo {
   id: number
@@ -91,15 +92,17 @@ interface Todo {
   done: boolean
 }
 
-const todosPath = '~/.todos.json'
+const todosPath = resolveTilde('~/.todos.json')
 let todos: Todo[] = []
 
-if (await files.pathExists(todosPath)) {
-  todos = JSON.parse(await files.readFile(todosPath)) as Todo[]
+const todosFile = Bun.file(todosPath)
+if (await todosFile.exists()) {
+  todos = await todosFile.json() as Todo[]
 }
 
 async function saveTodos() {
-  await files.outputFile(todosPath, `${JSON.stringify(todos, null, 2)}\n`)
+  await mkdir(path.dirname(todosPath), { recursive: true })
+  await Bun.write(todosPath, `${JSON.stringify(todos, null, 2)}\n`)
 }
 
 const commands = subcommands({
@@ -159,3 +162,4 @@ try {
 ## SAF Note
 
 Avoid `SAF` in new subcommand examples. It is deprecated in `1.4.x` and planned for removal in `2.0.0`.
+`files.*` is also deprecated for new code (except `glob`).

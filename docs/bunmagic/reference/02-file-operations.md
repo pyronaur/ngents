@@ -1,141 +1,81 @@
 ---
-summary: "bunmagic file-system APIs: Bun file ops, paths, glob, SAF, and editor integration"
+summary: "Filesystem guidance for bunmagic scripts: Bun.file/Bun.write + node:fs/promises, with glob kept"
 read_when:
-  - Working with files or directories in bunmagic scripts.
-  - Need safe write/rename behavior via SAF.
+  - Working with files/directories in bunmagic scripts.
+  - Need the current recommendation after SAF/files.* deprecation.
 ---
 
-## Overview
+## Current Recommendation
 
-This page describes filesystem-related globals available in bunmagic scripts, compatibility globals, and SAF deprecation status.
+For new Bunmagic scripts:
 
-For the `files.*` API reference, see [Files API](/reference/filesystem/files-api/).
+- Use `Bun.file(...)` for read/existence/lazy file handles.
+- Use `Bun.write(...)` for writes and file-to-file copying.
+- Use `node:fs/promises` for directory + metadata operations (`mkdir`, `cp`, `rename`, `rm`, `stat`, ...).
+- Keep using Bunmagic `glob()` when you want Bun shell cwd-aware glob behavior.
 
-## Global Usage
+Compact API reference: `docs/bun/file-system-compact.md`
 
-In bunmagic scripts, filesystem helpers are global.
+## Legacy Compatibility Status
 
-```ts
-await files.ensureDir('./output')
-await files.outputFile('./output/state.json', JSON.stringify({ ok: true }, null, 2))
+- `SAF`: deprecated, scheduled for removal in `2.0.0`.
+- `files.*`: deprecated, scheduled for removal in `2.0.0`.
+- `glob()` helper remains supported.
 
-if (await files.pathExists('./output/state.json')) {
-  const state = JSON.parse(await files.readFile('./output/state.json')) as { ok?: boolean }
-  console.log(state.ok)
-}
-```
+Migration details: `docs/bunmagic/migrations/saf-to-files.md`
 
-For imported modules:
+## Bunmagic Globals You Still Use
 
-```ts
-import * as files from 'bunmagic/files'
-import { outputFile, pathExists } from 'bunmagic/files'
-```
+- Path/helpers: `path`, `$HOME`, `resolveTilde()`
+- Working directory: `cd()`, `cwd()`
+- Convenience compatibility globals (legacy): `isDirectory()`, `ensureDirectory()`
+- Glob helper: `glob(pattern, options?)`
+- Editor: `openEditor(path)`
 
-## Primary API (Recommended)
+## Typical Patterns
 
-Use `files.*` for new code.
-
-- Path/checks: `resolve`, `stem`, `pathExists`, `isFile`, `isDir`
-- Directory: `ensureDir`, `ensureFile`, `emptyDir`
-- Read/write: `readFile`, `readBytes`, `writeFile`, `outputFile`, `editFile`
-- Movement: `copy`, `move`, `remove`, `glob`
-- Collision-safe: `ensureUniquePath`, `writeFileSafe`, `copySafe`, `moveSafe`
-
-Detailed reference: [Files API](/reference/filesystem/files-api/)
-
-## Compatibility Globals
-
-These exist in `1.4.x` for compatibility:
-
-- `isDirectory()` -> forwards to `files.isDir()`
-- `ensureDirectory()` -> calls `files.ensureDir()` and returns `true`
-- `glob()`
-- `resolveTilde()`
-
-Prefer `files.*` in new examples.
-
-## Path Helpers
-
-### `$HOME`
-
-User home directory path.
-
-**Type:** `string`
-
-### `resolveTilde()`
-**Usage:** `resolveTilde(input: string): string`
-
-Expands leading `~` in paths.
-
-**Parameters:**
-- `input` - Path string
-
-**Returns:**
-- Path with a leading `~` expanded to `$HOME`
-
-**Examples:**
-```ts
-const p = resolveTilde("~/Projects")
-console.log(p)
-```
-
-### `cd()`
-**Usage:** `cd(path: string | SAF): void`
-
-Changes the current working directory.
-
-When `path` is a string, the value is passed through `resolveTilde(...)`. When `path` is a legacy `SAF` instance, bunmagic uses `path.path`.
-
-**Parameters:**
-- `path` - Target directory path (string) or legacy `SAF` instance
-
-**Examples:**
-```ts
-cd("~")
-cd("~/Projects/bunmagic")
-```
-
-### `cwd()`
-**Usage:** `cwd(): Promise<string>`
-
-Returns the current working directory path.
-
-**Returns:**
-- Promise resolving to the current working directory path
-
-## JSON Pattern (Current API)
-
-`files.*` does not include dedicated JSON helpers. Use explicit parse/stringify.
+### Read text/json
 
 ```ts
-const p = './tmp/data.json'
-const state = await files.pathExists(p)
-  ? (JSON.parse(await files.readFile(p)) as Record<string, unknown>)
+const configFile = Bun.file('~/.config/tool/config.json'.replace('~', $HOME))
+const config = (await configFile.exists())
+  ? (await configFile.json() as Record<string, unknown>)
   : {}
-
-state.updatedAt = new Date().toISOString()
-await files.outputFile(p, `${JSON.stringify(state, null, 2)}\n`)
 ```
 
-## Editor Integration
-
-### `openEditor(path)`
-
-Opens a file or directory in the configured editor.
+### Ensure directory + write
 
 ```ts
-await openEditor('~/Projects/my-script.ts')
+import { mkdir } from 'node:fs/promises'
+
+await mkdir('./tmp', { recursive: true })
+await Bun.write('./tmp/state.json', `${JSON.stringify({ ok: true }, null, 2)}\n`)
 ```
 
-## SAF (Legacy, Deprecated)
+### Rename/move with Node APIs
 
-:::caution[Deprecated in 1.4.x]
-`SAF` is deprecated and will be removed in `2.0.0`.
+```ts
+import { rename } from 'node:fs/promises'
 
-Use `files.*` for all new code.
-:::
+await rename('./tmp/state.json', './tmp/state.next.json')
+```
 
-Migration guide: [/migrations/saf-to-files/](/migrations/saf-to-files/)
+### Remove file/dir safely
 
-`SAF` remains available in `1.4.x` for compatibility and emits a one-time deprecation warning unless silenced with `BUNMAGIC_SILENCE_DEPRECATIONS=1`.
+```ts
+import { rm } from 'node:fs/promises'
+
+await rm('./tmp', { recursive: true, force: true })
+```
+
+### Glob (kept helper)
+
+```ts
+const matches = await glob('**/*.ts', { cwd: './src', absolute: true })
+```
+
+## Official Docs
+
+- Bun file I/O: `https://bun.sh/docs/runtime/file-io`
+- Bun reference: `https://bun.sh/reference/bun/file`, `https://bun.sh/reference/bun/write`
+- Node fs docs: `https://nodejs.org/api/fs.html`

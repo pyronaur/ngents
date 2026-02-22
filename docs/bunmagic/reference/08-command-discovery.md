@@ -98,3 +98,4 @@ bunmagic which my-ns
 bunmagic which "my-ns my-script"
 cat ~/.bunmagic/config.json
 ```
+

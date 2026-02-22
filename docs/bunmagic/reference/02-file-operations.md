@@ -131,7 +131,7 @@ await openEditor('~/Projects/my-script.ts')
 ## SAF (Legacy, Deprecated)
 
 :::caution[Deprecated in 1.4.x]
-`SAF` is deprecated and will be removed in `1.5.0`.
+`SAF` is deprecated and will be removed in `2.0.0`.
 
 Use `files.*` for all new code.
 :::

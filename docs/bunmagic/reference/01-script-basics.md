@@ -19,10 +19,55 @@ await $`echo "You picked ${choice}"`
 
 Argument parsing utilities are available as globals.
 
+Bunmagic exposes two argument APIs:
+
+- `arg()` and `flag()` typed accessors (recommended default)
+- `args` and `flags` globals (still supported, still useful)
+
+Use `arg()`/`flag()` for explicit parsing and validation.  
+Use global `flags`/`args` when quick access is clearer (for example `flags.debug` or `flags.verbose`, or when you need to mutate/iterate the full args array).
+
+### arg()
+**Usage:** `arg(index: number): TypedAccessor`
+
+Reads one positional argument by index with typed helpers and validation.
+
+**Examples:**
+```ts
+const input = arg(0).string().required("Missing input")
+const retries = arg(1).int().default(3)
+```
+
+### flag()
+**Usage:** `flag(name: string): TypedAccessor`
+
+Reads one flag by name with typed helpers and validation.
+
+**Examples:**
+```ts
+const format = flag("format").enum("json", "csv").default("json")
+const minScore = flag("min-score")
+  .number()
+  .validate(value => value >= 0 && value <= 1, "min-score must be between 0 and 1")
+  .optional()
+```
+
+Typed helpers available on both `arg()` and `flag()`:
+
+- `.string()`
+- `.int()`
+- `.number()`
+- `.boolean()`
+- `.enum("a", "b", ...)`
+- `.validate((value) => boolean, message?)`
+- terminal methods: `.required()`, `.default(value)`, `.optional()`
+
 ### args
 **Type:** `string[]`
 
 Array containing all non-flag arguments passed to the script.
+
+This global is fully supported and not going away. It is still the best fit for bulk operations and mutable command routing patterns.
 
 **Examples:**
 ```ts
@@ -33,10 +78,24 @@ console.log(args) // ["file1.txt", "file2.txt"]
 const [inputFile, outputFile] = args
 ```
 
+### passthroughArgs
+**Type:** `string[]`
+
+Array containing all tokens after a `--` terminator. These tokens are left unparsed and excluded from `args` and `flags`.
+
+**Examples:**
+```ts
+// Running: my-script query -- --min-score 0.2 -n 5
+console.log(args) // ["query"]
+console.log(passthroughArgs) // ["--min-score", "0.2", "-n", "5"]
+```
+
 ### flags
 **Type:** `Record<string, string | boolean | number | undefined>`
 
 Object containing all flag arguments passed to the script.
+
+This global is fully supported and not going away. It is especially convenient for simple boolean toggles.
 
 **Examples:**
 ```ts
@@ -44,71 +103,35 @@ Object containing all flag arguments passed to the script.
 console.log(flags) // { name: "value", verbose: true, n: 5 }
 
 // Conditional logic based on flags
-if (flags.verbose) {
+if (flags.debug || flags.verbose) {
   console.log("Running in verbose mode")
 }
 ```
 
-### arg()
-**Usage:** `arg(index: number): TypedAccessor`
-
-Preferred typed accessor for positional arguments. Use this when you need defaults, required checks, or strict type assertions.
-
-**Examples:**
-```ts
-const input = arg(0).string().required()
-const retries = arg(1).int().default(3)
-const mode = arg(2).enum("fast", "safe").optional()
-const bounded = arg(3).int().validate(value => value > 30 && value < 100).required()
-```
-
-### flag()
-**Usage:** `flag(name: string): TypedAccessor`
-
-Preferred typed accessor for flags. Use this when you need safe defaults, required checks, or strict typed parsing.
-
-**Examples:**
-```ts
-const dry = flag("dry").boolean().default(false)
-const retries = flag("retries").int().default(3)
-const env = flag("env").enum("dev", "staging", "prod").required()
-const age = flag("age").int().validate(value => value > 30 && value < 100).required()
-```
-
-Typed helper methods available on both `arg()` and `flag()` accessors:
-- `.string()`
-- `.int()`
-- `.number()`
-- `.boolean()`
-- `.enum("a", "b", ...)`
-- `.validate((value) => boolean, message?)`
-
-Resolver methods:
-- `.default(value)` - return fallback when missing
-- `.required(message?)` - throw when missing
-- `.optional()` - return value or `undefined`
-
 ### argv
 **Type:** `Record<string, string | number | boolean | string[] | undefined>`
 
-Combined object containing both arguments and flags in a minimist-like format. Positional arguments are available under the `_` key.
+Combined object containing both arguments and flags in a minimist-like format. Positional arguments are available under the `_` key, and tokens after `--` are available under the `"--"` key.
 
 **Examples:**
 ```ts
 // Running: my-script file1.txt file2.txt --verbose
-console.log(argv) // { _: ["file1.txt", "file2.txt"], verbose: true }
+console.log(argv) // { _: ["file1.txt", "file2.txt"], verbose: true, "--": [] }
 ```
 
 ### notMinimist()
-**Usage:** `notMinimist(input: string[]): { flags: Record<string, string | number | boolean | undefined>, args: string[] }`
+**Usage:** `notMinimist(input: string[]): { flags: Record<string, string | number | boolean | undefined>, args: string[], passthroughArgs: string[] }`
 
-Parses command line arguments into structured format with flags and arguments. Used internally to generate the global `args`, `flags`, and `argv` variables.
+Parses command line arguments into structured format with flags and arguments. Used internally to generate `args`, `flags`, `passthroughArgs`, and `argv`, and to back typed `arg()`/`flag()` reads.
 
 **Parameters:**
 - `input` - Array of command line argument strings
 
 **Returns:**
-- Object with `flags` property containing parsed flags and `args` property containing non-flag arguments
+- Object with:
+  - `flags` containing parsed flags before `--`
+  - `args` containing non-flag positional arguments before `--`
+  - `passthroughArgs` containing all tokens after `--`
 
 **Behavior:**
 - Supports short flags (`-v`) and long flags (`--verbose`)
@@ -116,10 +139,10 @@ Parses command line arguments into structured format with flags and arguments. U
 - Handles flag values with space syntax (`--port 3000`)
 - Automatically type casts values (strings "true"/"false" become booleans, numeric strings become integers)
 - Flags without values default to `true`
-- Flag values are greedy: after `--key value` or `--key=value`, additional non-flag tokens are merged until the next flag
+- Flag values consume exactly one following non-flag token (`--key value`) or an inline token (`--key=value`)
 - Repeated flags keep the last parsed value
 - Short-flag grouping (`-abc`) is not split; it is parsed as a single key `abc`
-- `--` is not treated as a minimist terminator; it is parsed as an empty key in flags
+- `--` is treated as a terminator; all following tokens are excluded from flag parsing
 - `--no-*` is treated as a literal key (for example `no-color`), not automatic boolean inversion
 
 **Examples:**
@@ -127,22 +150,27 @@ Parses command line arguments into structured format with flags and arguments. U
 // Basic flag parsing
 const result = notMinimist(["--verbose", "-n", "5", "file.txt"])
 console.log(result)
-// { flags: { verbose: true, n: 5 }, args: ["file.txt"] }
+// { flags: { verbose: true, n: 5 }, args: ["file.txt"], passthroughArgs: [] }
 
 // Equals syntax for values
 const result = notMinimist(["--name=john", "--debug", "input.txt"])
 console.log(result)
-// { flags: { name: "john", debug: true }, args: ["input.txt"] }
+// { flags: { name: "john", debug: true }, args: ["input.txt"], passthroughArgs: [] }
 
 // Type casting
 const result = notMinimist(["--count=10", "--enabled=true", "--disabled=false"])
 console.log(result)
-// { flags: { count: 10, enabled: true, disabled: false }, args: [] }
+// { flags: { count: 10, enabled: true, disabled: false }, args: [], passthroughArgs: [] }
 
 // Mixed arguments and flags
 const result = notMinimist(["file1.txt", "--output", "result.txt", "file2.txt", "--verbose"])
 console.log(result)
-// { flags: { output: "result.txt", verbose: true }, args: ["file1.txt", "file2.txt"] }
+// { flags: { output: "result.txt", verbose: true }, args: ["file1.txt", "file2.txt"], passthroughArgs: [] }
+
+// Double-dash terminator
+const withPassthrough = notMinimist(["query", "--", "--min-score", "0.2", "-n", "5"])
+console.log(withPassthrough)
+// { flags: {}, args: ["query"], passthroughArgs: ["--min-score", "0.2", "-n", "5"] }
 ```
 
 ## Execution Model
@@ -150,9 +178,10 @@ console.log(result)
 Bunmagic prepares command routing and argument parsing before your script runs.
 
 - The command is routed first.
-- The remaining input is parsed into `args`, `flags`, and `argv`.
+- The remaining input is parsed into `args`, `flags`, `passthroughArgs`, and `argv`.
+- `arg()`/`flag()` read from the same parsed runtime values.
 
-Inside the script, `args[0]` is the first CLI argument passed to the command, not the command name.
+Inside the script, `arg(0)` / `args[0]` is the first CLI argument passed to the command, not the command name.
 
 **Example:**
 ```ts
@@ -187,7 +216,8 @@ Add `@autohelp` to enable automatic `--help` handling.
  * @alias transform
  */
 export default async function() {
-  const [input, output = "output.json"] = args
+  const input = arg(0).string().required("Input file is required")
+  const output = arg(1).string().default("output.json")
 
   if (flags.verbose) {
     console.log(`Processing ${input}...`)
@@ -224,12 +254,12 @@ Display help information for the current script programmatically. Useful when yo
  * @flag --config <path> Configuration file path
  */
 export default async function() {
-  if (args.length === 0 || flags.help) {
+  const command = arg(0).string().optional()
+  if (!command || flags.help) {
     await showHelp()
     throw new Exit(0)
   }
 
-  const command = args[0]
   if (!['process', 'validate', 'convert'].includes(command)) {
     await showHelp()
     throw new Exit(`Unknown command: ${command}`)

@@ -237,6 +237,6 @@ console.log(safePath) // ./report_1.txt
 
 ## SAF Status
 
-`SAF` is deprecated and planned for removal in `1.5.0`.
+`SAF` is deprecated and planned for removal in `2.0.0`.
 
 Migration guide: [/migrations/saf-to-files/](/migrations/saf-to-files/)

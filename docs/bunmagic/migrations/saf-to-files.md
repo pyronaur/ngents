@@ -8,12 +8,12 @@ read_when:
 ## Status
 
 - `SAF` is deprecated in `1.4.x`.
-- `SAF` is scheduled for removal in `1.5.0`.
+- `SAF` is scheduled for removal in `2.0.0`.
 - New code should use `files.*`.
 
 Current warning message:
 
-`[bunmagic] SAF is deprecated and will be removed in v1.5.0. Use files.* helpers. See docs: https://bunmagic.com/migrations/saf-to-files`
+`[bunmagic] SAF is deprecated and will be removed in v2.0.0. Use files.* helpers. See docs: https://bunmagic.com/migrations/saf-to-files`
 
 Temporarily silence deprecation warnings with:
 

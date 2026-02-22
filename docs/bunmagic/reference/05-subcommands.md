@@ -7,16 +7,18 @@ read_when:
 
 ## Basic Usage
 
+Default recommendation: use `arg()`/`flag()` for typed reads inside handlers. Keep `args.shift()` for command-token routing.
+
 ```ts
 import { subcommands } from 'bunmagic/extras'
 
 const commands = subcommands({
   add: async () => {
-    const file = args[0]
+    const file = arg(0).string().required('Missing file to add')
     console.log(`Adding ${file}...`)
   },
   remove: async () => {
-    const file = args[0]
+    const file = arg(0).string().required('Missing file to remove')
     console.log(`Removing ${file}...`)
   },
   list: async () => {
@@ -123,7 +125,7 @@ const commands = subcommands({
   },
 
   done: async () => {
-    const id = Number.parseInt(args[0] ?? '', 10)
+    const id = arg(0).int().required('Please provide todo id')
     const todo = todos.find(t => t.id === id)
     if (!todo) throw new Exit(`Todo ${id} not found`)
 
@@ -150,8 +152,10 @@ try {
 1. Call `maybeHelp()` early.
 2. Consume command token once with `args.shift()`.
 3. Prefer explicit fallback (`args.shift() || 'list'`).
-4. Use `throw new Exit(...)` for user-facing failures.
+4. Default to `arg()`/`flag()` for typed argument and flag reads.
+5. Keep global `flags` for quick booleans (`flags.help`, `flags.verbose`, `flags.debug`).
+6. Use `throw new Exit(...)` for user-facing failures.
 
 ## SAF Note
 
-Avoid `SAF` in new subcommand examples. It is deprecated in `1.4.x` and planned for removal in `1.5.0`.
+Avoid `SAF` in new subcommand examples. It is deprecated in `1.4.x` and planned for removal in `2.0.0`.

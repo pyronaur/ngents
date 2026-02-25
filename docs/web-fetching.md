@@ -25,9 +25,17 @@ Goal: pick the right web tool fast, then fetch reliably.
 ## Golden Paths
 
 ```bash
-# Primary fetch (browser-backed)
-kpw session open <url>
+# Fast one-off fetch (ephemeral session, auto cleanup)
 kpw read <url> --markdown
+
+# Sticky session flow (tab reuse across steps)
+kpw session status
+kpw session start
+kpw session open <url>
+kpw -- tab-list
+kpw session end
+
+# Help
 kpw --help
 
 # Search/discovery
@@ -52,4 +60,7 @@ mcporter call <firecrawl.tool> key=value
 
 - Keep this repo public-safe.
 - Do not document internal host names or endpoint internals.
+- `kpw session status` is read-only and does not create a session.
+- `kpw session open` requires an active sticky session.
+- `kpw read` uses temporary sessions and cleans them up automatically.
 - For advanced options, run `kpw --help` and inspect MCP schemas with `mcporter list <server> --schema`.

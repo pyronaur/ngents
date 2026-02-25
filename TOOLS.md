@@ -61,15 +61,23 @@ Bundle prompt + files for second-model review.
 
 Session-safe Playwright wrapper for web browsing and extraction.
 
-- Start with one bootstrap command per browsing run:
-  - `kpw session status`
-  - `kpw session open <url>`
-- Use `kpw read` for fast extraction:
+- Fast one-off extraction (auto cleanup):
   - `kpw read <url> --markdown`
   - `kpw read <url> --selector="main article" --markdown`
+- Sticky session flow (reused tab by default):
+  - `kpw session status`
+  - `kpw session start`
+  - `kpw session open <url>`
+  - `kpw -- tab-list`
+  - `kpw session end`
 - Use forward mode for direct Playwright actions:
   - `kpw -- tab-list`
   - `kpw -- snapshot`
+- Notes:
+  - `kpw session status` is read-only; it does not create a session.
+  - `kpw session open` requires an active sticky session.
+  - `kpw -- open <url>` is blocked; use `kpw session open <url>` or `kpw read`.
+  - temp sessions auto-clean after 5 minutes; sticky sessions auto-clean after 24 hours idle.
 - Keep repo docs portable: do not add internal hosts or endpoint details.
 
 ## mcporter

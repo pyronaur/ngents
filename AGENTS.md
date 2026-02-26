@@ -4,21 +4,18 @@
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Work style: telegraph; noun-phrases ok; drop grammar; min tokens.
-- "Make a note/Remember That" -> edit ~/.ngents/AGENTS.md (shortcut; not a blocker). Ignore `CLAUDE.md`.
+- Style: telegraph; noun-phrases ok; drop grammar; min tokens.
+- Approach: less is more, we can always add more later. When planning, aim for less features and more simplification.
+- Leave It Better than you found it: refactors are always welcome, when they unblock, simplify or deduplicate.
 - Guardrails: use `trash` for deletes.
-- Bugs: add regression test when it fits.
-- Editor: `zed <path>`.
+- Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Prefer end-to-end verify; if blocked, say what’s missing.
-- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; for more browser tools, review `TOOLS.md`.
+- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; for more tools, review `TOOLS.md`.
 - Browser: `kpw --help`
-- Oracle: run `oracle --help` once/session before first use.
-- Style: telegraph. Drop filler/grammar. Min tokens (global AGENTS + replies).
-- Tooling:
-  - common: `trash`, `gh`, `zoxide`, `xcodegen`, `ast-grep`, `comby`.
-  - specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter` (read `~/.ngents/TOOLS.md` first for usage).
 - use zoxide to find paths on system
 - Scope lock: if next action includes anything beyond user’s explicit request (especially file modification, deletion, or side-effect command), stop and ask for explicit confirmation first, regardless of surrounding context or inferred intent.
+- Overcorrection: when cleaning up, don't leave a trail of "cleaned up here".
+- Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 
 ## Canonical Paths
 - Projects root: `~/Projects`
@@ -85,11 +82,10 @@
 
 ## Tools
 - Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`
-- Bunmagic: Bun.js script-to-command framework with built-ins; use Bunmagic 101 for implementation details.
-
-### tmux
-- Use only when you need persistence/interaction (debugger/server).
-- Quick refs: `tmux new -d -s codex-shell`, `tmux attach -t codex-shell`, `tmux list-sessions`, `tmux kill-session -t codex-shell`.
+- Bunmagic: Bun.js script-to-command framework with built-ins; Read Bunmagic 101 for implementation details.
+- common: `trash`, `gh`, `zoxide`, `xcodegen`, `ast-grep`, `comby`.
+- specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter` (read `~/.ngents/TOOLS.md` first for usage).
+- For debugging, logging, server running use `tmux` and read docs/tmux.md
 
 ### MCP Access
 - Not using MCPs in Codex; use `mcporter` instead.

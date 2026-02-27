@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agents Development Mode"
+  short_description: "Update AGENTS.md with development testing posture"
+  default_prompt: "Use $agents-development-mode to research this project's conventions, propose adapted AGENTS.md posture/testing updates, confirm semantic policy changes with the user, and then apply a minimal scoped diff."

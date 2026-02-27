@@ -4,7 +4,7 @@
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Style: telegraph; noun-phrases ok; drop grammar; min tokens.
+- Style: slack chat
 - Approach: less is more, we can always add more later. When planning, aim for less features and more simplification.
 - Leave It Better than you found it: refactors are always welcome, when they unblock, simplify or deduplicate.
 - Guardrails: use `trash` for deletes.

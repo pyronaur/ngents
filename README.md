@@ -34,7 +34,6 @@ The point of this directory is to keep small, practical automation close to the 
 ## Who This Is For
 
 - People building their own Codex/agent workflow.
-- Teams that want a concrete `AGENTS.md` example instead of generic advice.
 - Anyone who wants a modular setup with docs + skills + tool conventions in one place.
 
 

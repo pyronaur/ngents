@@ -71,6 +71,56 @@ Notes:
   - default personality is `pragmatic` when personality feature is enabled and no explicit value is set
   - personality text defaults come from model metadata in `codex-rs/core/models.json` (`model_messages`)
 
+## Personality Customization (Custom Text)
+
+### What Is Configurable
+
+- Personality **text is customizable**.
+- Built-in personality **selector values** remain fixed to: `none`, `friendly`, `pragmatic`.
+- Custom personality names (for example `smart`) are implemented by overriding one built-in slot text (for example `pragmatic`) in a custom model catalog JSON.
+
+### Quick Workflow (Smart Personality)
+
+1. Extract source text and set config wiring:
+
+```bash
+bun run scripts/sync-personality.ts set pragmatic smart
+```
+
+Optional source override:
+
+```bash
+bun run scripts/sync-personality.ts set pragmatic smart --source-model gpt-5.2-codex
+```
+
+2. Edit:
+
+```bash
+~/.ngents/config/personality.md
+```
+
+3. Apply edited text to all models that have a pragmatic slot:
+
+```bash
+bun run scripts/sync-personality.ts activate smart
+```
+
+### What The Script Updates
+
+- Active config file (`$CODEX_HOME/config.toml` on this machine) with:
+  - `personality = "pragmatic"`
+  - `model_catalog_json = "~/.ngents/config/personality.models.json"` (absolute path)
+- Managed personality text:
+  - `~/.ngents/config/personality.md`
+- Managed catalog JSON:
+  - `~/.ngents/config/personality.models.json`
+
+### Source of Personality Text
+
+- Default extraction source model is hardcoded to `gpt-5.3-codex`.
+- `--source-model` allows extracting from a different model.
+- On `activate`, the edited markdown text is fanned out to **all** models that define `personality_pragmatic` in the source catalog.
+
 ### 4) AGENTS Instructions
 
 - Configure by editing:

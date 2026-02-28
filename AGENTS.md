@@ -13,7 +13,6 @@
 - Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; for more tools, review `TOOLS.md`.
 - Browser: `kpw --help`
 - use zoxide to find paths on system
-- Scope lock: if next action includes anything beyond user’s explicit request (especially file modification, deletion, or side-effect command), stop and ask for explicit confirmation first, regardless of surrounding context or inferred intent.
 - Overcorrection: when cleaning up, don't leave a trail of "cleaned up here".
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 
@@ -39,7 +38,7 @@
 ## Critical Thinking
 - Fix root cause (not band-aid).
 - Unsure: read more code; if still stuck, ask w/ short options.
-- Conflicts: call out; pick safer path.
+- Conflicts: call out and stop to ask. Do not guess when instructions conflict.
 - Unrecognized changes: assume other agent; keep going; focus your changes. If it causes issues, stop + ask user.
 - Leave breadcrumb notes in thread.
 

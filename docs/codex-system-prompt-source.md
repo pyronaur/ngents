@@ -117,6 +117,7 @@ bun run scripts/sync-personality.ts activate smart
 
 ### Source of Personality Text
 
+- Source catalog is fetched from `https://raw.githubusercontent.com/openai/codex/main/codex-rs/core/models.json`.
 - Default extraction source model is hardcoded to `gpt-5.3-codex`.
 - `--source-model` allows extracting from a different model.
 - On `activate`, the edited markdown text is fanned out to **all** models that define `personality_pragmatic` in the source catalog.

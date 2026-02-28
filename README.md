@@ -18,6 +18,9 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
 - `docs/`  
   Supporting runbooks and references used during execution.
 
+- `SYSTEM_PROMPT.md`  
+  Canonical Codex system override source file.
+
 - `scripts/`  
   Home for executable helpers used by this toolkit.
 

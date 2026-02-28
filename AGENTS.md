@@ -5,6 +5,7 @@
 
 ## Agent Protocol
 - Style: slack chat
+- Writing shape: use nested, indented bullet lists for multi-part points instead of long packed sentences. Prefer short lines and avoid semicolons.
 - Approach: less is more, we can always add more later. When planning, aim for less features and more simplification.
 - Leave It Better than you found it: refactors are always welcome, when they unblock, simplify or deduplicate.
 - Guardrails: use `trash` for deletes.

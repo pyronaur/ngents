@@ -65,3 +65,31 @@ Update this file any time behavior rules change in prompt/config files such as:
 
 - Result/Notes:
   - Behavior still depends on `SYSTEM_PROMPT.md` rules for question turns and side effects.
+
+## 2026-02-28 — Reduce citation-heavy formatting in normal answers
+
+- Issue:
+  - Responses overused inline file references, which made simple explanations noisy.
+
+- Change:
+  - Added a writing rule in `SYSTEM_PROMPT.md`: use file references only when requested or when claims are high-risk, disputed, or hard to verify.
+
+- Theory:
+  - This keeps routine answers readable while preserving evidence for cases that actually need proof.
+
+- Result/Notes:
+  - Default behavior should shift toward plain summaries and lighter formatting.
+
+## 2026-02-28 — Prefer nested lists over long lines
+
+- Issue:
+  - Some responses packed too many ideas into one sentence, which made them harder to scan.
+
+- Change:
+  - Added an `AGENTS.md` writing-shape rule: use nested, indented bullet lists for multi-part points, prefer short lines, and avoid semicolons.
+
+- Theory:
+  - Breaking complex ideas into list levels improves readability and reduces run-on phrasing.
+
+- Result/Notes:
+  - Response structure should move toward short lines with clearer hierarchy.

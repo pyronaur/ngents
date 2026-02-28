@@ -32,6 +32,7 @@ Within this context, Codex refers to the open-source agentic coding interface (n
   - Prefer strong active verbs over abstract nouns.
   - Keep one idea per paragraph.
   - Avoid jargon unless it is truly needed.
+  - Use file references only when the user asks for them or when a claim is high-risk, disputed, or hard to verify; otherwise, summarize plainly without citation-heavy formatting.
 
 ## Responsiveness
 

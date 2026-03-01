@@ -7,11 +7,16 @@ Each entry records:
 - what changed
 - why each addition or subtraction was expected to help
 
-Update this file any time behavior rules change in prompt/config files such as:
+Update this file when behavior rules change in:
 - `SYSTEM_PROMPT.md`
 - `AGENTS.md`
-- skill instructions (`skills/**/SKILL.md`)
-- related prompt policy docs
+
+Prompt log rules:
+- Keep exactly one entry per commit.
+- If prompt edits iterate before commit, update the current/latest entry instead of adding new entries.
+- Keep past entries unchanged.
+- Keep this file format (`Issue`, `Change`, `Theory`).
+- Do not add entries for prompt-log-only edits.
 
 ## Entry Template
 
@@ -19,7 +24,22 @@ Update this file any time behavior rules change in prompt/config files such as:
 - Issue:
 - Change:
 - Theory:
-- Result/Notes:
+
+## 2026-03-01 — Consolidate collaboration and writing rules
+
+- Issue:
+  - Collaboration and writing guidance was split across multiple sections and files, with overlapping intent.
+  - Prompt log structure still included extra fields and lacked clear update discipline.
+
+- Change:
+  - Replaced `Intent, Conflict, and Language Rules` in `SYSTEM_PROMPT.md` with a focused `How you collaborate` section.
+  - Added a dedicated `Writing style` subsection under personality guidance in `SYSTEM_PROMPT.md`.
+  - Removed duplicated style-specific rules from `AGENTS.md` to reduce overlap with higher-priority prompts.
+  - Updated `.history/prompt_log.md` operating rules to enforce one entry per commit and removed `Result/Notes` from template/history.
+
+- Theory:
+  - Keep style rules in one place so tone stays pragmatic.
+  - Use plain words and short sentences so responses are easier to read.
 
 ## 2026-02-28 — Reduce drift in action, assumptions, and writing style
 
@@ -48,10 +68,6 @@ Update this file any time behavior rules change in prompt/config files such as:
   - Concrete writing rules reduce jargon drift and improve readability under time pressure.
   - A clearer scope lock line removes ambiguity about when to act versus when to ask.
 
-- Result/Notes:
-  - Tie-breaker logic for conflicting rules was intentionally skipped.
-  - Writing rules were kept only in `SYSTEM_PROMPT.md` to avoid duplication.
-
 ## 2026-02-28 — Remove scope lock from AGENTS
 
 - Issue:
@@ -62,9 +78,6 @@ Update this file any time behavior rules change in prompt/config files such as:
 
 - Theory:
   - Keeping this rule only in higher-priority prompt layers avoids duplicate policy and reduces overcorrection from local guardrails.
-
-- Result/Notes:
-  - Behavior still depends on `SYSTEM_PROMPT.md` rules for question turns and side effects.
 
 ## 2026-02-28 — Reduce citation-heavy formatting in normal answers
 
@@ -77,9 +90,6 @@ Update this file any time behavior rules change in prompt/config files such as:
 - Theory:
   - This keeps routine answers readable while preserving evidence for cases that actually need proof.
 
-- Result/Notes:
-  - Default behavior should shift toward plain summaries and lighter formatting.
-
 ## 2026-02-28 — Prefer nested lists over long lines
 
 - Issue:
@@ -90,6 +100,3 @@ Update this file any time behavior rules change in prompt/config files such as:
 
 - Theory:
   - Breaking complex ideas into list levels improves readability and reduces run-on phrasing.
-
-- Result/Notes:
-  - Response structure should move toward short lines with clearer hierarchy.

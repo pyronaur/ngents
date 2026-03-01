@@ -1,0 +1,70 @@
+{
+  "version": 3,
+  "name": "smoke",
+  "description": "Demo 3-iteration smoke loop",
+  "workdir": ".",
+  "maxIterations": 3,
+  "prompt": {
+    "source": "file",
+    "path": ".al/prompts/smoke.objective.md"
+  },
+  "template": {
+    "tag": "building",
+    "path": ".al/prompts/smoke.template.md",
+    "policy": {
+      "verification": {
+        "required": true,
+        "runOnExecutorSuccessOnly": true
+      },
+      "completion": {
+        "requireChecklistEmpty": true,
+        "ruleText": "COMPLETE is valid only when all required work is done, all verification commands pass, and checklist remaining is 0."
+      }
+    }
+  },
+  "plan": {
+    "path": "plan_smoke.md"
+  },
+  "context": {
+    "files": [
+      "specs/dummy-task.md",
+      "AGENTS.md"
+    ],
+    "globs": [],
+    "includeInPrompt": true
+  },
+  "verification": {
+    "commands": [
+      "./scripts/demo-proof-gate.sh"
+    ]
+  },
+  "executor": {
+    "command": "codex",
+    "args": [
+      "--search",
+      "-a",
+      "never",
+      "exec",
+      "-m",
+      "gpt-5.3-codex",
+      "-c",
+      "model_reasoning_effort=\"low\"",
+      "--cd",
+      "{workdir}",
+      "--sandbox",
+      "danger-full-access",
+      "--output-last-message",
+      "{outMessage}",
+      "-"
+    ],
+    "stdinMode": "prompt_file"
+  },
+  "completion": {
+    "completeToken": "COMPLETE",
+    "continueToken": "CONTINUE"
+  },
+  "logging": {
+    "persistPromptFiles": true,
+    "persistAgentLogs": true
+  }
+}

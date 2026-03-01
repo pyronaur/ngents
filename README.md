@@ -32,6 +32,9 @@ This is where I keep the common scripts that agents can self-improve over time. 
   Scans docs folders, reads front matter, and prints a docs index with `summary` and `read_when` metadata.  
   This is what powers the `ngents docs` command.
 
+- `scripts/bins.ts`  
+  Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.
+
 The point of this directory is to keep small, practical automation close to the instructions and docs it supports.
 
 ## Who This Is For

@@ -1,3 +1,9 @@
+---
+summary: "Ralph planning prompt template focused on selecting the next simple-lovable-complete release slice."
+read_when:
+  - Need an SLC-oriented planning prompt driven by audience JTBD.
+---
+
 0a. Study @AUDIENCE_JTBD.md to understand who we're building for and their Jobs to Be Done.
 0b. Study `specs/*` with up to 250 parallel Sonnet subagents to learn JTBD activities.
 0c. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.

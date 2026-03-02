@@ -1,4 +1,4 @@
 interface:
   display_name: "Setup Loop"
   short_description: "Set up reliable Agent Loop configs in any repository"
-  default_prompt: "Use $setup-loop to set up an Agent Loop from my plan/spec, run al validate, and return one start command only. Do not run the loop unless I explicitly ask."
+  default_prompt: "Use $setup-loop to set up an Agent Loop from my plan/spec, run agent-loop validate, and return one start command only. Do not run the loop unless I explicitly ask."

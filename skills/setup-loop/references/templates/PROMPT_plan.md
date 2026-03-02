@@ -1,3 +1,9 @@
+---
+summary: "Ralph planning prompt template for generating or refreshing implementation plans."
+read_when:
+  - Need a planning-only prompt that updates implementation plan content.
+---
+
 0a. Study `specs/*` with up to 250 parallel Sonnet subagents to learn the application specifications.
 0b. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.
 0c. Study `src/lib/*` with up to 250 parallel Sonnet subagents to understand shared utilities & components.

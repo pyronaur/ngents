@@ -1,3 +1,9 @@
+---
+summary: "Index of reusable Ralph loop templates and prompt files."
+read_when:
+  - Need to choose a Ralph template file for planning or building loops.
+---
+
 # Ralph Templates
 
 These files were extracted from `docs/ralph/ralph-loop-core.md` and `docs/ralph/ralph-loop-advanced.md` with template content kept verbatim.

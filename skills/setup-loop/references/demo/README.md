@@ -5,7 +5,7 @@ Minimal, self-contained reference setup showing a correct Agent Loop in `demo/`.
 ## What this demonstrates
 
 - Loop config + prompt + spec + plan layout
-- GPT-5.3 Codex executor config with low reasoning effort
+- Codex agent adapter config with resume support
 - Building-template verification + checklist gate behavior
 - Exactly three iterations where each iteration can complete only one checklist item
 - Reproducible reset and rerun flow
@@ -23,7 +23,7 @@ Minimal, self-contained reference setup showing a correct Agent Loop in `demo/`.
 
 ## Prereqs
 
-- `al` command available in PATH
+- `agent-loop` command available in PATH
 - `codex` CLI authenticated
 
 ## Canonical run
@@ -31,9 +31,9 @@ Minimal, self-contained reference setup showing a correct Agent Loop in `demo/`.
 ```bash
 cd demo
 ./scripts/reset.sh
-al validate smoke
-al start smoke --fresh --max-iters 3
-al status smoke --json
+agent-loop validate smoke
+agent-loop start smoke --limit 3
+agent-loop status smoke --json
 ```
 
 ## Inspect per-iteration proof in demo artifacts

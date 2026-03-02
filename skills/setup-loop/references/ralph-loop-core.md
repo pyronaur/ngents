@@ -1,3 +1,10 @@
+---
+summary: "Core Ralph playbook covering requirement definition and planning/build loop workflow."
+read_when:
+  - Need the baseline Ralph process from requirements to loop execution.
+  - Setting up planning or building prompts for a Ralph-style loop.
+---
+
 # The Ralph Playbook
 
 ## What is the optimal way to Ralph?

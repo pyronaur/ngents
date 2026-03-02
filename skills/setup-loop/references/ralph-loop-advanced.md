@@ -1,3 +1,10 @@
+---
+summary: "Advanced Ralph patterns for planning quality, backpressure, scope control, and release slicing."
+read_when:
+  - Need advanced loop controls beyond the core Ralph workflow.
+  - Designing planning or validation strategies for non-trivial loop runs.
+---
+
 # Ralph Loop Advanced Patterns
 
 Optional extensions to the core Ralph loop workflow.

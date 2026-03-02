@@ -2,11 +2,11 @@
 
 Agent Loop is a configurable loop runner for autonomous plan/build workflows.
 
-It manages iteration state, prompt assembly, validation, and policy gates while delegating implementation work to an external executor (default: `codex`).
+It manages iteration state, prompt assembly, validation, and policy gates while delegating implementation work to an agent adapter (default: `codex`) plus optional lifecycle hooks.
 
 ## What This Repo Contains
 
-- Loop lifecycle engine (`init`, `run`, `start`, `status`, `validate`)
+- Loop lifecycle engine (`init`, `start`, `clear`, `status`, `validate`)
 - JSON schema-based loop config (`.al/loops/<name>.json`)
 - Prompt composition contract (template + objective + plan + optional context)
 - Execution artifacts and resumable run state under `.al/runs/<name>/`
@@ -16,7 +16,7 @@ It manages iteration state, prompt assembly, validation, and policy gates while 
 
 - Node.js
 - npm
-- `al` command available in PATH
+- `agent-loop` command available in PATH
 
 Install deps:
 
@@ -29,7 +29,7 @@ npm install
 1. Create a loop scaffold from a template tag:
 
 ```bash
-al init demo --template building
+agent-loop init demo --template building
 ```
 
 2. This creates:
@@ -51,13 +51,13 @@ al init demo --template building
 5. Validate config and required files:
 
 ```bash
-al validate demo
+agent-loop validate demo
 ```
 
-6. Run one iteration:
+6. Run one iteration budget:
 
 ```bash
-al run demo
+agent-loop start demo --limit 1
 ```
 
 Sample output:
@@ -69,10 +69,10 @@ Sample output:
 [14:03:49] 1/1 Continue ‧ 28s
 ```
 
-7. Or run the full loop:
+7. Or run a larger budget:
 
 ```bash
-al start demo --max-iters 20
+agent-loop start demo --limit 20
 ```
 
 Sample output:
@@ -89,8 +89,14 @@ Sample output:
 8. Inspect status:
 
 ```bash
-al status demo
-al status demo --json
+agent-loop status demo
+agent-loop status demo --json
+```
+
+Optional local alias (machine-specific):
+
+```bash
+alias al='agent-loop'
 ```
 
 ## Template Tags
@@ -101,32 +107,36 @@ Built-in tags:
 
 - `building`: required verification + checklist-empty completion gate
 - `planning`: verification optional + no checklist-empty completion gate
+- `debug-hypothesis`: deterministic bug-fix loop with required verification and no checklist-empty gate
 
 ## Commands
 
 ```bash
-al init <name> --template <tag>
-al validate <name> [--json] [--timeout-ms <n>]
-al run <name> [--iteration <n>]
-al start <name> [--max-iters <n>] [--fresh]
-al status <name> [--json]
+agent-loop init <name> --template <tag>
+agent-loop validate <name> [--json] [--timeout-ms <n>]
+agent-loop start <name> [--limit <n>] [-- <agent-args...>]
+agent-loop clear <name>
+agent-loop status <name> [--json]
 ```
 
 Notes:
 
-- `--fresh` clears `.al/runs/<name>/` before `start`
-- `start` resumes from prior state unless complete or `--fresh` is used
+- `start` resumes from prior state when unfinished
+- `start --limit N` runs up to N additional iterations from current state
+- `start` without `--limit` uses configured `maxIterations` as the run budget default
+- `start` fails if the prior run is complete; clear run artifacts first with `agent-loop clear <name>`
+- `clear` removes only `.al/runs/<name>/`
+- args after `--` are forwarded to the agent command for `start`
 - `validate` checks required files and can execute verification commands as preflight when policy requires verification
 
 ## Config (Core Fields)
 
-Each loop config lives at `.al/loops/<name>.json` and uses schema version `3`.
+Each loop config lives at `.al/loops/<name>.json`.
 
 Minimal practical shape:
 
 ```json
 {
-  "version": 3,
   "name": "demo",
   "workdir": ".",
   "maxIterations": 50,
@@ -157,22 +167,19 @@ Minimal practical shape:
   "verification": {
     "commands": ["npm test"]
   },
-  "executor": {
+  "agent": {
+    "type": "codex",
     "command": "codex",
-    "args": [
-      "--search",
-      "-a",
-      "never",
-      "exec",
-      "--cd",
-      "{workdir}",
-      "--sandbox",
-      "danger-full-access",
-      "--output-last-message",
-      "{outMessage}",
-      "-"
-    ],
-    "stdinMode": "prompt_file"
+    "args": [],
+    "resume": { "enabled": true }
+  },
+  "hooks": {
+    "before_run": [],
+    "before_iteration": [],
+    "after_executor": [],
+    "after_verification": [],
+    "after_iteration": [],
+    "after_run": []
   },
   "completion": {
     "completeToken": "COMPLETE",
@@ -185,7 +192,7 @@ Minimal practical shape:
 }
 ```
 
-## Executor Contract
+## Agent Contract
 
 Agent Loop builds a full iteration prompt from:
 
@@ -195,12 +202,30 @@ Agent Loop builds a full iteration prompt from:
 - policy-derived verification/output contract
 - optional context docs (`context.includeInPrompt: true`)
 
-Your executor must output a final decision token line:
+Your agent must output a final decision token line:
 
 - `COMPLETE`
 - `CONTINUE`
 
 If template policy requires verification/checklist gating, `COMPLETE` is accepted only when those gates pass.
+
+## Hooks Contract
+
+Hooks are external commands executed at loop lifecycle events:
+
+- `before_run`
+- `before_iteration`
+- `after_executor`
+- `after_verification`
+- `after_iteration`
+- `after_run`
+
+Each hook receives JSON on stdin and may return JSON directives on stdout:
+
+- `control.forceStatus` (`complete` or `continue`)
+- `agent.resumeNow.message` (triggers same-thread agent resume within the iteration)
+
+Hook failures are fail-open: the loop continues and records hook warnings.
 
 ## Run Artifacts
 
@@ -213,12 +238,13 @@ For loop `<name>`, Agent Loop writes under `.al/runs/<name>/`:
 
 ## Recommended Workflow
 
-1. `al init <name> --template <tag>`
+1. `agent-loop init <name> --template <tag>`
 2. Customize prompts/config/plan
-3. `al validate <name>`
-4. Iterate with `al run <name>` while tuning
-5. Use `al start <name>` for continuous execution
-6. Monitor via `al status <name>`
+3. `agent-loop validate <name>`
+4. Iterate with `agent-loop start <name> --limit 1` while tuning
+5. Use `agent-loop start <name>` for larger continuous budgets
+6. Reset run artifacts with `agent-loop clear <name>` when you want a new run from iteration 1
+7. Monitor via `agent-loop status <name>`
 
 ## Demo Reference
 
@@ -226,6 +252,7 @@ For a complete, reviewer-friendly example Agent Loop setup, see `demo/README.md`
 
 ## Docs
 
+- Full API reference: `docs/api-reference.md`
 - Core Ralph loop guide: `docs/ralph/ralph-loop-core.md`
 - Advanced Ralph loop patterns: `docs/ralph/ralph-loop-advanced.md`
 - Template set referenced by the guide: `docs/ralph/templates/README.md`

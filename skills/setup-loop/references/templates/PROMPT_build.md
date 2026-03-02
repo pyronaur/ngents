@@ -1,3 +1,9 @@
+---
+summary: "Ralph building prompt template for implementation-focused loop iterations."
+read_when:
+  - Need a build-mode prompt that executes plan items and verification loops.
+---
+
 0a. Study `specs/*` with up to 500 parallel Sonnet subagents to learn the application specifications.
 0b. Study @IMPLEMENTATION_PLAN.md.
 0c. For reference, the application source code is in `src/*`.

@@ -45,7 +45,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 if [ "$MODE" = "plan-work" ]; then
     if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
         echo "Error: plan-work should be run on a work branch, not main/master"
-        echo "Create a work branch first: git checkout -b agent-loop/your-work"
+        echo "Create a work branch first: git checkout -b ralph/your-work"
         exit 1
     fi
 
@@ -101,7 +101,7 @@ while true; do
         break
     fi
 
-    # Run loop iteration with selected prompt
+    # Run Ralph iteration with selected prompt
     # -p: Headless mode (non-interactive, reads from stdin)
     # --dangerously-skip-permissions: Auto-approve all tool calls (YOLO mode)
     # --output-format=stream-json: Structured output for logging/monitoring

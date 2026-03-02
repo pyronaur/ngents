@@ -1,5 +1,4 @@
 {
-  "version": 3,
   "name": "smoke",
   "description": "Demo 3-iteration smoke loop",
   "workdir": ".",
@@ -38,26 +37,26 @@
       "./scripts/demo-proof-gate.sh"
     ]
   },
-  "executor": {
+  "agent": {
+    "type": "codex",
     "command": "codex",
     "args": [
-      "--search",
-      "-a",
-      "never",
-      "exec",
       "-m",
       "gpt-5.3-codex",
       "-c",
-      "model_reasoning_effort=\"low\"",
-      "--cd",
-      "{workdir}",
-      "--sandbox",
-      "danger-full-access",
-      "--output-last-message",
-      "{outMessage}",
-      "-"
+      "model_reasoning_effort=\"low\""
     ],
-    "stdinMode": "prompt_file"
+    "resume": {
+      "enabled": true
+    }
+  },
+  "hooks": {
+    "before_run": [],
+    "before_iteration": [],
+    "after_executor": [],
+    "after_verification": [],
+    "after_iteration": [],
+    "after_run": []
   },
   "completion": {
     "completeToken": "COMPLETE",

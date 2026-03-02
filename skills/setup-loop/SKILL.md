@@ -1,6 +1,6 @@
 ---
 name: setup-loop
-description: Set up a production-ready Agent Loop in any repository from an existing plan/spec or from scratch. Use when asked to initialize or fix Agent Loop configuration, convert a detailed plan into checklist-driven execution, enforce verification and backpressure gates, or prepare a reviewer-friendly demo. Apply Ralph methodology for loop correctness (template tag, checklist semantics, context, verification, completion contract); run al validate; never run al start unless explicitly asked; always end with one start command for the user.
+description: Set up a production-ready Agent Loop in any repository from an existing plan/spec or from scratch. Use when asked to initialize or fix Agent Loop configuration, convert a detailed plan into checklist-driven execution, enforce verification and backpressure gates, or prepare a reviewer-friendly demo. Apply Ralph methodology for loop correctness (template tag, checklist semantics, context, verification, completion contract); run agent-loop validate; never run agent-loop start unless explicitly asked; always end with one start command for the user.
 ---
 
 # Agent Loop Setup
@@ -28,10 +28,10 @@ If references might be stale, cross-check upstream:
 
 ## Hard Rules
 
-- Never run `al start` or `al run` unless user explicitly asks.
-- Always run `al validate <loop-name>` and resolve all issues.
+- Never run `agent-loop start` unless user explicitly asks.
+- Always run `agent-loop validate <loop-name>` and resolve all issues.
 - Checklist state is sourced only from the file at `plan.path`.
-- `al init <name> --template <tag>` scaffolds `plan_<name>.md`; keep that naming unless the user asks for a different path.
+- `agent-loop init <name> --template <tag>` scaffolds `plan_<name>.md`; keep that naming unless the user asks for a different path.
 - The configured `plan.path` is the single source of truth the loop reads/writes each iteration.
 - If `template.policy.verification.required` is `true`, keep `verification.commands` non-empty and real.
 - Enforce final token contract: final line must be `COMPLETE` or `CONTINUE`.
@@ -42,7 +42,7 @@ If references might be stale, cross-check upstream:
 If loop files do not exist, bootstrap once:
 
 ```bash
-al init <name> --template <tag>
+agent-loop init <name> --template <tag>
 ```
 
 Then spend effort on Agent Loop behavior: template policy, plan/checklist semantics, context wiring, verification gates, and prompt guidance.
@@ -121,26 +121,28 @@ Template prompt should enforce:
 - update checklist accurately
 - emit only final token line
 
-### 6) Configure Executor
+### 6) Configure Agent
 
-Default scaffold executor profile (`al init`):
+Default scaffold agent profile (`agent-loop init`):
 
-- command: `codex`
-- args: `--search -a never exec --cd {workdir} --sandbox danger-full-access --output-last-message {outMessage} -`
-- model/reasoning: not set by default in scaffold; set explicitly per project if needed (example: `-m gpt-5.3-codex`, `-c model_reasoning_effort="low"`).
-- stdin mode: `prompt_file`
+- `agent.type`: `codex`
+- `agent.command`: `codex`
+- `agent.args`: `[]`
+- `agent.resume.enabled`: `true`
 - completion tokens: `COMPLETE` / `CONTINUE`
 
-Template note:
+Codex adapter invocation:
 
-- Init templates currently configure policy + default verification commands, not executor model/reasoning defaults.
+- start: `codex exec --json --output-last-message <outMessage> ...agent.args ...runtime-agent-args -`
+- resume: `codex exec resume --json --output-last-message <outMessage> ...agent.args ...runtime-agent-args <threadId> -`
+- runtime agent args are values passed after `--` on `agent-loop start`
 
 ### 7) Validate Readiness
 
 Always run:
 
 ```bash
-al validate <name>
+agent-loop validate <name>
 ```
 
 Do not claim ready until validation is clean.
@@ -155,9 +157,9 @@ Provide:
 
 Start command choice:
 
-- new run: `al start <name> --fresh`
-- resume: `al start <name>`
-- bounded demo: `al start <name> --fresh --max-iters <n>`
+- default: `agent-loop start <name>`
+- bounded demo: `agent-loop start <name> --limit <n>`
+- if prior run is complete: `agent-loop clear <name>` then `agent-loop start <name>`
 
 Do not execute it unless explicitly requested.
 

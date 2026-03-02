@@ -1,3 +1,9 @@
+---
+summary: "Ralph scoped-planning prompt template for generating work-specific implementation plans."
+read_when:
+  - Need to plan only a constrained work scope inside a larger project.
+---
+
 0a. Study `specs/*` with up to 250 parallel Sonnet subagents to learn the application specifications.
 0b. Study @IMPLEMENTATION_PLAN.md (if present) to understand the plan so far.
 0c. Study `src/lib/*` with up to 250 parallel Sonnet subagents to understand shared utilities & components.

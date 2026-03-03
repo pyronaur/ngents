@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reflect"
+  short_description: "Blameless input introspection workflow."
+  default_prompt: "Run blameless input-level introspection: inspect active instructions, identify conflicts and assumptions, explain causal path, and propose smallest input fixes with verification checks."

@@ -1,119 +1,101 @@
 ---
 name: agents-development-mode
-description: Update the current project's AGENTS.md to reflect an active-development posture and a surface-level, black-box testing philosophy. Use this skill whenever the user asks to update, improve, or add development posture or testing guidance to AGENTS.md, or when AGENTS.md is missing these sections entirely.
+description: Update the current project's AGENTS.md to reflect active-development posture and outside-in surface testing. Use when the user wants to enter development mode, or when AGENTS.md is missing these sections.
 ---
 
-# Agents Development Mode
+# agents-development-mode
 
-## Objective
+## Goal
 
-Update the active project's `AGENTS.md` with minimal, scoped edits that preserve project voice while clarifying development posture and testing strategy.
+Add or update two sections in the project's `AGENTS.md`: **Development Posture** and **Testing**.
 
----
-
-## Scope Boundaries
-
-- Edit only the current project's `AGENTS.md` in the working repo.
-- Do not edit global or shared agent config files unless explicitly requested.
-- Avoid unrelated edits; change only sections needed for posture and testing guidance.
-- If no `AGENTS.md` exists, ask before creating one.
+These sections exist because Codex defaults to production-conservative behavior and needs a project-scoped override. The content below is not a summary of principles — it is the minimum required content, written to be concrete enough that it cannot be misapplied.
 
 ---
 
-## Doctrine
+## Workflow
 
-These principles are non-negotiable. Wording and technical application adapt per project; the substance does not.
+### 1. Read and identify the surface
 
-### Delivery Posture
+Read the project source to find the outermost interaction boundary — the entry point where the outside world meets the code. You will need this to fill in the Testing section.
 
-- This project is in active development. Breaking changes are acceptable when they improve architecture or code clarity.
-- Prefer direct refactors over compatibility shims, fallback paths, or migration layers unless explicitly requested.
-- Default validation is manual behavior verification plus successful builds.
+Examples of surfaces:
+- **CLI**: the action function that receives parsed args (not the arg parser; not deeper utilities)
+- **HTTP API**: the route handler — mock inbound request, assert response
+- **Library / SDK**: the public API exports
+- **Background job**: the job entry point
 
-### Testing Philosophy
+Describe the surface by its architectural role, not by file path. Paths change; the role does not.
 
-The goal of tests is to verify the correctness of the program's behavior without coupling tests to its implementation. Tests must survive refactors — if internal code is restructured but behavior is unchanged, no test should need to change.
+- Wrong: "The CLI action functions in `src/cli.ts` (`monitor`, `capture-replies`)"
+- Right: "CLI commands — the action function invoked after argument parsing"
 
-**Test at the surface, not the implementation.**
+### 2. Compute the delta
 
-Every program has an interaction surface — the outermost boundary where the outside world meets the code. That is where tests belong. Do not test internal functions, private methods, or implementation details directly.
+Check whether Development Posture and Testing sections already exist. Do not duplicate content already present. Only add or replace what is absent or contradictory.
 
-Surface examples by app type:
-- **HTTP API** → the route handler (mock an inbound request, assert the response)
-- **CLI** → the command invocation (call the CLI, assert stdout/stderr/exit code/side effects)
-- **iOS / SwiftUI** → the view model or service layer (not UIKit/SwiftUI internals, not the simulator)
-- **Background worker / job** → the job entry point (mock inputs, assert outputs and side effects)
-- **Library / SDK** → the public API (call the public interface, assert what callers observe)
+### 3. Write
 
-**Priority order — always test at the highest surface that is fast and stable:**
-
-1. **Integration tests at the surface** — fast, broad, refactor-resistant. Default choice.
-2. **Contract tests** — verify interface contracts between components when needed.
-3. **UI / E2E tests (Playwright, XCUITest, simulator)** — last resort only. Slow and brittle. Use only to reproduce a specific bug at the UI level or when explicitly requested. Never the default.
-
-**Test design rules:**
-- Mock at the boundary (external I/O, network, filesystem), not inside business logic.
-- Assert observable outcomes: responses, state changes, errors, side effects.
-- Use fixtures where state setup is complex; include a script to regenerate fixtures if they can drift.
-- Design interaction surfaces to be reusable — the same entry points used by the app should be callable from a test harness or CLI utility, enabling manual testing during development.
-
-**Avoid:**
-- Tests that target a single internal function or class by mocking its dependencies — these couple tests to implementation and break on refactors.
-- Testing SQL queries, file manipulation, or internal utilities directly — test the observable outcome at the surface instead.
+Copy the Required Content below verbatim, then:
+- Fill in the surface placeholder in the Testing section with the specific surface you identified.
+- Adapt wording to match the project's voice only where necessary — do not change meaning.
+- Insert near `Architecture` or `Build / Test` if present; otherwise append.
+- Do not ask for confirmation. Write directly.
 
 ---
 
-## Follow this step by step workflow:
+## Required Content
 
-### 1. Read and research
-
-Read the current `AGENTS.md` and nearby project docs to capture tone, structure, and any existing posture guidance. Then research the project's test reality: stack, language, framework, CI/test commands, and what the public interaction surface looks like. Use available tools — do not ask the user for things you can discover yourself.
-
-### 2. Compute the policy delta
-
-Compare the current `AGENTS.md` against the doctrine above. Identify what is missing, what conflicts, and what is already covered. This delta drives everything — do not insert content that is already present in substance.
-
-### 3. Choose interaction mode
-
-- **Confirm with the user** when a change introduces new policy meaning, changes existing strictness, or requires choosing between multiple valid interpretations (e.g., which testing framework to adopt, what counts as the surface in this specific project).
-- **Edit directly** when the change is a wording or structural clarification that preserves existing intent. No confirmation needed.
-- When confirmation is needed, present a recommendation plus alternatives only when tradeoffs are genuinely real. One clear recommendation is fine when the choice is obvious — do not force options for the sake of it.
-
-### 4. Apply scoped edits
-
-Make minimal in-place edits. Match project voice and existing section structure. Insert new sections near `Agent Protocol` or `Build / Test` if present; otherwise append. Avoid section churn — extend or replace partial coverage rather than duplicating.
-
-### 5. Summarize
-
-State clearly what changed and why, expressed as a policy delta.
+The following must appear in the project's `AGENTS.md`. This is the minimum. Do not summarize, paraphrase, or condense it.
 
 ---
 
-## Baseline Template
+### Development Posture
 
-Use only when a section is entirely absent and the user agrees to add it. Adapt wording to project voice — the content below is the substance to convey, not a paste target.
+This project is in active development. The goal is a codebase that is always easy to change. Every line of code is a line that must be understood, maintained, and worked around in the next refactor. The right amount of code is the minimum that correctly implements current requirements — not a generalized version, not a future-proof version, not a version that anticipates other callers.
 
-```md
-## Delivery Posture
+**Scope:**
+- Implement what is required now. Not what might be needed. Not what a more general version of this would need.
+- Do not add configuration options or optional parameters with a single fixed value. Hardcode the value or use a constant.
+- Do not add abstraction layers, interfaces, or base classes with a single concrete implementation. Write the concrete thing directly.
+- Do not add optional code paths, conditional branches, or feature flags for scenarios not currently exercised.
+- Do not make functions accept parameters they are never called with in the current codebase.
+- Do not generalize or parametrize code that is only ever called one way.
+- When in doubt: if you are writing code that is not required to make the current task work, stop and delete it.
 
-- This project is in active development. Breaking changes are acceptable when they improve architecture or code clarity.
-- Prefer direct refactors over compatibility shims or migration layers unless explicitly requested.
-- Default validation is manual behavior verification plus successful builds.
+**Removal:**
+- Remove means purge. When asked to remove a feature, flag, CLI option, or API surface — delete all traces: the implementation, the types, the tests, the documentation, and any code that only existed to support it.
+- Never add an error-throwing stub as a substitute for deletion.
+- Never add a deprecation warning, a "no longer supported" comment, or a migration note.
+- Never add a test that verifies a removed thing now throws an error. If it was removed, the test is removed too.
 
-## Testing Philosophy
+**Stability:**
+- Breaking changes are acceptable when they improve architecture or clarity.
+- Prefer direct refactors over compatibility shims, migration layers, or fallback paths.
+- Do not preserve old behavior for callers that do not exist.
 
-Tests verify behavior, not implementation. Internal rewrites should not require test rewrites when observable behavior is unchanged.
+---
 
-Test at the interaction surface of the program — the outermost boundary where the outside world meets the code. [Describe the specific surface for this project here.]
+### Testing
 
-Priority order:
-1. Integration tests at the surface (default)
-2. Contract tests where interface boundaries need explicit verification
-3. UI / E2E tests (last resort — slow and brittle, use only when explicitly required)
+Tests verify behavior, not implementation. A test suite is healthy when you can rewrite the internals of a feature completely — restructure files, rename functions, change data shapes — and have zero tests fail, because nothing changed from the outside.
 
-Mock at the boundary. Assert observable outcomes. Use fixtures for complex state; include a regeneration path if fixtures can drift. Design surfaces to be reusable as manual test harnesses.
+**Test at the outermost interaction surface (outside-in, black-box).** [FILL IN: describe the specific surface for this project — e.g. "The CLI action functions that receive parsed arguments in `src/commands/*.ts`" or "The HTTP route handlers in `src/routes/*.ts`".]
 
-Do not write tests that target internal functions or mock internal dependencies — these couple tests to implementation and create friction for refactoring.
+Rules:
+- Mock at the external boundary only: network, filesystem, third-party services. Never mock internal functions, intermediate modules, or implementation details.
+- Assert observable outcomes: HTTP responses, exit codes, stdout/stderr, returned values, persisted state, side effects.
+- Do not write tests for individual internal functions, private methods, helper utilities, or implementation details.
+- Do not add a test for every function you touch. Add or update a surface test that exercises the behavior you changed.
+- Do not write a test verifying that a removed feature now throws an error. Remove the test with the feature.
+- One test that drives a full code path through the interaction surface is worth more than ten tests of internal functions.
 
-[Framework, entry point, and fixture specifics for this project.]
-```
+---
+
+## Optional additions
+
+After writing the required content, consider whether the following are relevant for this specific project. Add them only if they apply:
+
+- **Fixture guidance**: if the project has complex state setup, note where fixtures live and whether a regeneration script is needed.
+- **Framework/runner specifics**: if the project uses a non-obvious test runner or invocation pattern, document the exact command.
+- **Multiple surfaces**: if the project has more than one distinct surface (e.g. a CLI and an HTTP API), describe each one and which tests belong to which.

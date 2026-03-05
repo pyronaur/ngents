@@ -12,8 +12,9 @@ read_when:
 - Runtime home: `~/.agents`
 - System prompt file: `~/.ngents/SYSTEM_PROMPT.md`
 - Runtime config file: `~/.agents/config.toml`
-- Active override key:
-  - `model_instructions_file = "~/.ngents/SYSTEM_PROMPT.md"`
+- Active override key: none
+- Disabled override in config:
+  - `# model_instructions_file = "/Users/n14/.ngents/SYSTEM_PROMPT.md"`
 
 ## Writer Profile Layout
 

@@ -1,18 +1,17 @@
-# NGENTS
+# AGENTS.md
 - ngents is a set of tools, docs, instructions, protocols to improve your workflow.
 - `~/.ngents/AGENTS.md` is symlinked to `~/.agents.md/AGENTS.md`.
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Approach: less is more, we can always add more later. When planning, aim for less features and more simplification.
 - Leave It Better than you found it: refactors are always welcome, when they unblock, simplify or deduplicate.
 - Guardrails: use `trash` for deletes.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Prefer end-to-end verify; if blocked, say what’s missing.
-- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; for more tools, review `TOOLS.md`.
+- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; 
 - Browser: `kpw --help`
-- use zoxide to find paths on system
-- Overcorrection: when cleaning up, don't leave a trail of "cleaned up here".
+- Any legacy-guardrail code requires explicit user request in the same thread; otherwise it is forbidden.
+- Remove means purge: when asked to remove a feature, flag, CLI option, or API surface, delete all traces. Never add error-throwing stubs, deprecation guards, or removal-verification tests as a substitute for deletion.
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 
 ## Canonical Paths
@@ -47,6 +46,7 @@
 
 ## Build / Test
 - Before handoff: run full gate (lint/typecheck/tests/docs).
+- Tests target the outermost interaction surface (outside-in, black-box). Do not add tests for internal functions, private methods, or implementation details.
 - Keep it observable (logs, panes, tails, MCP/browser tools).
 - Release: use repo-local checklist if present; if missing, write a minimal checklist before shipping.
 
@@ -68,18 +68,29 @@
 - Swift: use workspace helper/daemon; validate `swift build` + tests; keep concurrency attrs right.
 - TypeScript: use repo PM; run `ngents docs`; keep files small; follow existing patterns.
 
+## Architecture
+- Less is more
+- Single-owner minimal mode is the default
+- No proactive future-proofing
+### Unless Explicitly Requested
+- No backwards compatiblity
+- No optional pathways
+- Never add legacy/deprecation guardrail tests for removed CLI/API surfaces
+
 ## Code Style
 - Prefer guard clauses + early returns; avoid `else`.
 - Keep functions/methods small; reduce cognitive load.
 - Avoid loop-in-loop; extract helper function.
 - Avoid nesting deeper than 3 levels.
-- Keep files <~500 LOC; split/refactor as needed.
+- Keep files <500 LOC; split/refactor as needed.
+- No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches.
 
 ## macOS Permissions / Signing (TCC)
 - Never re-sign / ad-hoc sign / change bundle ID as "debug" without explicit ok (can mess TCC).
 
 ## Tools
 - Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`
+- use `zoxide` to find paths on system
 - Bunmagic: Bun.js script-to-command framework with built-ins; Read Bunmagic 101 for implementation details.
 - common: `trash`, `gh`, `zoxide`, `xcodegen`, `ast-grep`, `comby`.
 - specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter` (read `~/.ngents/TOOLS.md` first for usage).

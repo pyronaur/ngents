@@ -8,6 +8,7 @@
 const EXCLUDED_DIRS = new Set(['archive', 'research']);
 const POSIX_SEP = '/';
 const GLOBAL_DOCS_LABEL = '~/.ngents/docs';
+const DOCS_GLOB_IGNORE = ['**/.*/**', ...Array.from(EXCLUDED_DIRS, dir => `**/${dir}/**`)];
 
 type Metadata = {
 	summary: string | null;
@@ -263,6 +264,7 @@ async function listMarkdownFiles(docsRoot: string): Promise<string[]> {
 			cwd: docsRoot,
 			onlyFiles: true,
 			absolute: true,
+			ignore: DOCS_GLOB_IGNORE,
 		});
 		return markdownFiles.map(file => toDisplayPath(file)).sort((a, b) => a.localeCompare(b));
 	} catch {
@@ -310,6 +312,7 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 			cwd: rootDir,
 			onlyFiles: false,
 			absolute: false,
+			ignore: DOCS_GLOB_IGNORE,
 		});
 	} catch {
 		nestedDocs = [];

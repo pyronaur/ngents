@@ -5,11 +5,21 @@ read_when:
   - Need an overview of Bunmagic APIs like fs, interaction, glob, shell, etc
 ---
 
-# Quick bunmagic Reference
+===
+ 🔥 BUNMAGIC GLOBAL APIa ARE DEPRECATED 🔥
+===
+Only use this guide as a reference to migrate off of Bunmagic Global APIs
+Instead Use:
+	- Vanilla Native Bun.js
+	- Vanilla native Node 25+
+	- Clean & Focused npm packages
+More info: `migrate-bunmagic.md`
+===
 
-See also:
-- Command discovery model: `docs/bunmagic/reference/08-command-discovery.md`
-- SAF deprecation/migration: `docs/bunmagic/migrations/saf-to-files.md`
+# Old Bunmagic 101 Reference:
+
+- Archived Documentation: `ls ~/.ngents/docs/.archive/bunmagic/`
+- SAF migration: `docs/bunmagic/migrations/saf-to-native.md`
 - Native Bun/Node FS compact reference: `docs/bun/file-system-compact.md`
 - Advanced arg parsing: `docs/bunmagic/advanced-argv.md`
 
@@ -88,7 +98,7 @@ if (exists && (await stat(filePath)).isFile()) {
 }
 ```
 
-Migration details: `docs/bunmagic/migrations/saf-to-files.md`
+Migration details: `docs/bunmagic/migrations/saf-to-native.md`
 
 ## Prompts and UI
 - `ack(question: string, defaultOption?: "y" | "n"): boolean`

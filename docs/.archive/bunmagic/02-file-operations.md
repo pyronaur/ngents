@@ -22,7 +22,7 @@ Compact API reference: `docs/bun/file-system-compact.md`
 - `files.*`: deprecated, scheduled for removal in `2.0.0`.
 - `glob()` helper remains supported.
 
-Migration details: `docs/bunmagic/migrations/saf-to-files.md`
+Migration details: `docs/bunmagic/migrations/saf-to-native.md`
 
 ## Bunmagic Globals You Still Use
 

@@ -102,3 +102,7 @@
   - `xcodebuild`: Apple platform build/sim/debug
 - `mcporter list <server> [--schema]` / `mcporter call <server.tool> [key=value]`
 - Usage/source of truth: `TOOLS.md` (`mcporter`).
+
+## Terminal Title (iTerm2)
+While working, telegraph WIP: `codex_title "<wip 1-3 words>"``
+When you're done: `codex_title 🔥`

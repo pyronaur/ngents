@@ -1,14 +1,17 @@
 /**
  * List docs index with summary/read_when metadata from docs roots.
  * @autohelp
- * @usage ngents docs
- * @flag --repo Only include docs from current repo/local context.
- * @flag --global Only include docs from ~/.ngents/docs.
+ * @usage ngents docs [--repo] [--global]
+ * @flag --repo Only include docs from current repo/local context
+ * @flag --global Only include docs from ~/.ngents/docs
  */
+import { lstat, readdir, stat } from 'node:fs/promises';
+import path from 'node:path';
+import { fail, parseCommandArgs } from './_argv';
+
 const EXCLUDED_DIRS = new Set(['archive', 'research']);
 const POSIX_SEP = '/';
 const GLOBAL_DOCS_LABEL = '~/.ngents/docs';
-const DOCS_GLOB_IGNORE = ['**/.*/**', ...Array.from(EXCLUDED_DIRS, dir => `**/${dir}/**`)];
 
 type Metadata = {
 	summary: string | null;
@@ -36,6 +39,33 @@ type DocsSection = {
 	rootDir: string;
 	docsRoots: string[];
 };
+
+async function lstatSafe(filePath: string): Promise<Awaited<ReturnType<typeof lstat>> | null> {
+	try {
+		return await lstat(filePath);
+	} catch {
+		return null;
+	}
+}
+
+async function isDirectory(filePath: string): Promise<boolean> {
+	const entry = await lstatSafe(filePath);
+	if (!entry) {
+		return false;
+	}
+	if (entry.isDirectory()) {
+		return true;
+	}
+	if (!entry.isSymbolicLink()) {
+		return false;
+	}
+	try {
+		const resolvedStat = await stat(filePath);
+		return resolvedStat.isDirectory();
+	} catch {
+		return false;
+	}
+}
 
 function compactStrings(values: unknown[]): string[] {
 	const result: string[] = [];
@@ -259,17 +289,46 @@ function formatOutput(cwdRelativePath: string, metadata: Metadata): FormattedOut
 }
 
 async function listMarkdownFiles(docsRoot: string): Promise<string[]> {
-	try {
-		const markdownFiles = await glob('**/*.md', {
-			cwd: docsRoot,
-			onlyFiles: true,
-			absolute: true,
-			ignore: DOCS_GLOB_IGNORE,
-		});
-		return markdownFiles.map(file => toDisplayPath(file)).sort((a, b) => a.localeCompare(b));
-	} catch {
-		return [];
+	const markdownFiles: string[] = [];
+
+	async function walk(currentDir: string): Promise<void> {
+		let entries: Awaited<ReturnType<typeof readdir>>;
+		try {
+			entries = await readdir(currentDir, { withFileTypes: true });
+		} catch {
+			return;
+		}
+
+		for (const entry of entries) {
+			const entryName = entry.name;
+			if (!entryName) {
+				continue;
+			}
+
+			const entryPath = path.join(currentDir, entryName);
+			const relativePath = toDisplayPath(path.relative(docsRoot, entryPath));
+			if (hasHiddenOrExcludedSegment(relativePath)) {
+				continue;
+			}
+
+			if (entry.isDirectory()) {
+				await walk(entryPath);
+				continue;
+			}
+
+			if (entry.isSymbolicLink() && (await isDirectory(entryPath))) {
+				await walk(entryPath);
+				continue;
+			}
+
+			if (entryName.endsWith('.md')) {
+				markdownFiles.push(toDisplayPath(entryPath));
+			}
+		}
 	}
+
+	await walk(docsRoot);
+	return markdownFiles.sort((a, b) => a.localeCompare(b));
 }
 
 async function hasGitMarker(candidateDir: string): Promise<boolean> {
@@ -306,25 +365,23 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 
 	await maybeAddDocsRoot(path.join(rootDir, 'docs'));
 
-	let nestedDocs: string[] = [];
 	try {
-		nestedDocs = await glob('*/docs', {
-			cwd: rootDir,
-			onlyFiles: false,
-			absolute: false,
-			ignore: DOCS_GLOB_IGNORE,
-		});
-	} catch {
-		nestedDocs = [];
-	}
-
-	for (const candidateRelative of nestedDocs) {
-		const normalizedCandidate = toDisplayPath(candidateRelative);
-		if (hasHiddenOrExcludedSegment(normalizedCandidate)) {
-			continue;
+		const entries = await readdir(rootDir, { withFileTypes: true });
+		for (const entry of entries) {
+			if (!entry.name || entry.name.startsWith('.') || EXCLUDED_DIRS.has(entry.name)) {
+				continue;
+			}
+			if (!entry.isDirectory()) {
+				continue;
+			}
+			const normalizedCandidate = toDisplayPath(path.join(entry.name, 'docs'));
+			if (hasHiddenOrExcludedSegment(normalizedCandidate)) {
+				continue;
+			}
+			await maybeAddDocsRoot(path.join(rootDir, normalizedCandidate));
 		}
-		const candidate = path.join(rootDir, normalizedCandidate);
-		await maybeAddDocsRoot(candidate);
+	} catch {
+		return Array.from(roots).sort((a, b) => a.localeCompare(b));
 	}
 
 	return Array.from(roots).sort((a, b) => a.localeCompare(b));
@@ -365,63 +422,65 @@ async function printSection(section: DocsSection): Promise<void> {
 	console.log('- [no markdown docs found]');
 }
 
-export default async function () {
-	const repoFlag = parseBooleanFlag(flags.repo);
-	const globalFlag = parseBooleanFlag(flags.global);
-	if (repoFlag && globalFlag) {
-		throw new Exit('Use either --repo or --global, not both.');
-	}
-
-	const includeRepo = !globalFlag;
-	const includeGlobal = !repoFlag;
-	const currentDir = normalizePath(await cwd());
-
-	const sections: DocsSection[] = [];
-
-	if (includeRepo) {
-		const repoRoot = await discoverRepoRoot(currentDir);
-		const docsRoot = repoRoot ?? currentDir;
-		sections.push({
-			heading: `# Docs: ${docsRoot}`,
-			rootDir: docsRoot,
-			docsRoots: await discoverDocsRoots(docsRoot),
-		});
-	}
-
-	if (includeGlobal) {
-		const homeDir = Bun.env.HOME ? normalizePath(Bun.env.HOME) : null;
-		const globalBaseDir = homeDir ? normalizePath(path.join(homeDir, '.ngents')) : null;
-		const globalDocsRoot = globalBaseDir ? normalizePath(path.join(globalBaseDir, 'docs')) : null;
-		const globalDocsRoots =
-			globalDocsRoot && (await isDirectory(globalDocsRoot)) ? [globalDocsRoot] : [];
-
-		sections.push({
-			heading: `# Global Docs: ${GLOBAL_DOCS_LABEL}`,
-			rootDir: globalBaseDir ?? currentDir,
-			docsRoots: globalDocsRoots,
-		});
-	}
-
-	if (sections.length === 2) {
-		const [repoSection, globalSection] = sections;
-		const sameRoot = normalizePath(repoSection.rootDir) === normalizePath(globalSection.rootDir);
-		const sameDocsRoots = samePathList(
-			normalizePathList(repoSection.docsRoots),
-			normalizePathList(globalSection.docsRoots),
-		);
-		if (sameRoot && sameDocsRoots) {
-			sections.pop();
-		}
-	}
-
-	for (let index = 0; index < sections.length; index += 1) {
-		if (index > 0) {
-			console.log('');
-		}
-		await printSection(sections[index]);
-	}
-
-	console.log(
-		'\nReminder: keep docs up to date as behavior changes. When your task matches any "Read when" hint above (React hooks, cache directives, database work, tests, etc.), read that doc before coding, and suggest new coverage when it is missing.',
-	);
+const { values } = parseCommandArgs({
+	repo: { type: 'boolean' },
+	global: { type: 'boolean' },
+});
+const repoFlag = parseBooleanFlag(values.repo);
+const globalFlag = parseBooleanFlag(values.global);
+if (repoFlag && globalFlag) {
+	fail('Use either --repo or --global, not both.');
 }
+
+const includeRepo = !globalFlag;
+const includeGlobal = !repoFlag;
+const currentDir = normalizePath(process.cwd());
+
+const sections: DocsSection[] = [];
+
+if (includeRepo) {
+	const repoRoot = await discoverRepoRoot(currentDir);
+	const docsRoot = repoRoot ?? currentDir;
+	sections.push({
+		heading: `# Docs: ${docsRoot}`,
+		rootDir: docsRoot,
+		docsRoots: await discoverDocsRoots(docsRoot),
+	});
+}
+
+if (includeGlobal) {
+	const homeDir = Bun.env.HOME ? normalizePath(Bun.env.HOME) : null;
+	const globalBaseDir = homeDir ? normalizePath(path.join(homeDir, '.ngents')) : null;
+	const globalDocsRoot = globalBaseDir ? normalizePath(path.join(globalBaseDir, 'docs')) : null;
+	const globalDocsRoots =
+		globalDocsRoot && (await isDirectory(globalDocsRoot)) ? [globalDocsRoot] : [];
+
+	sections.push({
+		heading: `# Global Docs: ${GLOBAL_DOCS_LABEL}`,
+		rootDir: globalBaseDir ?? currentDir,
+		docsRoots: globalDocsRoots,
+	});
+}
+
+if (sections.length === 2) {
+	const [repoSection, globalSection] = sections;
+	const sameRoot = normalizePath(repoSection.rootDir) === normalizePath(globalSection.rootDir);
+	const sameDocsRoots = samePathList(
+		normalizePathList(repoSection.docsRoots),
+		normalizePathList(globalSection.docsRoots),
+	);
+	if (sameRoot && sameDocsRoots) {
+		sections.pop();
+	}
+}
+
+for (let index = 0; index < sections.length; index += 1) {
+	if (index > 0) {
+		console.log('');
+	}
+	await printSection(sections[index]);
+}
+
+console.log(
+	'\nReminder: keep docs up to date as behavior changes. When your task matches any "Read when" hint above (React hooks, cache directives, database work, tests, etc.), read that doc before coding, and suggest new coverage when it is missing.',
+);

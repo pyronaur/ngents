@@ -3,6 +3,7 @@
  * @autohelp
  * @usage ngents bins
  */
+import { $ } from 'bun';
 import { existsSync } from 'node:fs';
 import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -536,13 +537,11 @@ function printSection(title: string, section: ManagerSection): void {
 	}
 }
 
-export default async function () {
-	const bunSection = await collectBunSection();
-	const npmSection = await collectNpmSection();
+const bunSection = await collectBunSection();
+const npmSection = await collectNpmSection();
 
-	console.log('# Linked bins (local sources)');
-	console.log('');
-	printSection('Bun', bunSection);
-	console.log('');
-	printSection('npm', npmSection);
-}
+console.log('# Linked bins (local sources)');
+console.log('');
+printSection('Bun', bunSection);
+console.log('');
+printSection('npm', npmSection);

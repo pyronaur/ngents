@@ -16,20 +16,20 @@ Rule of thumb:
 - Use raw `process.argv` only for advanced passthrough patterns.
 
 Script path:
-- `~/.ngents/docs/bunmagic/examples/argv-playground.ts`
+- `docs/bunmagic/examples/argv-playground.ts`
 
 Run with `bunmagic exec`:
 
 ```bash
-bunmagic exec ~/.ngents/docs/bunmagic/examples/argv-playground.ts alpha --verbose
+bunmagic exec docs/bunmagic/examples/argv-playground.ts alpha --verbose
 ```
 
 ```bash
-bunmagic exec ~/.ngents/docs/bunmagic/examples/argv-playground.ts -- --literal '--name=value' tail
+bunmagic exec docs/bunmagic/examples/argv-playground.ts -- --literal '--name=value' tail
 ```
 
 Optional shell interpolation demo:
 
 ```bash
-bunmagic exec ~/.ngents/docs/bunmagic/examples/argv-playground.ts -- --demo '$(echo test)'
+bunmagic exec docs/bunmagic/examples/argv-playground.ts -- --demo '$(echo test)'
 ```

@@ -11,6 +11,10 @@ read_when:
 
 Pick the smallest consistent solution for each Bunmagic feature.
 
+Bunmagic v1 migrations happen one namespace at a time.
+Treat the current Bunmagic namespace root as the migration unit.
+If that root does not have a `package.json`, initialize it as a Bun package before migrating scripts inside it.
+
 Decision order:
 
 1. Native Bun or modern Node in a couple of lines.
@@ -31,8 +35,8 @@ Decision order:
 ### Small Packages
 
 - Flags and argv:
-  - Prefer `node:util.parseArgs` when strict option schemas help readability.
-  - Consider `mri` when the script only needs a few lightweight flags.
+  - Standardize on `mri` for migrated script argument parsing.
+  - Install it with Bun commands in the namespace root instead of hand-writing `package.json`.
 - Globbing:
   - Prefer `tinyglobby` when a script needs real globbing.
   - Use `Bun.Glob` when the usage is trivial and local.
@@ -44,10 +48,19 @@ Decision order:
 
 ### `flags`, `arg()`, `flag()`
 
-- Default to `parseArgs(...)` for strict migrations.
-- Use `mri` when the native config is more boilerplate than value.
+- Default to `mri`.
+- Use the same parser across migrated namespaces for consistency, even when native parsing would also work.
+- From the namespace root, run:
+
+```sh
+bun init --minimal --yes
+bun add mri
+```
+
+- Do not hand-write `package.json` or dependency entries for this setup.
 - Do not recreate Bunmagic globals in each repo.
 - Extract a tiny shared argv package only after a real repeated pattern appears.
+- Do not add runner-detection glue, dual-mode argv shims, or per-script help parsing.
 
 ### `cwd()`
 
@@ -100,6 +113,69 @@ Bad candidates:
 - `cwd`
 - `exit`
 - wrappers around one-line Bun or Node APIs
+
+## Namespace Root Setup
+
+When migrating a Bunmagic v1 namespace:
+
+1. Identify the current namespace root directory.
+2. If it does not contain `package.json`, run `bun init --minimal --yes` in that directory.
+3. Install `mri` with `bun add mri` in that same directory.
+4. Migrate scripts in that namespace against the package root you just initialized.
+5. If the repo does not already ignore the nested package install, add an ignore rule for that namespace root's `node_modules/`.
+
+`bun init --yes` creates extra starter files that are not useful for this migration flow.
+Prefer `bun init --minimal --yes` because it creates the smallest Bun package shape:
+
+- `package.json`
+- `tsconfig.json`
+- `bun.lock`
+
+## Current v1 Namespace Argv Shape
+
+Current Bunmagic v1 namespace shims do not pass plain script args through unchanged.
+
+Observed with:
+
+```sh
+nconf argv alpha --flag bravo -- tail
+```
+
+Current namespace execution produced:
+
+```json
+[
+  "~/.bun/bin/bun",
+  "/path/to/bunmagic-exec-namespace.ts",
+  "/path/to/namespace-root",
+  "nconf",
+  "argv",
+  "alpha",
+  "--flag",
+  "bravo",
+  "--",
+  "tail"
+]
+```
+
+Direct Bun execution of the same script produced:
+
+```json
+[
+  "~/.bun/bin/bun",
+  "/path/to/argv.ts",
+  "alpha",
+  "--flag",
+  "bravo",
+  "--",
+  "tail"
+]
+```
+
+Practical consequence:
+
+- current v1 namespace scripts need a small bridge if they must run both through the existing v1 namespace shim and directly with `bun run`
+- do not treat the v1 namespace-runner argv shape as the target contract for Bunmagic v2 migrations
 
 ## Wishlist
 

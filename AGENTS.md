@@ -4,20 +4,18 @@
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Leave It Better than you found it: refactors are always welcome, when they unblock, simplify or deduplicate.
 - Guardrails: use `trash` for deletes.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Prefer end-to-end verify; if blocked, say what’s missing.
-- Web: search early; quote exact errors; prefer 2025–2026 sources; prefer `kpw` for JS-based pages; 
-- Browser: `kpw --help`
+- Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Any legacy-guardrail code requires explicit user request in the same thread; otherwise it is forbidden.
 - Remove means purge: when asked to remove a feature, flag, CLI option, or API surface, delete all traces. Never add error-throwing stubs, deprecation guards, or removal-verification tests as a substitute for deletion.
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 
-## Canonical Paths
+## Mac
 - Projects root: `~/Projects`
 - iOS projects: `~/Projects/iOS`
-- Shell/config repo: `~/.nconf` (read for machine specific docs)
+- Shell/config repo: `~/.nconf/AGENTS.md`
 - Private docs and runbooks: `~/.nconf/docs`
 
 ## Host Context Resolution
@@ -72,10 +70,8 @@
 - Less is more
 - Single-owner minimal mode is the default
 - No proactive future-proofing
-### Unless Explicitly Requested
-- No backwards compatiblity
-- No optional pathways
-- Never add legacy/deprecation guardrail tests for removed CLI/API surfaces
+- Unless Explicitly Requested: No backwards compatiblity, optional pathways
+- Fix lints early, they may change your design
 
 ## Code Style
 - Prefer guard clauses + early returns; avoid `else`.
@@ -84,25 +80,14 @@
 - Avoid nesting deeper than 3 levels.
 - Keep files <500 LOC; split/refactor as needed.
 - No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches.
-
-## macOS Permissions / Signing (TCC)
-- Never re-sign / ad-hoc sign / change bundle ID as "debug" without explicit ok (can mess TCC).
+- Never add legacy/deprecation guardrail tests for removed CLI/API surfaces
 
 ## Tools
-- Keep entries portable. Host-only tools/paths belong in `~/.nconf/docs/hosts/`
+- read `~/.ngents/TOOLS.md` first for usage
 - use `zoxide` to find paths on system
-- Bunmagic: Bun.js script-to-command framework with built-ins; Read Bunmagic 101 for implementation details.
-- common: `trash`, `gh`, `zoxide`, `xcodegen`, `ast-grep`, `comby`.
-- specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter` (read `~/.ngents/TOOLS.md` first for usage).
+- common: `trash`, `gh`, `zoxide`
+- specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter`
 - For debugging, logging, server running use `tmux` and read docs/tmux.md
 
 ### MCP Access
-- Not using MCPs in Codex; use `mcporter` instead.
-  - `exa`: web research/search
-  - `xcodebuild`: Apple platform build/sim/debug
-- `mcporter list <server> [--schema]` / `mcporter call <server.tool> [key=value]`
 - Usage/source of truth: `TOOLS.md` (`mcporter`).
-
-## Terminal Title (iTerm2)
-While working, telegraph WIP: `codex_title "<wip 1-3 words>"``
-When you're done: `codex_title 🔥`

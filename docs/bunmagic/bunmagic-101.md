@@ -18,7 +18,7 @@ More info: `migrate-bunmagic.md`
 
 # Old Bunmagic 101 Reference:
 
-- Archived Documentation: `docs/bunmagic/archive/reference/`
+- Archived Documentation: `docs/.archive/bunmagic/`
 - SAF migration: `docs/bunmagic/migrations/saf-to-native.md`
 - Native Bun/Node FS compact reference: `docs/bun/file-system-compact.md`
 - Advanced arg parsing: `docs/bunmagic/advanced-argv.md`

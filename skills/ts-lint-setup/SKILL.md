@@ -39,21 +39,13 @@ tests, tests should be linted too, but test scope may use separate config/rules
 from runtime source. Temporary files, weak sources (for example JSON), and
 compiled output must stay excluded.
 
-## 1) Choose The Package Manager (bun preferred)
+## 1) Install Or Upgrade Lint Dependencies
 
-Detect the repo’s package manager and use it consistently for installs and
-scripts.
+Install these dev dependencies using the repo's existing package manager. This
+skill does not dictate package-manager choice. It only requires `bun` for
+executing `.lint/run.ts`.
 
-Prefer `bun` when both are true:
-- The `bun` command is available.
-- The repo shows bun intent (for example `bun.lock` / `bun.lockb`, or
-  `package.json` includes `"packageManager": "bun@..."`).
-
-Otherwise, use `npm`.
-
-## 2) Install Or Upgrade Lint Dependencies
-
-Install these dev dependencies using the chosen manager:
+Install:
 - `dprint@latest`
 - `oxlint@latest`
 - `oxlint-tsgolint@latest` (required for Oxlint type-aware rules)
@@ -61,19 +53,14 @@ Install these dev dependencies using the chosen manager:
 - `jscpd@latest`
 - `knip@latest`
 
-Bun:
+Examples:
 
 ```bash
 bun add -d dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest jscpd@latest knip@latest
-```
-
-Npm:
-
-```bash
 npm install -D dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest jscpd@latest knip@latest
 ```
 
-## 3) Harden AGENTS.md (strict policy)
+## 2) Harden AGENTS.md (strict policy)
 
 Ensure the repo has a root `AGENTS.md`. If it is missing, copy the template. If
 it exists, merge in the strict lint policy without weakening it.
@@ -98,7 +85,7 @@ Required outcomes:
   changes inside the repo's configured lint scope (exception: step 6 validation
   run in this skill).
 
-## 4) Copy Config Templates
+## 3) Copy Config Templates
 
 Copy the templates into the repo root:
 - `assets/templates/dprint.json` -> `dprint.json`
@@ -106,6 +93,7 @@ Copy the templates into the repo root:
 - `assets/templates/.jscpd.json` -> `.jscpd.json`
 - `assets/templates/.jscpd.tests.json` -> `.jscpd.tests.json` when the repo has tests
 - `assets/templates/knip.json` -> `knip.json`
+- `assets/templates/.lint/run.ts` -> `.lint/run.ts`
 
 See `references/templates.md` for allowed tweaks.
 
@@ -168,6 +156,15 @@ Mandatory config expectations:
 - `threshold: 0`
 - `minTokens: 60`
 - `minLines: 7`
+- A hidden `.lint/run.ts` orchestrator is required and should:
+- be written in TypeScript and use Bun Shell (`Bun.$` / `$`)
+- run the full lint pipeline and fail only at the end
+- keep `fix` steps sequential before read-only validation
+- allow read-only `lint-dry` steps to run in parallel
+- print only a concise pass line for successful steps
+- print full captured stdout/stderr for failed steps
+- If a repo uses explicit lint scope globs, include `.lint/**/*.ts` (or the
+  repo-equivalent path) so the orchestrator is linted too.
 
 When comparing a repo to this skill, call out only actual config differences:
 - changed rule values
@@ -198,57 +195,60 @@ Do not call out:
 - Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.
 - `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
 
-## 5) Wire Scripts And Makefile
+## 4) Wire Scripts, Runner, And Makefile
 
-Ensure `package.json` scripts include both a default auto-fix lint pipeline and
-a check-only lint pipeline, and that Makefile targets delegate to them.
+Use a hidden Bun-based lint orchestrator at `.lint/run.ts` instead of
+short-circuiting `&&` chains in `package.json`.
 
-Recommended script structure:
+Keep `make lint` and `make lint-dry` as the only public entrypoints. When a
+Makefile exists, do not add top-level `package.json` `lint` / `lint-dry`
+shortcuts.
+
+Recommended leaf scripts:
 
 ```json
 {
   "scripts": {
-    "lint": "<pm> run lint:dprint:fix && <pm> run lint:oxlint:fix && <pm> run typecheck && <pm> run jscpd && <pm> run knip",
-    "lint-dry": "<pm> run lint:dprint && <pm> run lint:oxlint && <pm> run typecheck && <pm> run jscpd && <pm> run knip",
     "lint:dprint": "dprint check",
     "lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.json .",
     "lint:dprint:fix": "dprint fmt",
     "lint:oxlint:fix": "oxlint --type-aware --tsconfig tsconfig.json --fix .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "jscpd": "<pm> run jscpd:src && <pm> run jscpd:tests",
     "jscpd:src": "jscpd --config .jscpd.json",
     "jscpd:tests": "jscpd --config .jscpd.tests.json",
-    "knip": "knip"
+    "knip": "knip --no-progress"
   }
 }
 ```
 
-Replace `<pm>` with `bun` or `npm` to match the repo.
-If the repo has no tests, omit `jscpd:tests` and point `jscpd` only at
-`jscpd:src`.
-Keep script targets as `.`. Lint scope must be configured in `dprint.json`,
-`.oxlintrc.json`, `.jscpd.json`, and `.jscpd.tests.json` via includes/ignore
-patterns.
+If the repo has no tests, omit `jscpd:tests`. The bundled `.lint/run.ts`
+template skips that step automatically when the script is absent.
 
-Ensure the Makefile has a real tab before the command:
+The runner template:
+- is written in TypeScript
+- uses Bun Shell with top-level `await`
+- uses `bun run` for the leaf scripts
+- keeps successful step output quiet except for a concise pass line
+- prints full captured output for failed steps
+- continues running the remaining steps even after a failure
+
+Recommended Makefile wiring:
 
 ```make
 .PHONY: lint lint-dry
 
 lint:
-	<pm> run lint
+	bun ./.lint/run.ts fix
 
 lint-dry:
-	<pm> run lint-dry
+	bun ./.lint/run.ts check
 ```
 
 Do not run `npm run lint` / `bun run lint` directly. Use `make lint`.
 Remember that `make lint` runs auto-fix by default. Use `make lint-dry` for
 check-only runs (especially during setup).
 
-Do not add a separate `lint-fix` script. The default `lint` script should fix.
-
-## 6) Validate With A Dry, Non-Destructive Lint Run
+## 5) Validate With A Dry, Non-Destructive Lint Run
 
 After setup, run a single non-fixing lint pass to confirm wiring and that the
 linters complain as expected:
@@ -272,6 +272,8 @@ entry points. Always update these values per repo:
 - `knip.json` `entry`
 - `jscpd` source/test `path` or equivalent scope fields
 - Any ignore patterns for known generated artifacts
+- Whether explicit formatter/linter/knip/jscpd globs also need `.lint/**/*.ts`
+  so the hidden runner is included in coverage
 - Lint include/ignore patterns to match the repo's source and test layout while
   excluding tmp/weak sources/compiled output
 - Every ignore pattern must be justified by an actual project match; remove

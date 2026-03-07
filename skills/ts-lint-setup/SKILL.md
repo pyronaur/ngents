@@ -5,13 +5,39 @@ description: Set up or upgrade strict TypeScript/JavaScript linting with Oxlint 
 
 # TS Lint Setup
 
-Follow this workflow to install lint tooling, harden AGENTS.md, copy known-good
-config templates, and validate with a dry, non-destructive lint run.
+This skill is the shared, maintained baseline for strict TypeScript/JavaScript
+lint setup across projects. Treat it as the current best-known default, not as
+a verbatim file-layout recipe.
+
+When applying this skill to a repo:
+- preserve the meaning of the policy, not the literal path names or file layout
+- adapt config placement, globs, and entry points to the repo structure
+- report only meaningful deltas when comparing a repo to this skill
+
+Meaningful deltas:
+- rule presence or absence
+- rule values
+- custom rule messages
+- duplication thresholds
+- formatter/linter coverage intent
+- whether tests are linted and how they are configured
+
+Usually not meaningful by themselves:
+- repo root vs subdirectory config placement
+- different but equivalent path globs
+- project-specific directory names
+- AGENTS wording differences that preserve the same lint policy
+
+Follow this workflow to install lint tooling, harden AGENTS.md, copy the shared
+baseline templates, adapt them to the repo, and validate with a dry,
+non-destructive lint run.
 
 Do not weaken lint rules. Do not add exclusions to hide lint violations. Do not
 raise duplication thresholds.
-Lint scope must target real TypeScript/JavaScript source code, not tests,
-temporary files, weak sources (for example JSON), or compiled output.
+Lint scope must target real TypeScript/JavaScript source code. When a repo has
+tests, tests should be linted too, but test scope may use separate config/rules
+from runtime source. Temporary files, weak sources (for example JSON), and
+compiled output must stay excluded.
 
 ## 1) Choose The Package Manager (bun preferred)
 
@@ -69,7 +95,8 @@ Required outcomes:
 - In multi-language repos, apply this frequent-run requirement to
   TypeScript/JavaScript work only.
 - Run lint only after execution-affecting TypeScript/JavaScript source code
-  changes (exception: step 6 validation run in this skill).
+  changes inside the repo's configured lint scope (exception: step 6 validation
+  run in this skill).
 
 ## 4) Copy Config Templates
 
@@ -77,6 +104,7 @@ Copy the templates into the repo root:
 - `assets/templates/dprint.json` -> `dprint.json`
 - `assets/templates/.oxlintrc.json` -> `.oxlintrc.json`
 - `assets/templates/.jscpd.json` -> `.jscpd.json`
+- `assets/templates/.jscpd.tests.json` -> `.jscpd.tests.json` when the repo has tests
 - `assets/templates/knip.json` -> `knip.json`
 
 See `references/templates.md` for allowed tweaks.
@@ -84,9 +112,12 @@ See `references/templates.md` for allowed tweaks.
 Mandatory config expectations:
 - dprint is the formatter.
 - Oxlint is the linter and runs in type-aware mode.
-- Lint scope targets only runtime TypeScript/JavaScript source files.
-- Exclude tests, temporary directories, weak sources (for example JSON), and
-  compiled output directories.
+- Lint scope targets real TypeScript/JavaScript source files.
+- Tests are linted when the repo has tests.
+- Runtime source and tests may use separate config or rule values when that
+  improves signal. Keep that separation explicit.
+- Exclude temporary directories, weak sources (for example JSON), and compiled
+  output directories.
 - In multi-language repos, keep this lint policy scoped to TypeScript/JavaScript
   instead of unrelated language sources.
 - Keep excludes minimal and evidence-based. For every include/ignore line you
@@ -94,6 +125,8 @@ Mandatory config expectations:
   If the match count is `0`, do not add that line.
 - Do not pre-add framework-specific directories or filename patterns unless the
   project actually contains them.
+- Adapt paths and globs to the repo. Different directory names or config
+  locations are not meaningful deltas by themselves.
 - Oxlint enables these plugins: `eslint`, `typescript`, `unicorn`, `oxc`,
   `import`.
 - Oxlint enables the JS plugin: `oxlint-plugin-inhuman`.
@@ -114,6 +147,12 @@ Mandatory config expectations:
 - `inhuman/no-switch`
 - `inhuman/no-else`
 - Oxlint enforces `oxc/no-barrel-file`.
+- Oxlint enforces banned-type rules:
+- `typescript/no-wrapper-object-types`
+- `typescript/no-restricted-types` for:
+- `object` with message: `Use a specific object shape. If the data is already typed, prefer generics. Reserve unknown as a last resort for incoming external data before validation.`
+- `Object` with the same message
+- `Function` with message: `Declare the callable signature explicitly.`
 - Oxlint enforces type-aware assertion safety rules:
 - `typescript/consistent-type-assertions` with `{ "assertionStyle": "never" }`
 - `typescript/no-non-null-assertion`
@@ -121,7 +160,26 @@ Mandatory config expectations:
 - `typescript/no-unsafe-type-assertion`
 - `typescript/non-nullable-type-assertion-style`
 - `as const` remains allowed; ban `as SomeType` and other type assertions.
-- jscpd duplication threshold remains `0`.
+- `jscpd` runtime/source config keeps:
+- `threshold: 0`
+- `minTokens: 40`
+- `minLines: 3`
+- `jscpd` test config keeps:
+- `threshold: 0`
+- `minTokens: 60`
+- `minLines: 7`
+
+When comparing a repo to this skill, call out only actual config differences:
+- changed rule values
+- changed thresholds
+- added or missing rules
+- changed custom messages
+- different source/test coverage intent
+
+Do not call out:
+- equivalent path/glob differences
+- root vs subdirectory config placement
+- project-specific AGENTS wording that preserves the same lint meaning
 
 ### Why These Guardrails Exist
 
@@ -135,6 +193,8 @@ Mandatory config expectations:
 - `curly: all` and `no-else-return`: Make control flow explicit and push toward early returns.
 - `inhuman/*` rules: Enforce guard clauses, forbid swallowed errors, prevent `switch`/`else`, and forbid empty wrapper exports.
 - `oxc/no-barrel-file`: Discourage barrels and keep exports near their definitions.
+- Banned-type rules: Push code away from vague placeholder types and toward
+  specific shapes, generics, and explicit callable signatures.
 - Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.
 - `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
 
@@ -155,15 +215,20 @@ Recommended script structure:
     "lint:dprint:fix": "dprint fmt",
     "lint:oxlint:fix": "oxlint --type-aware --tsconfig tsconfig.json --fix .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "jscpd": "jscpd --config .jscpd.json",
+    "jscpd": "<pm> run jscpd:src && <pm> run jscpd:tests",
+    "jscpd:src": "jscpd --config .jscpd.json",
+    "jscpd:tests": "jscpd --config .jscpd.tests.json",
     "knip": "knip"
   }
 }
 ```
 
 Replace `<pm>` with `bun` or `npm` to match the repo.
+If the repo has no tests, omit `jscpd:tests` and point `jscpd` only at
+`jscpd:src`.
 Keep script targets as `.`. Lint scope must be configured in `dprint.json`,
-`.oxlintrc.json`, and `.jscpd.json` via includes/ignore patterns.
+`.oxlintrc.json`, `.jscpd.json`, and `.jscpd.tests.json` via includes/ignore
+patterns.
 
 Ensure the Makefile has a real tab before the command:
 
@@ -205,8 +270,10 @@ Validation rules:
 Templates must remain generic. Do not add repo-specific ignores, file names, or
 entry points. Always update these values per repo:
 - `knip.json` `entry`
+- `jscpd` source/test `path` or equivalent scope fields
 - Any ignore patterns for known generated artifacts
-- Lint include/ignore patterns to exclude tests/tmp/weak sources/compiled output
+- Lint include/ignore patterns to match the repo's source and test layout while
+  excluding tmp/weak sources/compiled output
 - Every ignore pattern must be justified by an actual project match; remove
   zero-match patterns (for example, no `*.spec.*` ignore when there are zero
   spec files).
@@ -216,6 +283,8 @@ entry points. Always update these values per repo:
 - Never raise duplication thresholds.
 - Never add exclusions to hide lint complaints.
 - Never disable lint rules without explicit user approval.
-- Never widen lint scope to tests, temporary files, weak sources, or compiled
-  output just to increase coverage.
+- Never silently blur runtime-source and test scopes. If tests are linted, use
+  explicit test config or test-specific rule overrides.
+- Never widen lint scope to temporary files, weak sources, or compiled output
+  just to increase coverage.
 - Prefer incremental, reviewable config/script changes before auto-fixing.

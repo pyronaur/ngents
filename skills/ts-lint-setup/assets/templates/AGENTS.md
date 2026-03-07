@@ -2,9 +2,10 @@
 
 ## Linting Is Mandatory (Zero Complaints Policy)
 
-Linting is mandatory when you make source code changes that can affect program
-execution. When linting is required, you must run the full lint pipeline,
-inspect the output, and ensure there are zero lint complaints.
+Linting is mandatory when you make TypeScript/JavaScript source code changes
+inside the repo's configured lint scope. When linting is required, you must run
+the full lint pipeline, inspect the output, and ensure there are zero lint
+complaints.
 
 ### When To Run Linting
 
@@ -18,8 +19,8 @@ You must follow these rules strictly:
   structure issues are caught early.
 - In repos with multiple languages, this frequent linting requirement applies
   only to TypeScript/JavaScript work.
-- Run linting only after source code changes that affect runtime behavior
-  (for example, changes to `.ts`, `.tsx`, `.js`, or similar code files).
+- Run linting only after execution-affecting TypeScript/JavaScript source code
+  changes inside the configured lint scope.
 - Do not run linting after changes limited to JSON, Markdown, shell commands,
   configuration-only edits, or documentation updates.
 - Do not run linting merely because the user asked a question. Only lint after

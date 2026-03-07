@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Package current work state for agent-to-agent transfer with concise, executable handoff notes. Use when ending a session, pausing with unfinished work, switching agents, or when asked to produce a handoff prompt.
+description: Invoked by user to prepare a session handoff document.
 ---
 
 # Handoff

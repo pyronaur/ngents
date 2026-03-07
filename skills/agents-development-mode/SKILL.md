@@ -1,6 +1,6 @@
 ---
 name: agents-development-mode
-description: Update the current project's AGENTS.md to reflect active-development posture and outside-in surface testing. Use when the user wants to enter development mode, or when AGENTS.md is missing these sections.
+description: Invoked by user directly to enable "Devmode Instructions" in project.
 ---
 
 # agents-development-mode

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Waypoint Flow"
+  short_description: "Install opt-in repo commit cadence."
+  default_prompt: "Use $waypoint-flow to set up or apply this repo's waypoint-flow commit cadence and create waypoint commits automatically when the configured verification gate has passed."
+
+policy:
+  allow_implicit_invocation: false

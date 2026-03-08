@@ -1,11 +1,26 @@
 ---
-name: git-commit
-description: Create or amend high-signal git commits with clear rationale. Use when the user asks to commit, fix a commit message, or says to “match commit quality.”
+name: waypoint-flow
+description: Install and apply waypoint flow, an opt-in repo commit cadence. Use when asked for `$waypoint-flow setup`, when a repo wants waypoint flow, or when the repo `AGENTS.md` says to read `$waypoint-flow` once per session before making changes. After it is loaded, follow the repo’s `Waypoint Gate` and create waypoint commits for your own verified changes.
 ---
 
-# Git Commit
+# Waypoint Flow
 
 ## Overview
+
+Waypoint flow means you commit automatically after the configured `Waypoint Gate` passes.
+
+## `$waypoint-flow setup`
+
+When invoked as `$waypoint-flow setup`, read [references/setup.md](references/setup.md) and follow it exactly.
+
+## Runtime Rule
+
+- Read the exact command or exact ordered command list under `Waypoint Gate:` in `AGENTS.md`.
+- Keep working normally until that exact `Waypoint Gate` passes.
+- Once that `Waypoint Gate` passes, commit only your own intended changes immediately.
+- Do not wait for manual approval.
+
+## Waypoint Commit
 
 Produce high-signal commits that are easy to review and easy to understand later.
 Prioritize clarity and rationale quality over matching historical wording patterns.
@@ -31,30 +46,12 @@ When in doubt, make the why explicit.
 - Keep conventions that improve readability; do not copy weak patterns.
 - If local style conflicts with the quality bar, follow the quality bar.
 
-3. Prepare a single-commit proposal
-- Use this skill for one commit at a time.
-- You MUST ALWAYS present a single commit plan and ask for approval before committing.
-- Exception: if the user invokes this skill and says `ok` in the same message, treat that as pre-approval for the commit.
-- Use this template:
-
-<single_commit_example>
-## Single commit:
-
-<Title>
-- <Bullet 1>
-- <Bullet 2>
-
-Files:
-- <path>
-- <path>
-</single_commit_example>
-
-4. Validate staging after approval
-- After the user approves the plan, stage only the intended files or hunks.
+3. Validate staging
+- Stage only the intended files or hunks.
 - Verify the staged diff before committing.
 - Keep unrelated edits unstaged.
 
-5. Compose the message
+4. Compose the message
 - Subject: imperative, concise, no trailing period.
 - Body: blank line, then `-` bullets.
 - Each bullet starts with a verb and is a single sentence.
@@ -63,7 +60,7 @@ Files:
 - Cover the important parts of the change instead of forcing a fixed bullet count.
 - Keep lines reasonably short.
 
-6. Commit safely
+5. Commit safely
 - Prefer a heredoc with `-F -` to avoid escaped `\n`:
 
 ```bash
@@ -75,15 +72,11 @@ Subject in imperative mood
 EOF
 ```
 
-7. Why-check before commit
+6. Why-check before commit
 - Ask: "Could a reviewer answer why this change exists from this message alone?"
 - If no, rewrite the body before committing.
 
-8. Amend only when asked
-- If the user asks to fix an existing commit message, use `git commit --amend -F - <<'EOF' ... EOF`.
-- Otherwise, do not amend.
-
-9. Post-commit sanity check
+7. Post-commit sanity check
 - After committing, run `git status -sb` to confirm expected remaining changes before proceeding.
 
 ## Quick Template
@@ -106,10 +99,7 @@ Weak:
 - Update tests.
 - Clean up code.
 
-## Notes
+## Guardrails
 
-- Favor clarity over cleverness; optimize for future readability.
-- If automated tools touched many files, validate that those changes are actually present in the diff and propose a separate commit or explicitly confirm the user wants them included.
-- If commit examples include a prefix or scope, use it consistently.
-- If the repo uses single-line subjects only, omit the body.
-- Never offer to push commits. Only discuss or run push operations when the user explicitly asks to push.
+- Never commit unexpected changes you did not make.
+- Never commit changes outside the verified change set.

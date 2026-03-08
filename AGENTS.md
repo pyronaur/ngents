@@ -10,6 +10,10 @@
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Any legacy-guardrail code requires explicit user request in the same thread; otherwise it is forbidden.
 - Remove means purge: when asked to remove a feature, flag, CLI option, or API surface, delete all traces. Never add error-throwing stubs, deprecation guards, or removal-verification tests as a substitute for deletion.
+- No residue: every artifact must justify its existence in the final design. If a file, function, method, type, comment, flag, branch, wrapper, alias, helper, or test no longer has a concrete job, delete it.
+- Do not leave pointer files, redirect comments, compatibility shims, placeholder code, dead wrappers, no-op helpers, or explanatory leftovers unless explicitly requested in this thread.
+- When behavior or authority moves, the new location becomes the only source of truth. Remove the old structure entirely instead of leaving a stub behind.
+- Before keeping any existing artifact, answer: `What exact job does this still perform after my change?` If the answer is vague, historical, defensive, or "just in case," remove it.
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 
 ## Mac
@@ -79,7 +83,7 @@
 - Avoid loop-in-loop; extract helper function.
 - Avoid nesting deeper than 3 levels.
 - Keep files <500 LOC; split/refactor as needed.
-- No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches.
+- No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches, no residue.
 - Never add legacy/deprecation guardrail tests for removed CLI/API surfaces
 
 ## Tools

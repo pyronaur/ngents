@@ -70,6 +70,8 @@ const welcome = await $`echo "Hello World!"`.text();
 console.log(welcome); // Hello World!\n
 ```
 
+`.text()` can still work with interactive commands if the command reads from the terminal or `/dev/tty` and writes its final result to stdout.
+
 By default, `await`ing will return stdout and stderr as `Buffer`s.
 
 ```js
@@ -256,6 +258,36 @@ await $`vim --version >> /dev/tty`;
 
 Interactive or terminal-aware commands do **not** automatically require `Bun.spawn(...)`.
 
+### Interactive commands with captured output
+
+An interactive command can still work under `$` while returning stdout to JavaScript.
+
+```js
+import { $ } from "bun";
+
+const result = await $`interactive-picker`.nothrow().quiet();
+
+if (result.exitCode !== 0) {
+  return null;
+}
+
+const selected = result.stdout.toString().trim();
+```
+
+The same pattern can work with `.text()` when you only need stdout as a string:
+
+```js
+import { $ } from "bun";
+
+const selected = (await $`interactive-picker`.text()).trim();
+```
+
+The important distinction is:
+
+* `$` can still run interactive commands through normal shell semantics
+* `Bun.spawn(...)` is only needed when you need direct `Subprocess` or PTY control
+* "possible with `$`" and "most convenient with `$`" are different questions
+
 ## Piping (`|`)
 
 Like in bash, you can pipe the output of one command to another:
@@ -293,6 +325,17 @@ If needed, you can combine:
 * `.lines()`
 
 to orchestrate longer-lived processes from Bun without using `Bun.spawn(...)`.
+
+For example:
+
+* create a FIFO for stdin
+* start a background process with shell redirection
+* keep a JS writer open to that FIFO
+* read output incrementally with `.lines()`
+
+That is more indirect than `Bun.spawn(...)`, but it is still possible with `$`.
+
+This includes cases as heavy as driving a real REPL through shell plumbing. For example, a Python REPL can be run in the background, fed through a FIFO, and observed incrementally with `.lines()`.
 
 ## Command substitution (`$(...)`)
 
@@ -610,28 +653,6 @@ bun .\script.sh
 ```txt
 Hello World! pwd=C:\Users\Demo
 ```
-
-***
-
-## When to use `Bun.spawn(...)`
-
-Use `$` for normal shell work, including:
-
-* captured stdout and stderr
-* line-by-line streaming with `.lines()`
-* pipes and redirection
-* commands that write to `/dev/tty`
-* interactive commands that already work through normal shell semantics
-
-Use `Bun.spawn(...)` only when you need direct process-handle control:
-
-* `proc.stdin.write(...)`
-* `proc.kill(...)`
-* `proc.stdout` / `proc.stderr` from a `Subprocess`
-* `proc.terminal.write(...)`
-* `proc.terminal.resize(...)`
-
-Even long-lived interaction is still possible with `$` if you intentionally use shell plumbing such as background processes, FIFOs, and `.lines()`.
 
 ***
 

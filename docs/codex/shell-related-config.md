@@ -17,7 +17,14 @@ Source:
 User-level config lives at:
 
 ```toml
-~/.codex/config.toml
+$CODEX_HOME/config.toml
+```
+
+Resolve the base directory from the `CODEX_HOME` environment variable before assuming a path.
+Example on this machine:
+
+```toml
+/Users/n14/.agents/config.toml
 ```
 
 Project-scoped overrides can live at:
@@ -72,6 +79,6 @@ The Codex CLI features doc says to make sure the environment is already set up b
 
 ## Practical Use
 
-- Put stable personal defaults in `~/.codex/config.toml`.
+- Put stable personal defaults in `$CODEX_HOME/config.toml`.
 - Use `.codex/config.toml` only for repo-specific behavior you want applied in trusted projects.
 - Use profiles when you want named environment modes instead of one global shell policy.

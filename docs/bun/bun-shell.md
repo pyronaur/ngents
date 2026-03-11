@@ -28,6 +28,8 @@ await $`cat < ${response} | wc -c`; // 1256
 
 If you are trying to run a shell command in Bun, start with `$`.
 
+Repo policy: `Bun.spawn(...)` is prohibited unless the same behavior cannot be achieved with `$`. When considering `Bun.spawn(...)`, first identify the specific capability `$` cannot provide.
+
 Do not jump to `Bun.spawn(...)` just because:
 
 - the command is interactive

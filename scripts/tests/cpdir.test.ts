@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { $ } from 'bun';
 import { chmod, mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -91,28 +92,22 @@ async function runCpdir(
 ): Promise<RunResult> {
 	const rootDir = await makeTempDir('cpdir-test-');
 	const stubBin = await createStubBin(rootDir);
-	const child = Bun.spawn({
-		cmd: [process.execPath, scriptPath, ...(options.runnerArgs ?? []), ...args],
-		cwd: options.cwd,
-		env: {
+	const result = await $`${[process.execPath, scriptPath, ...(options.runnerArgs ?? []), ...args]}`
+		.cwd(options.cwd)
+		.env({
 			...process.env,
 			...options.env,
 			CPDIR_TEST_CLIPBOARD: stubBin.clipboardPath,
 			CPDIR_TEST_INVOKE_LOG: stubBin.invocationsPath,
 			PATH: options.pathOverride ?? `${stubBin.binDir}:${process.env.PATH ?? ''}`,
-		},
-		stdout: 'pipe',
-		stderr: 'pipe',
-	});
-
-	const stdout = await new Response(child.stdout).text();
-	const stderr = await new Response(child.stderr).text();
-	const exitCode = await child.exited;
+		})
+		.nothrow()
+		.quiet();
 
 	return {
-		exitCode,
-		stdout,
-		stderr,
+		exitCode: result.exitCode,
+		stdout: result.stdout.toString(),
+		stderr: result.stderr.toString(),
 		clipboardPath: stubBin.clipboardPath,
 		invocationsPath: stubBin.invocationsPath,
 	};

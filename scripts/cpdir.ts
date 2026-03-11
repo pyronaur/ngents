@@ -1,49 +1,19 @@
 /**
- * Copy the current directory to the clipboard
+ * Copy the current directory or a matched zoxide directory to the clipboard
+ * @autohelp
+ * @usage ngents cpdir [query...]
  * @global cpdir
  */
 import { $ } from 'bun';
 import { realpath } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { parseCommandArgs } from './_argv';
 
-const { positionals } = parseCommandArgs({});
-const scriptPath = fileURLToPath(import.meta.url);
-
-function queryArgs(): string[] {
-	const trimmed = positionals.map(value => value.trim()).filter(value => value.length > 0);
-	if (trimmed[0] !== scriptPath) {
-		return trimmed;
-	}
-	if (trimmed[1] !== 'cpdir') {
-		return trimmed;
-	}
-	return trimmed.slice(2);
-}
+const { positionals: query } = parseCommandArgs({});
 
 async function copyPath(dir: string): Promise<void> {
 	const resolvedDir = await realpath(dir);
 	await $`printf %s ${resolvedDir} | pbcopy`;
 	console.log(`Copied: ${resolvedDir}`);
-}
-
-async function runCommand(
-	cmd: string[],
-	options: {
-		stdin?: 'pipe' | 'inherit';
-		stderr?: 'pipe' | 'inherit';
-	},
-): Promise<{ exitCode: number; stdout: string; stderr: string; }> {
-	const child = Bun.spawn({
-		cmd,
-		stdin: options.stdin ?? 'pipe',
-		stdout: 'pipe',
-		stderr: options.stderr ?? 'pipe',
-	});
-	const stdout = await new Response(child.stdout).text();
-	const stderr = await new Response(child.stderr).text();
-	const exitCode = await child.exited;
-	return { exitCode, stdout, stderr };
 }
 
 function requireZoxide(): void {
@@ -55,29 +25,26 @@ function requireZoxide(): void {
 }
 
 async function queryMatches(query: string[]): Promise<string[]> {
-	const result = await runCommand(['zoxide', 'query', '-l', '--', ...query], {});
+	const result = await $`zoxide query -l -- ${query}`.nothrow().quiet();
 	if (result.exitCode !== 0) {
 		return [];
 	}
 	return result.stdout
+		.toString()
 		.split('\n')
 		.map(value => value.trim())
 		.filter(value => value.length > 0);
 }
 
 async function selectMatch(query: string[]): Promise<string | null> {
-	const result = await runCommand(['zoxide', 'query', '-i', '--', ...query], {
-		stdin: 'inherit',
-		stderr: 'inherit',
-	});
+	const result = await $`zoxide query -i -- ${query}`.nothrow().quiet();
 	if (result.exitCode !== 0) {
 		return null;
 	}
-	const selected = result.stdout.trim();
+	const selected = result.stdout.toString().trim();
 	return selected.length > 0 ? selected : null;
 }
 
-const query = queryArgs();
 if (query.length === 0) {
 	await copyPath(process.cwd());
 	process.exit(0);

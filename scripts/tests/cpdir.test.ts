@@ -129,19 +129,6 @@ describe('cpdir', () => {
 		expect(await readFile(result.clipboardPath, 'utf8')).toBe(expectedPath);
 	});
 
-	test('ignores bunmagic global shim argv when called without query args', async () => {
-		const cwd = await makeTempDir('cpdir-shim-cwd-');
-		const expectedPath = await realpath(cwd);
-		const result = await runCpdir([], {
-			cwd,
-			runnerArgs: [scriptPath, 'cpdir'],
-		});
-
-		expect(result.exitCode).toBe(0);
-		expect(result.stdout.trim()).toBe(`Copied: ${expectedPath}`);
-		expect(await readFile(result.clipboardPath, 'utf8')).toBe(expectedPath);
-	});
-
 	test('copies the only zoxide match without interactive selection', async () => {
 		const cwd = await makeTempDir('cpdir-query-cwd-');
 		const targetDir = await makeTempDir('cpdir-target-');
@@ -165,21 +152,23 @@ describe('cpdir', () => {
 		expect(invocations).not.toContain('query -i -- bun');
 	});
 
-	test('ignores bunmagic global shim argv before zoxide query args', async () => {
-		const cwd = await makeTempDir('cpdir-shim-query-cwd-');
-		const targetDir = await makeTempDir('cpdir-shim-target-');
-		const result = await runCpdir(['bunmagic_v2'], {
+	test('passes all query positionals directly to zoxide', async () => {
+		const cwd = await makeTempDir('cpdir-query-words-cwd-');
+		const targetDir = await makeTempDir('cpdir-query-words-target-');
+		const result = await runCpdir(['bun', 'magic'], {
 			cwd,
 			env: {
 				CPDIR_TEST_ZOXIDE_LIST: `${targetDir}\n`,
 			},
-			runnerArgs: [scriptPath, 'cpdir'],
 		});
 
+		const invocations = await readFile(result.invocationsPath, 'utf8');
 		const expectedPath = await realpath(targetDir);
+
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout.trim()).toBe(`Copied: ${expectedPath}`);
 		expect(await readFile(result.clipboardPath, 'utf8')).toBe(expectedPath);
+		expect(invocations).toContain('query -l -- bun magic');
 	});
 
 	test('uses zoxide interactive selection when multiple matches exist', async () => {

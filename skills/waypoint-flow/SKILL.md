@@ -24,6 +24,7 @@ When invoked as `$waypoint-flow setup`, read [references/setup.md](references/se
 
 Produce high-signal commits that are easy to review and easy to understand later.
 Prioritize clarity and rationale quality over matching historical wording patterns.
+After you commit, acknowledge it on the last line of your message like: "✔︎ Commit: <the title of the commit>"
 
 ## Commit Message Quality Bar
 

@@ -30,9 +30,11 @@ Those repo instructions should not:
 Add these exact lines:
 
 ```text
-This repo uses waypoint flow. Read $waypoint-flow once per session before making changes.
+## Waypoint Gate
+Required: Read `~/.waypoint-flow.md` before writing code. Always keep this file in memory and re-read as soon as you forget.
+Required: Follow that file for the full session and always keep its rules in memory while working in this repo.
 Waypoint Gate:
-- `<exact command>`
+- `<command 1>`
 ```
 
 ### Multiple Command Gate
@@ -40,7 +42,9 @@ Waypoint Gate:
 Add these exact lines:
 
 ```text
-This repo uses waypoint flow. Read $waypoint-flow once per session before making changes.
+## Waypoint Gate
+Required: Read `~/.waypoint-flow.md` before writing code. Always keep this file in memory and re-read as soon as you forget.
+Required: Follow that file for the full session and always keep its rules in memory while working in this repo.
 Waypoint Gate:
 - `<command 1>`
 - `<command 2>`

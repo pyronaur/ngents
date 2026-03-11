@@ -1,3 +1,10 @@
+---
+summary: "Compact reference: Bun shell usage, output handling, redirection, piping, and shell-first decision rules"
+read_when:
+  - Need a compact Bun Shell reference grounded in the official Bun shell docs.
+  - Deciding whether a shell task should use `$` or `Bun.spawn(...)`.
+---
+
 # Bun Shell
 
 > Use Bun's shell scripting API to run shell commands from JavaScript.

@@ -77,8 +77,17 @@ Session-safe Playwright wrapper for web browsing and extraction.
   - `kpw session status` is read-only; it does not create a session.
   - `kpw session open` requires an active sticky session.
   - `kpw -- open <url>` is blocked; use `kpw session open <url>` or `kpw read`.
-  - temp sessions auto-clean after 5 minutes; sticky sessions auto-clean after 24 hours idle.
+- temp sessions auto-clean after 5 minutes; sticky sessions auto-clean after 24 hours idle.
 - Keep repo docs portable: do not add internal hosts or endpoint details.
+
+## cdp
+
+Machine-local Chrome CDP session commands.
+
+- Use `cdp status` before browser automation that depends on the shared local profile.
+- Use `cdp start` to launch the configured CDP Chrome session.
+- Use `cdp stop` only when the shared local browser session should be shut down.
+- Read `docs/browser/cdp.md` for the tracked contract and config schema.
 
 ## mcporter
 

@@ -1,4 +1,5 @@
 .private
 .nconf
 .DS_Store
+/local/
 /scripts/node_modules/

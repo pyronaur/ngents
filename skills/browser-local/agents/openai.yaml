@@ -1,0 +1,4 @@
+interface:
+  display_name: "Browser Local"
+  short_description: "Local CDP browser workflow"
+  default_prompt: "Use $browser-local to start, inspect, or stop the local CDP Chrome session and attach Playwright safely."

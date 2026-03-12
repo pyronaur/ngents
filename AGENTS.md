@@ -6,18 +6,11 @@
 ## Agent Protocol
 - Guardrails: use `trash` for deletes.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
-- Prefer end-to-end verify; if blocked, say what’s missing.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
-- Any legacy-guardrail code requires explicit user request in the same thread; otherwise it is forbidden.
-- Remove means purge: when asked to remove a feature, flag, CLI option, or API surface, delete all traces. Never add error-throwing stubs, deprecation guards, or removal-verification tests as a substitute for deletion.
-- No residue: every artifact must justify its existence in the final design. If a file, function, method, type, comment, flag, branch, wrapper, alias, helper, or test no longer has a concrete job, delete it.
-- Do not leave pointer files, redirect comments, compatibility shims, placeholder code, dead wrappers, no-op helpers, or explanatory leftovers unless explicitly requested in this thread.
-- When behavior or authority moves, the new location becomes the only source of truth. Remove the old structure entirely instead of leaving a stub behind.
-- Before keeping any existing artifact, answer: `What exact job does this still perform after my change?` If the answer is vague, historical, defensive, or "just in case," remove it.
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
+- Fidelity over initiative. Preserve the requested operation exactly, and only switch to initiative after explicit clarification or approval.
 
 ## Communication Style
-
 Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.
 Revert to chat immediately after. 
 
@@ -97,8 +90,6 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 ## Architecture
 - Less is more
 - Single-owner minimal mode is the default
-- No proactive future-proofing
-- Unless Explicitly Requested: No backwards compatiblity, optional pathways
 - Fix lints early, they may change your design
 
 ## Code Style
@@ -107,8 +98,17 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 - Avoid loop-in-loop; extract helper function.
 - Avoid nesting deeper than 3 levels.
 - Keep files <500 LOC; split/refactor as needed.
+
+## Developer Protocol
+- No proactive future-proofing
+- Guardrail: legacy-guardrail code is forbidden by default
+- Guardrail: never insert anything "just in case"
+- Remove means purge: when asked to remove a feature, flag, CLI option, or API surface, delete all traces. Never add error-throwing stubs, deprecation guards, or removal-verification tests as a substitute for deletion.
+- No residue: every artifact must justify its existence in the final design. If a file, function, method, type, comment, flag, branch, wrapper, alias, helper, or test no longer has a concrete job, delete it.
+- Do not leave pointer files, redirect comments, compatibility shims, placeholder code, dead wrappers, no-op helpers, or explanatory leftovers unless explicitly requested in this thread.
+- Maintain source of truth: When behavior or authority moves, the new location becomes the only source of truth. Remove the old structure entirely instead of leaving a stub behind.
 - No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches, no residue.
-- Never add legacy/deprecation guardrail tests for removed CLI/API surfaces
+- Never write tests to assert non-existance of something
 
 ## Tools
 - read `~/.ngents/TOOLS.md` first for usage

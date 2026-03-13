@@ -112,6 +112,7 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 
 ## Tools
 - read `~/.ngents/TOOLS.md` first for usage
+- read `browser-local` for browser access
 - use `zoxide` to find paths on system
 - common: `trash`, `gh`, `zoxide`
 - specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter`

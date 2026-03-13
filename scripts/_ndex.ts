@@ -1194,7 +1194,7 @@ function printRootDocs(docs: MarkdownEntry[]): void {
 }
 
 function printTopicIndex(topics: TopicIndexRow[], docs: MarkdownEntry[], showGlobalTip: boolean): void {
-	printLine("Usage: ndex [topic] [section] [--expand] [--repo] [--global]");
+	printLine("Usage: ndex [topic] [section] [--expand] [--global]");
 	printLine();
 	if (showGlobalTip) {
 		printLine("> Tip: use `--global` to view global documentation.");
@@ -1378,19 +1378,14 @@ function availableSectionKeys(topic: MergedTopic): string[] {
 export async function runNdex(): Promise<void> {
 	const { positionals, values } = parseCommandArgs({
 		expand: { type: "boolean" },
-		repo: { type: "boolean", short: "r" },
 		global: { type: "boolean", short: "g" },
 	});
 
 	if (positionals.length > 2) {
-		fail("Usage: ndex [topic] [section] [--expand] [--repo] [--global]");
+		fail("Usage: ndex [topic] [section] [--expand] [--global]");
 	}
 
-	const repoFlag = parseBooleanFlag(values.repo);
 	const globalFlag = parseBooleanFlag(values.global);
-	if (repoFlag && globalFlag) {
-		fail("Use either --repo or --global, not both.");
-	}
 
 	const currentDir = normalizePath(process.cwd());
 	const requestedTopic = positionals[0]?.trim() ?? null;

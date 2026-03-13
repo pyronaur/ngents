@@ -30,6 +30,7 @@ type Metadata = {
 type TopicRecord = {
 	name: string;
 	title: string | null;
+	summary: string | null;
 	guideBody: string | null;
 	markdownEntries: MarkdownEntry[];
 	importEntries: ImportEntry[];
@@ -225,6 +226,27 @@ function parseGuideBody(content: string): string | null {
 
 	const normalized = renderedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 	return normalized.length > 0 ? normalized : null;
+}
+
+function parseGuideSummary(content: string): string | null {
+	const body = parseGuideBody(content);
+	if (!body) {
+		return null;
+	}
+
+	const paragraphs = body.split('\n\n');
+	for (const paragraph of paragraphs) {
+		const normalized = paragraph.replace(/\s+/g, ' ').trim();
+		if (normalized.length === 0) {
+			continue;
+		}
+		if (normalized.startsWith('- ')) {
+			continue;
+		}
+		return normalized;
+	}
+
+	return null;
 }
 
 function normalizeInlineText(value: string | null): string | null {
@@ -758,6 +780,7 @@ async function readTopicRecord(
 	return {
 		name: topicName,
 		title: libTitle,
+		summary: libContent ? parseGuideSummary(libContent) : null,
 		guideBody,
 		markdownEntries: await listRootMarkdownEntries(topicDir),
 		importEntries: await listImportEntries(libraryRoot, topicName, manifest),
@@ -807,6 +830,25 @@ function printTopic(topic: TopicRecord, options: { showGuideBody: boolean }): vo
 	}
 }
 
+function printTopicIndex(topics: TopicRecord[]): void {
+	printLine({ text: 'Usage: ngents library <topic>' });
+	console.log('');
+	const topicLabel = 'TOPIC';
+	const libraryLabel = 'LIBRARY';
+	const descriptionLabel = 'DESCRIPTION';
+	const topicWidth = Math.max(topicLabel.length, ...topics.map(topic => topic.name.length));
+	const libraryWidth = Math.max(libraryLabel.length, ...topics.map(topic => (topic.title ?? topic.name).length));
+	const header = `${topicLabel.padEnd(topicWidth)}  ${libraryLabel.padEnd(libraryWidth)}  ${descriptionLabel}`;
+	printLine({ text: pc.bold(header) });
+
+	for (const topic of topics) {
+		const title = topic.title ?? topic.name;
+		const summary = topic.summary ?? 'No library description available.';
+		const row = `${topic.name.padEnd(topicWidth)}  ${title.padEnd(libraryWidth)}  ${summary}`;
+		printLine({ text: row });
+	}
+}
+
 const { positionals } = parseCommandArgs({});
 if (positionals.length > 1) {
 	fail('Usage: ngents library [topic]');
@@ -828,13 +870,14 @@ if (requestedTopic && !topicNames.includes(requestedTopic)) {
 	fail(`Unknown library topic "${requestedTopic}". Available topics: ${topicNames.join(', ')}`);
 }
 
-const selectedTopics = requestedTopic ? [requestedTopic] : topicNames;
-const singleTopicView = selectedTopics.length === 1;
-
-for (const topicName of selectedTopics) {
-	const topic = await readTopicRecord(libraryRoot, topicName, manifest);
-	printTopic(topic, { showGuideBody: singleTopicView });
-	if (topicName !== selectedTopics[selectedTopics.length - 1]) {
-		console.log('');
+if (!requestedTopic) {
+	const topics: TopicRecord[] = [];
+	for (const topicName of topicNames) {
+		topics.push(await readTopicRecord(libraryRoot, topicName, manifest));
 	}
+	printTopicIndex(topics);
+	process.exit(0);
 }
+
+const topic = await readTopicRecord(libraryRoot, requestedTopic, manifest);
+printTopic(topic, { showGuideBody: true });

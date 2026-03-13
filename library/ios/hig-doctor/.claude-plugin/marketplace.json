@@ -1,0 +1,35 @@
+{
+  "name": "apple-hig-skills",
+  "owner": {
+    "name": "Raintree",
+    "email": "hq@zacharyr0th.com"
+  },
+  "metadata": {
+    "description": "Apple Human Interface Guidelines skills for AI agents — platform design, foundations, components, patterns, inputs, and technologies",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "apple-hig-skills",
+      "description": "14 Apple HIG skills covering platform-specific design, visual foundations, UX patterns, UI components, input methods, Apple technology integrations, and project context management",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/hig-foundations",
+        "./skills/hig-platforms",
+        "./skills/hig-patterns",
+        "./skills/hig-inputs",
+        "./skills/hig-technologies",
+        "./skills/hig-project-context",
+        "./skills/hig-components-content",
+        "./skills/hig-components-controls",
+        "./skills/hig-components-dialogs",
+        "./skills/hig-components-layout",
+        "./skills/hig-components-menus",
+        "./skills/hig-components-search",
+        "./skills/hig-components-status",
+        "./skills/hig-components-system"
+      ]
+    }
+  ]
+}

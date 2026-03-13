@@ -5,7 +5,10 @@ The `library/` directory is the local index that powers `ngents library`.
 ## How `ngents library` reads this directory
 
 - `ngents library` lists one row per topic directory directly under `library/`.
-- `ngents library <topic>` renders that topic's guide plus its discoverable entries.
+- `ngents library <topic>` renders that topic's guide plus a compact topic view.
+- `ngents library <topic> <skill>` focuses one imported skill library inside that topic.
+- `ngents library <topic> --expand` expands a topic into a table of contents with nested skills and references.
+- `ngents library <topic> <skill> --expand` expands one imported skill library down to nested reference files.
 - Hidden directories and files are ignored.
 - `archive`, `research`, and `node_modules` are ignored.
 
@@ -44,7 +47,7 @@ library/
 
 - The first `#` heading becomes the library title shown by `ngents library`.
 - The first non-list paragraph becomes the short topic description shown by `ngents library`.
-- The rest of the markdown body is rendered at the top of `ngents library <topic>`.
+- The rest of the markdown body is rendered at the top of `ngents library <topic>` and `ngents library <topic> <skill>`.
 - `LIB.md` is plain markdown. It does not use frontmatter.
 
 Keep `LIB.md` focused on:
@@ -117,7 +120,7 @@ For each `SKILL.md`:
 
 - the first `#` heading becomes the displayed skill title
 - frontmatter `name`, `version`, and `description` are parsed
-- the current renderer shows the title and `description`
+- the current renderer shows the title and `description` in focused skill-library views
 
 Minimal example:
 
@@ -151,6 +154,12 @@ Keep skill support files next to the skill in paths such as:
 
 - `references/*.md`
 - `scripts/*`
+
+In command output:
+
+- compact topic view shows only top-level library entries and imported library summaries
+- focused skill-library view shows each contained skill and its reference index
+- expanded views show nested references and file-level contents
 
 ## Authoring checklist
 

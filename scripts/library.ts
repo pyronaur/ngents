@@ -1,7 +1,8 @@
 /**
- * List installed library topics, references, and imported skills.
+ * List installed library topics and browse topic contents.
  * @autohelp
- * @usage ngents library [topic]
+ * @usage ngents library [topic] [skill] [--expand]
+ * @flag --expand Show nested skill references and file-level contents
  */
 import { lstat, readdir, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -21,10 +22,29 @@ type FrontMatterParseResult = {
 	error?: string;
 };
 
-type Metadata = {
+type MarkdownEntry = {
+	absolutePath: string;
+	relativePath: string;
 	title: string | null;
 	summary: string | null;
 	error?: string;
+};
+
+type SkillEntry = {
+	absolutePath: string;
+	relativePath: string;
+	name: string;
+	title: string | null;
+	description: string | null;
+	error?: string;
+	referencePaths: string[];
+};
+
+type ImportEntry = {
+	absolutePath: string;
+	relativePath: string;
+	title: string | null;
+	skills: SkillEntry[];
 };
 
 type TopicRecord = {
@@ -36,33 +56,8 @@ type TopicRecord = {
 	importEntries: ImportEntry[];
 };
 
-type MarkdownEntry = {
-	absolutePath: string;
-	relativePath: string;
-	metadata: Metadata;
-};
-
-type ImportEntry = {
-	absolutePath: string;
-	relativePath: string;
+type LibraryManifestEntry = {
 	title: string | null;
-	skills: SkillEntry[];
-};
-
-type SkillEntry = {
-	absolutePath: string;
-	relativePath: string;
-	name: string;
-	title: string | null;
-	version: string | null;
-	description: string | null;
-	error?: string;
-	referencePaths: string[];
-};
-
-type StyledLine = {
-	text: string;
-	indent?: number;
 };
 
 function toDisplayPath(value: string): string {
@@ -99,12 +94,11 @@ function parseInlineArray(value: string): string[] {
 		return [];
 	}
 
-	const body = normalized.slice(1, -1);
 	const values: string[] = [];
 	let token = '';
 	let quote: "'" | '"' | null = null;
 
-	for (const char of body) {
+	for (const char of normalized.slice(1, -1)) {
 		if ((char === "'" || char === '"') && quote === null) {
 			quote = char;
 			continue;
@@ -131,131 +125,26 @@ function parseInlineArray(value: string): string[] {
 
 function collectFoldedLines(lines: string[]): string {
 	const paragraphs: string[] = [];
-	let currentParagraph: string[] = [];
+	let current: string[] = [];
 
 	for (const line of lines) {
 		const trimmed = line.trim();
 		if (trimmed.length === 0) {
-			if (currentParagraph.length > 0) {
-				paragraphs.push(currentParagraph.join(' '));
-				currentParagraph = [];
+			if (current.length > 0) {
+				paragraphs.push(current.join(' '));
+				current = [];
 			}
 			continue;
 		}
 
-		currentParagraph.push(trimmed);
+		current.push(trimmed);
 	}
 
-	if (currentParagraph.length > 0) {
-		paragraphs.push(currentParagraph.join(' '));
+	if (current.length > 0) {
+		paragraphs.push(current.join(' '));
 	}
 
 	return paragraphs.join('\n\n').trim();
-}
-
-function contentWithoutFrontMatter(content: string): string {
-	const normalized = content.replaceAll('\r\n', '\n');
-	if (!normalized.startsWith('---\n')) {
-		return normalized;
-	}
-
-	const endIndex = normalized.indexOf('\n---', 4);
-	if (endIndex === -1) {
-		return normalized;
-	}
-
-	const afterFrontMatterIndex = endIndex + '\n---'.length;
-	return normalized.slice(afterFrontMatterIndex).replace(/^\n+/, '');
-}
-
-function parseMarkdownTitle(content: string): string | null {
-	const body = contentWithoutFrontMatter(content);
-	for (const rawLine of body.split('\n')) {
-		const line = rawLine.trim();
-		if (!line.startsWith('#')) {
-			continue;
-		}
-
-		const title = line.replace(/^#+\s*/, '').trim();
-		if (title.length > 0) {
-			return title;
-		}
-	}
-
-	return null;
-}
-
-function parseGuideBody(content: string): string | null {
-	const body = contentWithoutFrontMatter(content);
-	const lines = body.split('\n');
-	const renderedLines: string[] = [];
-
-	let skippedTitle = false;
-	let inCodeBlock = false;
-	for (const rawLine of lines) {
-		const trimmed = rawLine.trim();
-
-		if (trimmed.startsWith('```')) {
-			inCodeBlock = !inCodeBlock;
-			continue;
-		}
-
-		if (inCodeBlock) {
-			continue;
-		}
-
-		if (!skippedTitle && trimmed.startsWith('#')) {
-			skippedTitle = true;
-			continue;
-		}
-
-		if (trimmed.length === 0) {
-			if (renderedLines[renderedLines.length - 1] !== '') {
-				renderedLines.push('');
-			}
-			continue;
-		}
-
-		if (trimmed.startsWith('- ')) {
-			renderedLines.push(trimmed);
-			continue;
-		}
-
-		renderedLines.push(trimmed);
-	}
-
-	const normalized = renderedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
-	return normalized.length > 0 ? normalized : null;
-}
-
-function parseGuideSummary(content: string): string | null {
-	const body = parseGuideBody(content);
-	if (!body) {
-		return null;
-	}
-
-	const paragraphs = body.split('\n\n');
-	for (const paragraph of paragraphs) {
-		const normalized = paragraph.replace(/\s+/g, ' ').trim();
-		if (normalized.length === 0) {
-			continue;
-		}
-		if (normalized.startsWith('- ')) {
-			continue;
-		}
-		return normalized;
-	}
-
-	return null;
-}
-
-function normalizeInlineText(value: string | null): string | null {
-	if (!value) {
-		return null;
-	}
-
-	const normalized = value.replace(/\s+/g, ' ').trim();
-	return normalized.length > 0 ? normalized : null;
 }
 
 function parseFrontMatter(content: string): FrontMatterParseResult {
@@ -292,23 +181,19 @@ function parseFrontMatter(content: string): FrontMatterParseResult {
 			let nextIndex = index + 1;
 			for (; nextIndex < lines.length; nextIndex += 1) {
 				const nextLine = lines[nextIndex] ?? '';
-				const trimmed = nextLine.trim();
-
-				if (trimmed.length === 0) {
-					continue;
-				}
-
 				if (/^[A-Za-z0-9_-]+:\s*/.test(nextLine)) {
 					break;
 				}
 
 				const listMatch = nextLine.match(/^\s*-\s+(.*)$/);
 				if (!listMatch) {
+					if (nextLine.trim().length === 0) {
+						continue;
+					}
 					break;
 				}
 
-				const listValue = listMatch[1] ?? '';
-				list.push(stripQuotes(listValue));
+				list.push(stripQuotes(listMatch[1] ?? ''));
 			}
 
 			values.set(key, list);
@@ -321,26 +206,14 @@ function parseFrontMatter(content: string): FrontMatterParseResult {
 			let nextIndex = index + 1;
 			for (; nextIndex < lines.length; nextIndex += 1) {
 				const nextLine = lines[nextIndex] ?? '';
-				if (nextLine.trim().length === 0) {
-					blockLines.push('');
-					continue;
-				}
-
-				if (/^[A-Za-z0-9_-]+:\s*/.test(nextLine)) {
-					break;
-				}
-
-				if (!/^\s/.test(nextLine)) {
+				if (/^[A-Za-z0-9_-]+:\s*/.test(nextLine) || (!/^\s/.test(nextLine) && nextLine.trim().length > 0)) {
 					break;
 				}
 
 				blockLines.push(nextLine.replace(/^\s+/, ''));
 			}
 
-			values.set(
-				key,
-				value.startsWith('>') ? collectFoldedLines(blockLines) : blockLines.join('\n').trim(),
-			);
+			values.set(key, value.startsWith('>') ? collectFoldedLines(blockLines) : blockLines.join('\n').trim());
 			index = nextIndex - 1;
 			continue;
 		}
@@ -366,19 +239,104 @@ function stringField(values: Map<string, FrontMatterValue>, key: string): string
 	return normalized.length > 0 ? normalized : null;
 }
 
-function stringListField(values: Map<string, FrontMatterValue>, key: string): string[] {
-	const value = values.get(key);
-	if (!Array.isArray(value)) {
-		return [];
+function contentWithoutFrontMatter(content: string): string {
+	const normalized = content.replaceAll('\r\n', '\n');
+	if (!normalized.startsWith('---\n')) {
+		return normalized;
 	}
 
-	return compactStrings(value);
+	const endIndex = normalized.indexOf('\n---', 4);
+	if (endIndex === -1) {
+		return normalized;
+	}
+
+	return normalized.slice(endIndex + '\n---'.length).replace(/^\n+/, '');
 }
 
-function parseMetadata(content: string): Metadata {
+function parseMarkdownTitle(content: string): string | null {
+	for (const rawLine of contentWithoutFrontMatter(content).split('\n')) {
+		const line = rawLine.trim();
+		if (!line.startsWith('#')) {
+			continue;
+		}
+
+		const title = line.replace(/^#+\s*/, '').trim();
+		if (title.length > 0) {
+			return title;
+		}
+	}
+
+	return null;
+}
+
+function parseGuideBody(content: string): string | null {
+	const lines = contentWithoutFrontMatter(content).split('\n');
+	const rendered: string[] = [];
+	let skippedTitle = false;
+	let inCodeBlock = false;
+
+	for (const rawLine of lines) {
+		const trimmed = rawLine.trim();
+
+		if (trimmed.startsWith('```')) {
+			inCodeBlock = !inCodeBlock;
+			continue;
+		}
+		if (inCodeBlock) {
+			continue;
+		}
+		if (!skippedTitle && trimmed.startsWith('#')) {
+			skippedTitle = true;
+			continue;
+		}
+		if (trimmed.length === 0) {
+			if (rendered[rendered.length - 1] !== '') {
+				rendered.push('');
+			}
+			continue;
+		}
+
+		rendered.push(trimmed);
+	}
+
+	const normalized = rendered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+	return normalized.length > 0 ? normalized : null;
+}
+
+function parseGuideSummary(content: string): string | null {
+	const guideBody = parseGuideBody(content);
+	if (!guideBody) {
+		return null;
+	}
+
+	for (const paragraph of guideBody.split('\n\n')) {
+		const normalized = paragraph.replace(/\s+/g, ' ').trim();
+		if (normalized.length === 0 || normalized.startsWith('- ')) {
+			continue;
+		}
+		return normalized;
+	}
+
+	return null;
+}
+
+function normalizeInlineText(value: string | null): string | null {
+	if (!value) {
+		return null;
+	}
+
+	const normalized = value.replace(/\s+/g, ' ').trim();
+	return normalized.length > 0 ? normalized : null;
+}
+
+function parseMarkdownEntry(content: string): Pick<MarkdownEntry, 'title' | 'summary' | 'error'> {
 	const frontMatter = parseFrontMatter(content);
 	if (frontMatter.error) {
-		return { title: parseMarkdownTitle(content), summary: null, error: frontMatter.error };
+		return {
+			title: parseMarkdownTitle(content),
+			summary: null,
+			error: frontMatter.error,
+		};
 	}
 
 	return {
@@ -390,14 +348,12 @@ function parseMetadata(content: string): Metadata {
 function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 	const frontMatter = parseFrontMatter(content);
 	const fallbackName = path.basename(path.dirname(relativePath));
-
 	if (frontMatter.error) {
 		return {
 			absolutePath: '',
 			relativePath,
 			name: fallbackName,
 			title: parseMarkdownTitle(content),
-			version: null,
 			description: null,
 			error: frontMatter.error,
 			referencePaths: [],
@@ -409,7 +365,6 @@ function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 		relativePath,
 		name: stringField(frontMatter.values, 'name') ?? fallbackName,
 		title: parseMarkdownTitle(content),
-		version: stringField(frontMatter.values, 'version'),
 		description: stringField(frontMatter.values, 'description'),
 		referencePaths: [],
 	};
@@ -419,78 +374,21 @@ function indentLine(text: string, indent = 0): string {
 	return `${' '.repeat(indent)}${text}`;
 }
 
-function printLine(line: StyledLine): void {
-	console.log(indentLine(line.text, line.indent ?? 0));
+function printLine(text = '', indent = 0): void {
+	console.log(indentLine(text, indent));
 }
 
-function formatTopicHeading(topic: TopicRecord): string {
-	return pc.cyan(pc.bold(`# ${topic.title ?? topic.name}`));
+function heading(level: 1 | 2 | 3, text: string): string {
+	const prefix = '#'.repeat(level);
+	const content = `${prefix} ${text}`;
+	if (level === 1) {
+		return pc.cyan(pc.bold(content));
+	}
+	return pc.white(pc.bold(content));
 }
 
-function formatMarkdownHeading(title: string | null, fallbackPath: string): string {
-	return pc.white(pc.bold(`## ${title ?? fallbackPath}`));
-}
-
-function formatImportHeading(entry: ImportEntry): string {
-	const title = entry.title ?? path.basename(entry.relativePath);
-	return pc.white(pc.bold(`## Skill: ${title}`));
-}
-
-function formatSkillHeading(skill: SkillEntry): string {
-	const title = skill.title ?? skill.name;
-	return pc.white(pc.bold(`### ${title}`));
-}
-
-function formatError(error: string): string {
+function errorText(error: string): string {
 	return pc.red(`[${error}]`);
-}
-
-function printMetadataEntry(entry: MarkdownEntry): void {
-	printLine({ text: formatMarkdownHeading(entry.metadata.title, entry.relativePath) });
-	printLine({ text: `${pc.dim('path:')} ${pc.dim(entry.absolutePath)}` });
-
-	if (entry.metadata.summary) {
-		printLine({ text: normalizeInlineText(entry.metadata.summary) ?? '' });
-	}
-
-	if (entry.metadata.error) {
-		printLine({ text: formatError(entry.metadata.error) });
-	}
-}
-
-function printSkillEntry(skill: SkillEntry): void {
-	printLine({ text: formatSkillHeading(skill) });
-	printLine({ text: `${pc.dim('path:')} ${pc.dim(skill.absolutePath)}` });
-
-	const description = normalizeInlineText(skill.description);
-	if (description) {
-		printLine({ text: description });
-	}
-
-	if (skill.error) {
-		printLine({ text: formatError(skill.error) });
-	}
-
-	if (skill.referencePaths.length === 0) {
-		return;
-	}
-
-	const groupedReferences = new Map<string, string[]>();
-	for (const referencePath of skill.referencePaths) {
-		const absoluteReferencePath = normalizePath(path.resolve(path.dirname(skill.absolutePath), referencePath));
-		const directoryPath = toDisplayPath(path.dirname(absoluteReferencePath));
-		const fileName = path.basename(absoluteReferencePath);
-		const existing = groupedReferences.get(directoryPath) ?? [];
-		existing.push(fileName);
-		groupedReferences.set(directoryPath, existing);
-	}
-
-	for (const [directoryPath, fileNames] of groupedReferences.entries()) {
-		printLine({ text: pc.gray(`- ${directoryPath}/:`) });
-		for (const fileName of fileNames.sort((first, second) => first.localeCompare(second))) {
-			printLine({ text: pc.gray(`  - ${fileName}`) });
-		}
-	}
 }
 
 function hasHiddenOrExcludedSegment(relativePath: string): boolean {
@@ -526,8 +424,7 @@ async function isDirectory(filePath: string): Promise<boolean> {
 		return false;
 	}
 	try {
-		const resolved = await stat(filePath);
-		return resolved.isDirectory();
+		return (await stat(filePath)).isDirectory();
 	} catch {
 		return false;
 	}
@@ -556,10 +453,6 @@ async function discoverRepoRoot(startDir: string): Promise<string | null> {
 	}
 }
 
-type LibraryManifestEntry = {
-	title: string | null;
-};
-
 async function readLibraryManifest(libraryRoot: string): Promise<Map<string, LibraryManifestEntry>> {
 	const manifestPath = path.join(libraryRoot, 'library.json');
 	if (!(await Bun.file(manifestPath).exists())) {
@@ -584,11 +477,6 @@ async function readLibraryManifest(libraryRoot: string): Promise<Map<string, Lib
 			continue;
 		}
 
-		if (typeof rawValue === 'string') {
-			manifest.set(entryPath, { title: null });
-			continue;
-		}
-
 		if (!rawValue || typeof rawValue !== 'object' || Array.isArray(rawValue)) {
 			manifest.set(entryPath, { title: null });
 			continue;
@@ -603,25 +491,15 @@ async function readLibraryManifest(libraryRoot: string): Promise<Map<string, Lib
 }
 
 async function listTopicNames(libraryRoot: string): Promise<string[]> {
-	let entries;
 	try {
-		entries = await readdir(libraryRoot, { withFileTypes: true });
+		const entries = await readdir(libraryRoot, { withFileTypes: true });
+		return entries
+			.filter(entry => entry.isDirectory() && entry.name.length > 0 && !entry.name.startsWith('.') && !EXCLUDED_DIRS.has(entry.name))
+			.map(entry => entry.name)
+			.sort((a, b) => a.localeCompare(b));
 	} catch {
 		return [];
 	}
-
-	const topics: string[] = [];
-	for (const entry of entries) {
-		if (!entry.name || entry.name.startsWith('.') || !entry.isDirectory()) {
-			continue;
-		}
-		if (EXCLUDED_DIRS.has(entry.name)) {
-			continue;
-		}
-		topics.push(entry.name);
-	}
-
-	return topics.sort((first, second) => first.localeCompare(second));
 }
 
 async function listRootMarkdownEntries(topicDir: string): Promise<MarkdownEntry[]> {
@@ -632,7 +510,7 @@ async function listRootMarkdownEntries(topicDir: string): Promise<MarkdownEntry[
 		return [];
 	}
 
-	const markdownEntries: MarkdownEntry[] = [];
+	const result: MarkdownEntry[] = [];
 	for (const entry of entries) {
 		if (!entry.isFile() || !entry.name.endsWith('.md') || entry.name === 'LIB.md') {
 			continue;
@@ -641,19 +519,20 @@ async function listRootMarkdownEntries(topicDir: string): Promise<MarkdownEntry[
 			continue;
 		}
 
-		const fullPath = path.join(topicDir, entry.name);
-		markdownEntries.push({
-			absolutePath: normalizePath(fullPath),
+		const absolutePath = path.join(topicDir, entry.name);
+		const parsed = parseMarkdownEntry(await Bun.file(absolutePath).text());
+		result.push({
+			absolutePath: normalizePath(absolutePath),
 			relativePath: entry.name,
-			metadata: parseMetadata(await Bun.file(fullPath).text()),
+			...parsed,
 		});
 	}
 
-	return markdownEntries.sort((first, second) => first.relativePath.localeCompare(second.relativePath));
+	return result.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 }
 
 async function listSkillFiles(importDir: string): Promise<string[]> {
-	const skillFiles: string[] = [];
+	const result: string[] = [];
 
 	async function walk(currentDir: string): Promise<void> {
 		let entries;
@@ -664,31 +543,25 @@ async function listSkillFiles(importDir: string): Promise<string[]> {
 		}
 
 		for (const entry of entries) {
-			if (!entry.name) {
-				continue;
-			}
-
-			const entryPath = path.join(currentDir, entry.name);
-			const relativePath = toDisplayPath(path.relative(importDir, entryPath));
+			const absolutePath = path.join(currentDir, entry.name);
+			const relativePath = toDisplayPath(path.relative(importDir, absolutePath));
 			if (hasHiddenOrExcludedSegment(relativePath)) {
 				continue;
 			}
 
 			if (entry.isDirectory()) {
-				await walk(entryPath);
+				await walk(absolutePath);
 				continue;
 			}
 
-			if (!entry.isFile() || entry.name !== 'SKILL.md') {
-				continue;
+			if (entry.isFile() && entry.name === 'SKILL.md') {
+				result.push(absolutePath);
 			}
-
-			skillFiles.push(entryPath);
 		}
 	}
 
 	await walk(importDir);
-	return skillFiles.sort((first, second) => first.localeCompare(second));
+	return result.sort((a, b) => a.localeCompare(b));
 }
 
 async function extractReferencePaths(skillDir: string, content: string): Promise<string[]> {
@@ -708,18 +581,14 @@ async function extractReferencePaths(skillDir: string, content: string): Promise
 		}
 
 		const absolutePath = normalizePath(path.resolve(skillDir, withoutAnchor));
-		if (!(await Bun.file(absolutePath).exists())) {
-			continue;
-		}
-
-		if (await isDirectory(absolutePath)) {
+		if (!(await Bun.file(absolutePath).exists()) || (await isDirectory(absolutePath))) {
 			continue;
 		}
 
 		discovered.add(toDisplayPath(path.relative(skillDir, absolutePath)));
 	}
 
-	return Array.from(discovered).sort((first, second) => first.localeCompare(second));
+	return Array.from(discovered).sort((a, b) => a.localeCompare(b));
 }
 
 async function listImportEntries(
@@ -727,7 +596,7 @@ async function listImportEntries(
 	topicName: string,
 	manifest: Map<string, LibraryManifestEntry>,
 ): Promise<ImportEntry[]> {
-	const importEntries: ImportEntry[] = [];
+	const result: ImportEntry[] = [];
 
 	for (const [entryPath, metadata] of manifest.entries()) {
 		const topicPrefix = `${topicName}/`;
@@ -755,15 +624,15 @@ async function listImportEntries(
 			skills.push(skill);
 		}
 
-		importEntries.push({
+		result.push({
 			absolutePath: normalizePath(absolutePath),
 			relativePath: topicRelativePath,
 			title: metadata.title,
-			skills: skills.sort((first, second) => first.relativePath.localeCompare(second.relativePath)),
+			skills: skills.sort((a, b) => a.relativePath.localeCompare(b.relativePath)),
 		});
 	}
 
-	return importEntries.sort((first, second) => first.relativePath.localeCompare(second.relativePath));
+	return result.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 }
 
 async function readTopicRecord(
@@ -772,89 +641,259 @@ async function readTopicRecord(
 	manifest: Map<string, LibraryManifestEntry>,
 ): Promise<TopicRecord> {
 	const topicDir = path.join(libraryRoot, topicName);
-	const libPath = path.join(topicDir, 'LIB.md');
-	const libContent = (await Bun.file(libPath).exists()) ? await Bun.file(libPath).text() : null;
-	const libTitle = libContent ? parseMarkdownTitle(libContent) : null;
-	const guideBody = libContent ? parseGuideBody(libContent) : null;
+	const guidePath = path.join(topicDir, 'LIB.md');
+	const guideContent = (await Bun.file(guidePath).exists()) ? await Bun.file(guidePath).text() : null;
 
 	return {
 		name: topicName,
-		title: libTitle,
-		summary: libContent ? parseGuideSummary(libContent) : null,
-		guideBody,
+		title: guideContent ? parseMarkdownTitle(guideContent) : null,
+		summary: guideContent ? parseGuideSummary(guideContent) : null,
+		guideBody: guideContent ? parseGuideBody(guideContent) : null,
 		markdownEntries: await listRootMarkdownEntries(topicDir),
 		importEntries: await listImportEntries(libraryRoot, topicName, manifest),
 	};
 }
 
+function referenceCount(skills: SkillEntry[]): number {
+	return skills.reduce((sum, skill) => sum + skill.referencePaths.length, 0);
+}
+
+function countLabel(count: number, singular: string, plural = `${singular}s`): string {
+	return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function referenceNames(skill: SkillEntry): string[] {
+	return Array.from(new Set(skill.referencePaths.map(referencePath => path.basename(referencePath)))).sort((a, b) =>
+		a.localeCompare(b),
+	);
+}
+
 function printGuideBody(guideBody: string): void {
 	for (const line of guideBody.split('\n')) {
-		if (line.length === 0) {
-			console.log('');
-			continue;
-		}
-		printLine({ text: line });
+		printLine(line);
 	}
 }
 
-function printTopic(topic: TopicRecord, options: { showGuideBody: boolean }): void {
-	printLine({ text: formatTopicHeading(topic) });
-
-	if (options.showGuideBody && topic.guideBody) {
+function printTopicHeader(topic: TopicRecord): void {
+	printLine(heading(1, topic.title ?? topic.name));
+	if (topic.guideBody) {
 		printGuideBody(topic.guideBody);
-		if (topic.markdownEntries.length > 0 || topic.importEntries.length > 0) {
-			console.log('');
-		}
 	}
+}
 
-	if (topic.markdownEntries.length === 0 && topic.importEntries.length === 0) {
-		printLine({ text: pc.dim('[no library entries found]'), indent: 2 });
+function printTopicTips(topic: TopicRecord, expand: boolean): void {
+	const exampleImport = topic.importEntries[0]?.relativePath ?? null;
+
+	if (expand) {
+		if (exampleImport) {
+			printLine(`Tip: pass a skill library name to focus one import, like \`ngents library ${topic.name} ${exampleImport}\`.`);
+		}
 		return;
 	}
 
-	for (const entry of topic.markdownEntries) {
-		printMetadataEntry(entry);
-		console.log('');
+	printLine(`Tip: run \`ngents library ${topic.name} --expand\` for a full file-level table of contents.`);
+	if (exampleImport) {
+		printLine(`Tip: pass a skill library name to focus one import, like \`ngents library ${topic.name} ${exampleImport}\`.`);
+	}
+}
+
+function printFocusedTips(topic: TopicRecord, importEntry: ImportEntry): void {
+	printLine(`Tip: run \`ngents library ${topic.name} ${importEntry.relativePath} --expand\` for nested reference files.`);
+}
+
+function printMarkdownEntry(entry: MarkdownEntry): void {
+	printLine(heading(2, entry.title ?? entry.relativePath));
+	printLine(`${pc.dim('path:')} ${pc.dim(entry.absolutePath)}`);
+
+	const summary = normalizeInlineText(entry.summary);
+	if (summary) {
+		printLine(summary);
 	}
 
-	for (const entry of topic.importEntries) {
-		printLine({ text: formatImportHeading(entry) });
-		printLine({ text: `${pc.dim('path:')} ${pc.dim(entry.absolutePath)}` });
-		if (entry.skills.length > 0) {
-			console.log('');
-		}
-		for (const skill of entry.skills) {
-			printSkillEntry(skill);
-			console.log('');
+	if (entry.error) {
+		printLine(errorText(entry.error));
+	}
+}
+
+function printImportSummary(topic: TopicRecord, entry: ImportEntry): void {
+	const title = entry.title ?? path.basename(entry.relativePath);
+	printLine(heading(2, `Skill: ${title}`));
+	printLine(`${pc.dim('path:')} ${pc.dim(entry.absolutePath)}`);
+	printLine(`contains: ${countLabel(entry.skills.length, 'skill')}, ${countLabel(referenceCount(entry.skills), 'reference file')}`);
+	printLine(`${pc.dim('view:')} ${pc.dim(`ngents library ${topic.name} ${entry.relativePath}`)}`);
+}
+
+function printSkillSummary(skill: SkillEntry, options: { showReferenceIndex: boolean; showPath: boolean }): void {
+	printLine(heading(2, skill.title ?? skill.name));
+	if (options.showPath) {
+		printLine(`${pc.dim('path:')} ${pc.dim(skill.absolutePath)}`);
+	}
+
+	const description = normalizeInlineText(skill.description);
+	if (description) {
+		printLine(description);
+	}
+
+	if (skill.error) {
+		printLine(errorText(skill.error));
+	}
+
+	if (!options.showReferenceIndex) {
+		return;
+	}
+
+	const names = referenceNames(skill);
+	if (names.length === 0) {
+		return;
+	}
+
+	printLine('Reference Index:');
+	for (const name of names) {
+		printLine(`- ${pc.gray(name)}`, 2);
+	}
+}
+
+function printExpandedSkillToc(skill: SkillEntry): void {
+	printLine(heading(3, skill.title ?? skill.name));
+
+	const description = normalizeInlineText(skill.description);
+	if (description) {
+		printLine(description);
+	}
+
+	if (skill.error) {
+		printLine(errorText(skill.error));
+	}
+
+	for (const name of referenceNames(skill)) {
+		printLine(`- ${pc.gray(name)}`, 2);
+	}
+}
+
+function printExpandedSkillDetails(skill: SkillEntry): void {
+	printLine(heading(2, skill.title ?? skill.name));
+	printLine(`${pc.dim('path:')} ${pc.dim(skill.absolutePath)}`);
+
+	const description = normalizeInlineText(skill.description);
+	if (description) {
+		printLine(description);
+	}
+
+	if (skill.error) {
+		printLine(errorText(skill.error));
+	}
+
+	if (skill.referencePaths.length === 0) {
+		return;
+	}
+
+	const grouped = new Map<string, string[]>();
+	for (const referencePath of skill.referencePaths) {
+		const absoluteReferencePath = normalizePath(path.resolve(path.dirname(skill.absolutePath), referencePath));
+		const directoryPath = toDisplayPath(path.dirname(absoluteReferencePath));
+		const fileName = path.basename(absoluteReferencePath);
+		const current = grouped.get(directoryPath) ?? [];
+		current.push(fileName);
+		grouped.set(directoryPath, current);
+	}
+
+	for (const [directoryPath, fileNames] of grouped.entries()) {
+		printLine(pc.gray(`${directoryPath}/:`));
+		for (const fileName of fileNames.sort((a, b) => a.localeCompare(b))) {
+			printLine(`- ${pc.gray(fileName)}`, 2);
 		}
 	}
 }
 
 function printTopicIndex(topics: TopicRecord[]): void {
-	printLine({ text: 'Usage: ngents library <topic>' });
-	console.log('');
+	printLine('Usage: ngents library [topic] [skill] [--expand]');
+	printLine();
+	printLine('Tip: run `ngents library <topic>` to browse a topic, or add `--expand` for a topic-wide TOC.');
+	printLine();
+
 	const topicLabel = 'TOPIC';
 	const libraryLabel = 'LIBRARY';
 	const descriptionLabel = 'DESCRIPTION';
 	const topicWidth = Math.max(topicLabel.length, ...topics.map(topic => topic.name.length));
 	const libraryWidth = Math.max(libraryLabel.length, ...topics.map(topic => (topic.title ?? topic.name).length));
-	const header = `${topicLabel.padEnd(topicWidth)}  ${libraryLabel.padEnd(libraryWidth)}  ${descriptionLabel}`;
-	printLine({ text: pc.bold(header) });
 
+	printLine(pc.bold(`${topicLabel.padEnd(topicWidth)}  ${libraryLabel.padEnd(libraryWidth)}  ${descriptionLabel}`));
 	for (const topic of topics) {
-		const title = topic.title ?? topic.name;
-		const summary = topic.summary ?? 'No library description available.';
-		const row = `${topic.name.padEnd(topicWidth)}  ${title.padEnd(libraryWidth)}  ${summary}`;
-		printLine({ text: row });
+		const row = `${topic.name.padEnd(topicWidth)}  ${(topic.title ?? topic.name).padEnd(libraryWidth)}  ${topic.summary ?? 'No library description available.'}`;
+		printLine(row);
 	}
 }
 
-const { positionals } = parseCommandArgs({});
-if (positionals.length > 1) {
-	fail('Usage: ngents library [topic]');
+function printTopic(topic: TopicRecord, options: { expand: boolean; focusedImport: ImportEntry | null }): void {
+	printTopicHeader(topic);
+	printLine();
+
+	if (options.focusedImport) {
+		printFocusedTips(topic, options.focusedImport);
+		printLine();
+
+		for (const [index, skill] of options.focusedImport.skills.entries()) {
+			if (options.expand) {
+				printExpandedSkillDetails(skill);
+			} else {
+				printSkillSummary(skill, { showReferenceIndex: true, showPath: true });
+			}
+			if (index < options.focusedImport.skills.length - 1) {
+				printLine();
+			}
+		}
+		return;
+	}
+
+	printTopicTips(topic, options.expand);
+	if (topic.markdownEntries.length > 0 || topic.importEntries.length > 0) {
+		printLine();
+	}
+
+	if (topic.markdownEntries.length === 0 && topic.importEntries.length === 0) {
+		printLine(pc.dim('[no library entries found]'));
+		return;
+	}
+
+	for (const entry of topic.markdownEntries) {
+		printMarkdownEntry(entry);
+		printLine();
+	}
+
+	for (const [index, entry] of topic.importEntries.entries()) {
+		if (!options.expand) {
+			printImportSummary(topic, entry);
+		} else {
+			const title = entry.title ?? path.basename(entry.relativePath);
+			printLine(heading(2, `Skill: ${title}`));
+			printLine(`${pc.dim('path:')} ${pc.dim(entry.absolutePath)}`);
+			printLine(`${pc.dim('view:')} ${pc.dim(`ngents library ${topic.name} ${entry.relativePath}`)}`);
+			printLine();
+
+			for (const [skillIndex, skill] of entry.skills.entries()) {
+				printExpandedSkillToc(skill);
+				if (skillIndex < entry.skills.length - 1) {
+					printLine();
+				}
+			}
+		}
+
+		if (index < topic.importEntries.length - 1) {
+			printLine();
+		}
+	}
+}
+
+const { positionals, values } = parseCommandArgs({
+	expand: { type: 'boolean' },
+});
+
+if (positionals.length > 2) {
+	fail('Usage: ngents library [topic] [skill] [--expand]');
 }
 
 const requestedTopic = positionals[0]?.trim() ?? null;
+const requestedImport = positionals[1]?.trim() ?? null;
 const currentDir = normalizePath(process.cwd());
 const repoRoot = await discoverRepoRoot(currentDir);
 const libraryRoot = normalizePath(path.join(repoRoot ?? currentDir, 'library'));
@@ -880,4 +919,16 @@ if (!requestedTopic) {
 }
 
 const topic = await readTopicRecord(libraryRoot, requestedTopic, manifest);
-printTopic(topic, { showGuideBody: true });
+const focusedImport = requestedImport
+	? topic.importEntries.find(entry => entry.relativePath === requestedImport) ?? null
+	: null;
+
+if (requestedImport && !focusedImport) {
+	const availableImports = topic.importEntries.map(entry => entry.relativePath).sort((a, b) => a.localeCompare(b));
+	fail(`Unknown skill library "${requestedImport}" for topic "${requestedTopic}". Available: ${availableImports.join(', ')}`);
+}
+
+printTopic(topic, {
+	expand: values.expand === true,
+	focusedImport,
+});

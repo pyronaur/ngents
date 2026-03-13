@@ -36,7 +36,7 @@ This is where I keep the common scripts that agents can self-improve over time. 
   Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.
 
 - `scripts/library.ts`  
-  Prints a library topic index with `ngents library` and a full topic browser with `ngents library [topic]`.
+  Prints a library topic index with `ngents library` and browses compact or expanded topic views with `ngents library [topic] [skill] [--expand]`.
 
 The point of this directory is to keep small, practical automation close to the instructions and docs it supports.
 

@@ -8,7 +8,6 @@
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
-- Fidelity over initiative. Preserve the requested operation exactly, and only switch to initiative after explicit clarification or approval.
 
 ## Communication Style
 Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.

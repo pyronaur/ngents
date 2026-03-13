@@ -1200,17 +1200,35 @@ function printRootDocs(docs: MarkdownEntry[]): void {
 		return;
 	}
 
-	printLine(pc.bold("Docs"));
+	const grouped = new Map<string, MarkdownEntry[]>();
 	for (const entry of docs) {
-		const title = entry.title ?? path.basename(entry.relativePath, ".md");
-		const summary = normalizeInlineText(entry.summary) ?? "No document summary available.";
-		printLine(`- ${title}: ${summary}`);
-		printLine(`${pc.dim("  path:")} ${pc.dim(entry.absolutePath)}`);
-		if (entry.readWhen.length > 0) {
-			printLine(`${pc.dim("  read when:")} ${entry.readWhen.join("; ")}`);
+		const directoryPath = normalizePath(path.dirname(entry.absolutePath));
+		const existing = grouped.get(directoryPath);
+		if (existing) {
+			existing.push(entry);
+			continue;
 		}
-		if (entry.error) {
-			printLine(`  ${errorText(entry.error)}`);
+
+		grouped.set(directoryPath, [entry]);
+	}
+
+	printLine(pc.bold("Docs"));
+	const groups = Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+	for (const [index, [directoryPath, entries]] of groups.entries()) {
+		printLine(`${pc.dim("source:")} ${pc.dim(directoryPath)}`);
+		for (const entry of entries.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))) {
+			const title = entry.title ?? path.basename(entry.relativePath, ".md");
+			const summary = normalizeInlineText(entry.summary) ?? pc.gray("-");
+			printLine(`- ${title}: ${summary}`);
+			if (entry.readWhen.length > 0) {
+				printLine(`${pc.dim("  read when:")} ${entry.readWhen.join("; ")}`);
+			}
+			if (entry.error) {
+				printLine(`  ${errorText(entry.error)}`);
+			}
+		}
+		if (index < groups.length - 1) {
+			printLine();
 		}
 	}
 }

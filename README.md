@@ -16,7 +16,7 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
   Task-specific skill packs. Each skill has its own `SKILL.md` with focused instructions.
 
 - `docs/`  
-  Supporting runbooks, topics, and imported reference sections used during execution.
+  Supporting runbooks plus `docs/topics/*` topic directories used during execution.
 
 - `scripts/`  
   Home for executable helpers used by this toolkit.
@@ -26,7 +26,7 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
 This is where I keep the common scripts that agents can self-improve over time. Still WIP.
 
 - `scripts/docs.ts`  
-  Powers `ndex` and `ngents docs`, browsing repo-local or global docs topics with progressive disclosure and preserving `summary` / `read_when` metadata.
+  Powers `ndex` and `ngents docs`, browsing root docs plus `docs/topics/*` with progressive disclosure and preserving `summary` / `read_when` metadata.
 
 - `scripts/bins.ts`  
   Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.

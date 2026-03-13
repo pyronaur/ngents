@@ -1,5 +1,5 @@
 /**
- * Browse local or global docs topics and section indexes.
+ * Browse local or global docs roots, topics, and section indexes.
  * @autohelp
  * @usage ndex [topic] [section] [--expand] [--repo] [--global]
  * @flag --expand Show nested skill references and file-level contents

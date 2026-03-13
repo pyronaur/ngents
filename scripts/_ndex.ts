@@ -4,7 +4,8 @@ import path from "node:path";
 import { fail, parseCommandArgs } from "./_argv";
 
 const EXCLUDED_DIRS = new Set(["archive", "research", "node_modules"]);
-const META_FILE = "NDEX.md";
+const META_FILE = ".ndex.md";
+const TOPICS_DIR = "topics";
 const POSIX_SEP = "/";
 const GLOBAL_DOCS_LABEL = "~/.ngents/docs";
 const require = createRequire(import.meta.url);
@@ -24,16 +25,8 @@ type GuideMetadata = {
 	title: string | null;
 	summary: string | null;
 	guideBody: string | null;
-	sections: Map<string, DeclaredSection>;
+	readWhen: string[];
 	error?: string;
-};
-
-type DeclaredSection = {
-	key: string;
-	kind: string | null;
-	title: string | null;
-	summary: string | null;
-	guideBody: string | null;
 };
 
 type MarkdownEntry = {
@@ -61,18 +54,19 @@ type SectionEntry = {
 	title: string;
 	summary: string | null;
 	guideBody: string | null;
+	readWhen: string[];
 	error?: string;
 	markdownEntries: MarkdownEntry[];
 	skills: SkillEntry[];
 };
 
 type TopicContribution = {
-	docsRoot: string;
 	name: string;
 	absolutePath: string;
 	title: string;
 	summary: string | null;
 	guideBody: string | null;
+	readWhen: string[];
 	error?: string;
 	markdownEntries: MarkdownEntry[];
 	sectionEntries: SectionEntry[];
@@ -88,7 +82,6 @@ type TopicIndexRow = {
 	name: string;
 	title: string;
 	summary: string | null;
-	sourceCount: number;
 };
 
 type IndexData = {
@@ -423,39 +416,6 @@ function stringArrayField(values: Map<string, FrontMatterValue>, key: string): s
 	return compactStrings(value);
 }
 
-function objectField(values: Map<string, FrontMatterValue>, key: string): FrontMatterObject | null {
-	const value = values.get(key);
-	if (!(value instanceof Map)) {
-		return null;
-	}
-
-	return value;
-}
-
-function parseDeclaredSections(values: Map<string, FrontMatterValue>): Map<string, DeclaredSection> {
-	const sectionValues = objectField(values, "sections");
-	if (!sectionValues) {
-		return new Map();
-	}
-
-	const sections = new Map<string, DeclaredSection>();
-	for (const [key, value] of sectionValues.entries()) {
-		if (!(value instanceof Map)) {
-			continue;
-		}
-
-		sections.set(key, {
-			key,
-			kind: stringField(value, "kind"),
-			title: stringField(value, "title"),
-			summary: stringField(value, "summary"),
-			guideBody: stringField(value, "guide"),
-		});
-	}
-
-	return sections;
-}
-
 function contentWithoutFrontMatter(content: string): string {
 	const normalized = content.replaceAll("\r\n", "\n");
 	if (!normalized.startsWith("---\n")) {
@@ -701,7 +661,7 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> {
 	const guidePath = path.join(directoryPath, META_FILE);
 	if (!(await Bun.file(guidePath).exists())) {
-		return { title: null, summary: null, guideBody: null, sections: new Map() };
+		return { title: null, summary: null, guideBody: null, readWhen: [] };
 	}
 
 	const content = await Bun.file(guidePath).text();
@@ -710,7 +670,7 @@ async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> 
 		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
 		summary: stringField(frontMatter.values, "summary") ?? parseGuideSummary(content),
 		guideBody: parseGuideBody(content),
-		sections: parseDeclaredSections(frontMatter.values),
+		readWhen: stringArrayField(frontMatter.values, "read_when"),
 		error: frontMatter.error,
 	};
 }
@@ -750,10 +710,57 @@ async function listMarkdownEntries(directoryPath: string): Promise<MarkdownEntry
 	return result.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 }
 
-async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
+async function listDocsEntries(directoryPath: string, rootPath = directoryPath): Promise<MarkdownEntry[]> {
 	let entries;
 	try {
-		entries = await readdir(docsRoot, { withFileTypes: true });
+		entries = await readdir(directoryPath, { withFileTypes: true });
+	} catch {
+		return [];
+	}
+
+	const result: MarkdownEntry[] = [];
+	for (const entry of entries) {
+		if (!entry.name || entry.name.startsWith(".") || EXCLUDED_DIRS.has(entry.name)) {
+			continue;
+		}
+
+		const absolutePath = normalizePath(path.join(directoryPath, entry.name));
+		const relativePath = toDisplayPath(path.relative(rootPath, absolutePath));
+		if (hasHiddenOrExcludedSegment(relativePath)) {
+			continue;
+		}
+
+		if (entry.isDirectory()) {
+			if (normalizePath(directoryPath) === normalizePath(rootPath) && entry.name === TOPICS_DIR) {
+				continue;
+			}
+			result.push(...(await listDocsEntries(absolutePath, rootPath)));
+			continue;
+		}
+
+		if (!entry.isFile() || !entry.name.endsWith(".md")) {
+			continue;
+		}
+		if (sameFileName(entry.name, META_FILE) || sameFileName(entry.name, "SKILL.md")) {
+			continue;
+		}
+
+		const parsed = parseMarkdownEntry(await Bun.file(absolutePath).text());
+		result.push({
+			absolutePath,
+			relativePath,
+			...parsed,
+		});
+	}
+
+	return result.sort((a, b) => a.absolutePath.localeCompare(b.absolutePath));
+}
+
+async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
+	const topicsRoot = path.join(docsRoot, TOPICS_DIR);
+	let entries;
+	try {
+		entries = await readdir(topicsRoot, { withFileTypes: true });
 	} catch {
 		return [];
 	}
@@ -764,9 +771,7 @@ async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
 		.sort((a, b) => a.localeCompare(b));
 }
 
-async function listSectionKeys(topicDir: string, declaredSections: Iterable<string>): Promise<string[]> {
-	const sectionKeys = new Set<string>();
-
+async function listSectionKeys(topicDir: string): Promise<string[]> {
 	let entries;
 	try {
 		entries = await readdir(topicDir, { withFileTypes: true });
@@ -774,73 +779,16 @@ async function listSectionKeys(topicDir: string, declaredSections: Iterable<stri
 		return [];
 	}
 
-	for (const entry of entries) {
-		if (!entry.isDirectory()) {
-			continue;
-		}
-		if (!entry.name || entry.name.startsWith(".") || EXCLUDED_DIRS.has(entry.name)) {
-			continue;
-		}
-
-		sectionKeys.add(entry.name);
-	}
-
-	for (const key of declaredSections) {
-		if (key && !hasHiddenOrExcludedSegment(key)) {
-			sectionKeys.add(key);
-		}
-	}
-
-	async function walk(currentDir: string): Promise<void> {
-		let currentEntries;
-		try {
-			currentEntries = await readdir(currentDir, { withFileTypes: true });
-		} catch {
-			return;
-		}
-
-		for (const entry of currentEntries) {
-			if (!entry.isDirectory()) {
-				continue;
-			}
-			if (!entry.name || entry.name.startsWith(".") || EXCLUDED_DIRS.has(entry.name)) {
-				continue;
-			}
-
-			const absolutePath = path.join(currentDir, entry.name);
-			const relativePath = toDisplayPath(path.relative(topicDir, absolutePath));
-			if (hasHiddenOrExcludedSegment(relativePath)) {
-				continue;
-			}
-			if (!relativePath.includes("/")) {
-				await walk(absolutePath);
-				continue;
-			}
-
-			if (await Bun.file(path.join(absolutePath, META_FILE)).exists()) {
-				sectionKeys.add(relativePath);
-			}
-
-			await walk(absolutePath);
-		}
-	}
-
-	for (const sectionKey of Array.from(sectionKeys)) {
-		const sectionDir = path.join(topicDir, sectionKey);
-		await walk(sectionDir);
-	}
-
-	return Array.from(sectionKeys).sort((a, b) => a.localeCompare(b));
+	return entries
+		.filter(entry => entry.isDirectory() && entry.name.length > 0 && !entry.name.startsWith(".") && !EXCLUDED_DIRS.has(entry.name))
+		.map(entry => entry.name)
+		.sort((a, b) => a.localeCompare(b));
 }
 
 async function listSkillFiles(sectionDir: string): Promise<string[]> {
 	const result: string[] = [];
 
 	async function walk(currentDir: string): Promise<void> {
-		if (normalizePath(currentDir) !== normalizePath(sectionDir) && (await Bun.file(path.join(currentDir, META_FILE)).exists())) {
-			return;
-		}
-
 		let entries;
 		try {
 			entries = await readdir(currentDir, { withFileTypes: true });
@@ -900,7 +848,6 @@ async function extractReferencePaths(skillDir: string, content: string): Promise
 async function readSectionEntry(
 	topicDir: string,
 	sectionKey: string,
-	declaredSection: DeclaredSection | null,
 ): Promise<SectionEntry> {
 	const absolutePath = normalizePath(path.join(topicDir, sectionKey));
 	const guide = await readGuideMetadata(absolutePath);
@@ -919,9 +866,10 @@ async function readSectionEntry(
 	return {
 		key: sectionKey,
 		absolutePath,
-		title: declaredSection?.title ?? guide.title ?? humanizeSlug(path.basename(sectionKey)),
-		summary: declaredSection?.summary ?? guide.summary,
-		guideBody: declaredSection?.guideBody ?? guide.guideBody,
+		title: guide.title ?? path.basename(sectionKey),
+		summary: guide.summary,
+		guideBody: guide.guideBody,
+		readWhen: guide.readWhen,
 		error: guide.error,
 		markdownEntries,
 		skills: skills.sort((a, b) => a.relativePath.localeCompare(b.relativePath)),
@@ -929,27 +877,27 @@ async function readSectionEntry(
 }
 
 async function readTopicContribution(docsRoot: string, topicName: string): Promise<TopicContribution | null> {
-	const topicDir = normalizePath(path.join(docsRoot, topicName));
+	const topicDir = normalizePath(path.join(docsRoot, TOPICS_DIR, topicName));
 	if (!(await isDirectory(topicDir))) {
 		return null;
 	}
 
 	const guide = await readGuideMetadata(topicDir);
 	const markdownEntries = await listMarkdownEntries(topicDir);
-	const sectionKeys = await listSectionKeys(topicDir, guide.sections.keys());
+	const sectionKeys = await listSectionKeys(topicDir);
 	const sectionEntries: SectionEntry[] = [];
 
 	for (const sectionKey of sectionKeys) {
-		sectionEntries.push(await readSectionEntry(topicDir, sectionKey, guide.sections.get(sectionKey) ?? null));
+		sectionEntries.push(await readSectionEntry(topicDir, sectionKey));
 	}
 
 	return {
-		docsRoot,
 		name: topicName,
 		absolutePath: topicDir,
 		title: guide.title ?? humanizeSlug(topicName),
 		summary: guide.summary,
 		guideBody: guide.guideBody,
+		readWhen: guide.readWhen,
 		error: guide.error,
 		markdownEntries,
 		sectionEntries,
@@ -963,19 +911,17 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 	for (const docsRoot of docsRoots) {
 		const topicNames = await listTopLevelTopics(docsRoot);
 		for (const topicName of topicNames) {
-			const guide = await readGuideMetadata(path.join(docsRoot, topicName));
+			const guide = await readGuideMetadata(path.join(docsRoot, TOPICS_DIR, topicName));
 			const existing = topicMap.get(topicName);
 			if (!existing) {
 				topicMap.set(topicName, {
 					name: topicName,
 					title: guide.title ?? humanizeSlug(topicName),
 					summary: guide.summary,
-					sourceCount: 1,
 				});
 				continue;
 			}
 
-			existing.sourceCount += 1;
 			if (!existing.summary && guide.summary) {
 				existing.summary = guide.summary;
 			}
@@ -984,7 +930,7 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 			}
 		}
 
-		const rootDocs = await listMarkdownEntries(docsRoot);
+		const rootDocs = await listDocsEntries(docsRoot);
 		docs.push(...rootDocs);
 	}
 
@@ -1088,6 +1034,9 @@ function printSectionSummary(topicName: string, section: SectionEntry): void {
 	if (section.error) {
 		printLine(errorText(section.error));
 	}
+	if (section.readWhen.length > 0) {
+		printLine(`${pc.dim("Read when:")} ${section.readWhen.join("; ")}`);
+	}
 
 	const contains = formatContains(section);
 	if (contains) {
@@ -1106,6 +1055,9 @@ function printExpandedSection(section: SectionEntry): void {
 	}
 	if (section.error) {
 		printLine(errorText(section.error));
+	}
+	if (section.readWhen.length > 0) {
+		printLine(`${pc.dim("Read when:")} ${section.readWhen.join("; ")}`);
 	}
 
 	for (const skill of section.skills) {
@@ -1212,19 +1164,27 @@ function printRootDocs(docs: MarkdownEntry[]): void {
 		grouped.set(directoryPath, [entry]);
 	}
 
-	printLine(pc.bold("Docs"));
+	printLine(heading(2, "Docs"));
 	const groups = Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 	for (const [index, [directoryPath, entries]] of groups.entries()) {
-		printLine(`${pc.dim("source:")} ${pc.dim(directoryPath)}`);
-		for (const entry of entries.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))) {
-			const title = entry.title ?? path.basename(entry.relativePath, ".md");
-			const summary = normalizeInlineText(entry.summary) ?? pc.gray("-");
-			printLine(`- ${title}: ${summary}`);
+		printLine(pc.white(pc.bold(directoryPath)));
+		const sortedEntries = entries.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath));
+		for (const [entryIndex, entry] of sortedEntries.entries()) {
+			const fileName = path.basename(entry.absolutePath);
+			const summary = normalizeInlineText(entry.summary);
+			printLine(`- ${fileName}`, 1);
 			if (entry.readWhen.length > 0) {
-				printLine(`${pc.dim("  read when:")} ${entry.readWhen.join("; ")}`);
+				for (const readWhen of entry.readWhen) {
+					printLine(pc.gray(readWhen), 3);
+				}
+			} else if (summary) {
+				printLine(pc.gray(summary), 3);
 			}
 			if (entry.error) {
-				printLine(`  ${errorText(entry.error)}`);
+				printLine(errorText(entry.error), 3);
+			}
+			if (entryIndex < sortedEntries.length - 1) {
+				printLine();
 			}
 		}
 		if (index < groups.length - 1) {
@@ -1237,11 +1197,11 @@ function printTopicIndex(topics: TopicIndexRow[], docs: MarkdownEntry[], showGlo
 	printLine("Usage: ndex [topic] [section] [--expand] [--repo] [--global]");
 	printLine();
 	if (showGlobalTip) {
-		printLine("Tip: use `--global` to view global documentation.");
+		printLine("> Tip: use `--global` to view global documentation.");
 		printLine();
 	}
 
-	printLine(pc.bold("Topics"));
+	printLine(heading(2, "Topics"));
 	if (topics.length === 0) {
 		printLine("- [no topics found]");
 	} else {
@@ -1310,8 +1270,17 @@ function printTopicView(topic: MergedTopic, expand: boolean): void {
 		if (contribution.error) {
 			printLine(errorText(contribution.error));
 		}
+		if (contribution.readWhen.length > 0) {
+			printLine(`${pc.dim("Read when:")} ${contribution.readWhen.join("; ")}`);
+		}
 
-		if (contribution.markdownEntries.length > 0 || contribution.sectionEntries.length > 0) {
+		if (
+			contribution.markdownEntries.length > 0 ||
+			contribution.sectionEntries.length > 0 ||
+			contribution.guideBody ||
+			contribution.error ||
+			contribution.readWhen.length > 0
+		) {
 			printLine();
 		}
 
@@ -1356,7 +1325,10 @@ function printFocusedSection(topic: MergedTopic, sectionKey: string, sections: S
 		if (section.error) {
 			printLine(errorText(section.error));
 		}
-		if (section.guideBody || section.error) {
+		if (section.readWhen.length > 0) {
+			printLine(`${pc.dim("Read when:")} ${section.readWhen.join("; ")}`);
+		}
+		if (section.guideBody || section.error || section.readWhen.length > 0) {
 			printLine();
 		}
 

@@ -22,35 +22,42 @@ read_when:
 ## How `ndex` reads `docs/`
 
 - Markdown files directly under a `docs/` root are free-floating docs.
-- Directories directly under a `docs/` root are top-level topics.
-- Directories directly under a topic are surfaced sections.
-- Deeper directories can also become surfaced sections when they contain `NDEX.md`.
-- A topic `NDEX.md` can also declare child sections in frontmatter with a `sections` map.
+- Topics live under `docs/topics/<topic>/`.
+- Direct child directories inside a topic are sections.
+- Directories outside `docs/topics/` are not topics.
+- Topic and section membership comes from filesystem placement, not metadata files.
 - Hidden directories and files are ignored.
 - `archive`, `research`, and `node_modules` are ignored.
 
-## `NDEX.md`
+## `.ndex.md`
 
-`NDEX.md` is a directory guide and metadata file.
+`.ndex.md` is an optional directory guide and metadata file.
 
-- `NDEX.md` is excluded from normal scans and lists.
+- `.ndex.md` is hidden and excluded from normal scans and lists.
+- `.ndex.md` is intentionally sparse. Do not add it just to improve index cosmetics.
+- Prefer one `.ndex.md` at a meaningful topic boundary over many small child `.ndex.md` files.
+- `.ndex.md` does not decide whether something is a topic or a section.
+- `.ndex.md` does not decide whether a file belongs to a topic.
 - Frontmatter `title` takes precedence over markdown heading parsing.
 - Frontmatter `summary` takes precedence over summary parsing.
+- Frontmatter `read_when` is available when a directory guide needs it.
 - The first `#` heading is the fallback title when frontmatter `title` is absent.
 - The first non-list paragraph is the fallback summary when frontmatter `summary` is absent.
 - The rest of the body is rendered when the topic or section is opened.
 
-Use `NDEX.md` to explain:
+Use `.ndex.md` to explain:
 
 - what the topic or section contains
 - how to use it
 - what to prioritize first
 
+Add a child `.ndex.md` only when that child directory genuinely needs its own guide text.
+
 For external or imported directories:
 
 - do not modify the external directory
-- do not add `NDEX.md` inside the external directory
-- declare the child section in the parent topic `NDEX.md` frontmatter instead
+- do not add `.ndex.md` inside the external directory
+- let `ndex` discover the section from directory placement and fall back to the directory name when no guide exists
 
 Example:
 
@@ -58,14 +65,13 @@ Example:
 ---
 title: iOS Library
 summary: This topic collects iOS-focused references and Apple HIG skills.
-sections:
-  hig-doctor:
-    kind: skill-library
-    title: HIG Doctor
-    summary: Curated Apple HIG skills and reference files.
-    guide: |
-      Start here when you need structured Apple HIG guidance.
+read_when:
+  - Working on Apple-platform UI, UX, or HIG questions.
 ---
+
+# iOS Library
+
+Start with `hig-doctor` when you need structured Apple HIG guidance.
 ```
 
 ## Skills and references
@@ -79,8 +85,9 @@ sections:
 
 1. Create or choose the target `docs/` root.
 2. Put free-floating docs directly under that `docs/` root when they are not part of a topic.
-3. Put related docs inside a directory when they should appear as one topic.
-4. Add `NDEX.md` when a topic or owned local section needs a title, summary, or guide body.
+3. Put topic docs under `docs/topics/<topic>/`.
+4. Add `.ndex.md` only when a topic or owned local section needs a real guide body.
 5. Add `SKILL.md` files inside a section when that section exposes skills.
 6. Link local reference files from each `SKILL.md` when they should show up in `ndex`.
-7. Declare external child sections in the parent topic `NDEX.md` frontmatter instead of modifying the external directory.
+7. Let local files and child directories join a topic by placement instead of adding wiring.
+8. Keep external child sections unmodified and let `ndex` discover them by placement.

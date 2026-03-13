@@ -1,3 +1,10 @@
+---
+summary: "Sosumi CLI and MCP reference for fetching Apple Developer docs as Markdown."
+read_when:
+- Need Apple Developer documentation in Markdown from the terminal.
+- Need the Sosumi CLI path or MCP endpoint for agent workflows.
+---
+
 # Sosumi CLI
 
 Use Sosumi when you want Apple Developer documentation in AI-readable Markdown from the command line.

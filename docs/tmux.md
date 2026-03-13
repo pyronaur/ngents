@@ -1,5 +1,6 @@
 ---
-summary: "tmux guide for persistent debugging and log capture"
+title: tmux
+summary: "Persistent debugging and log capture guide."
 read_when:
   - Need persistent terminal state for debugger/logging.
   - Need reproducible log capture during UI/manual repro.

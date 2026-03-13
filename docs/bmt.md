@@ -1,4 +1,5 @@
 ---
+title: BMT
 summary: "Canonical guide for using `bmt` to manage and run plain script commands."
 read_when:
   - Setting up or validating `bmt` on a machine.

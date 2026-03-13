@@ -10,7 +10,9 @@ const GLOBAL_DOCS_LABEL = "~/.ngents/docs";
 const require = createRequire(import.meta.url);
 const pc: typeof import("picocolors") = require("picocolors");
 
-type FrontMatterValue = string | string[];
+type FrontMatterObject = Map<string, FrontMatterValue>;
+
+type FrontMatterValue = string | string[] | FrontMatterObject;
 
 type FrontMatterParseResult = {
 	found: boolean;
@@ -22,7 +24,16 @@ type GuideMetadata = {
 	title: string | null;
 	summary: string | null;
 	guideBody: string | null;
+	sections: Map<string, DeclaredSection>;
 	error?: string;
+};
+
+type DeclaredSection = {
+	key: string;
+	kind: string | null;
+	title: string | null;
+	summary: string | null;
+	guideBody: string | null;
 };
 
 type MarkdownEntry = {
@@ -206,6 +217,150 @@ function parseInlineArray(value: string): string[] {
 	return compactStrings(values).map(stripQuotes);
 }
 
+function frontMatterKeyPattern(): RegExp {
+	return /^(\s*)([A-Za-z0-9_./-]+):(.*)$/;
+}
+
+function nextMeaningfulLine(
+	lines: string[],
+	startIndex: number,
+): { index: number; line: string; indent: number } | null {
+	for (let index = startIndex; index < lines.length; index += 1) {
+		const line = lines[index] ?? "";
+		if (line.trim().length === 0) {
+			continue;
+		}
+
+		const indent = line.match(/^(\s*)/)?.[1]?.length ?? 0;
+		return { index, line, indent };
+	}
+
+	return null;
+}
+
+function parseFrontMatterList(lines: string[], startIndex: number, indent: number): { value: string[]; nextIndex: number } {
+	const values: string[] = [];
+	let index = startIndex;
+
+	for (; index < lines.length; index += 1) {
+		const line = lines[index] ?? "";
+		if (line.trim().length === 0) {
+			continue;
+		}
+
+		const currentIndent = line.match(/^(\s*)/)?.[1]?.length ?? 0;
+		if (currentIndent < indent) {
+			break;
+		}
+		if (currentIndent !== indent) {
+			break;
+		}
+
+		const listMatch = line.match(/^\s*-\s+(.*)$/);
+		if (!listMatch) {
+			break;
+		}
+
+		values.push(stripQuotes(listMatch[1] ?? ""));
+	}
+
+	return { value: compactStrings(values), nextIndex: index };
+}
+
+function parseFrontMatterMap(
+	lines: string[],
+	startIndex: number,
+	indent: number,
+): { values: Map<string, FrontMatterValue>; nextIndex: number } {
+	const values = new Map<string, FrontMatterValue>();
+	let index = startIndex;
+
+	for (; index < lines.length; ) {
+		const rawLine = lines[index] ?? "";
+		if (rawLine.trim().length === 0) {
+			index += 1;
+			continue;
+		}
+
+		const keyMatch = rawLine.match(frontMatterKeyPattern());
+		if (!keyMatch) {
+			break;
+		}
+
+		const currentIndent = keyMatch[1]?.length ?? 0;
+		if (currentIndent < indent) {
+			break;
+		}
+		if (currentIndent > indent) {
+			break;
+		}
+
+		const key = keyMatch[2] ?? "";
+		const rawValue = keyMatch[3] ?? "";
+		const value = rawValue.trim();
+		index += 1;
+
+		if (value === "" || value === "[]") {
+			const nextLine = nextMeaningfulLine(lines, index);
+			if (!nextLine || nextLine.indent <= currentIndent) {
+				values.set(key, value === "[]" ? [] : "");
+				continue;
+			}
+
+			if (/^\s*-\s+/.test(nextLine.line)) {
+				const parsed = parseFrontMatterList(lines, index, nextLine.indent);
+				values.set(key, parsed.value);
+				index = parsed.nextIndex;
+				continue;
+			}
+
+			if (frontMatterKeyPattern().test(nextLine.line)) {
+				const parsed = parseFrontMatterMap(lines, index, nextLine.indent);
+				values.set(key, parsed.values);
+				index = parsed.nextIndex;
+				continue;
+			}
+
+			values.set(key, "");
+			continue;
+		}
+
+		if (value === ">" || value === ">-" || value === "|" || value === "|-") {
+			const blockLines: string[] = [];
+			const nextLine = nextMeaningfulLine(lines, index);
+			const blockIndent = nextLine && nextLine.indent > currentIndent ? nextLine.indent : currentIndent + 2;
+
+			for (; index < lines.length; index += 1) {
+				const nextRawLine = lines[index] ?? "";
+				if (nextRawLine.trim().length === 0) {
+					blockLines.push("");
+					continue;
+				}
+
+				const nextIndent = nextRawLine.match(/^(\s*)/)?.[1]?.length ?? 0;
+				if (nextIndent < blockIndent) {
+					break;
+				}
+
+				blockLines.push(nextRawLine.slice(Math.min(blockIndent, nextRawLine.length)));
+			}
+
+			const blockValue = value.startsWith(">") ? collectFoldedLines(blockLines) : blockLines.join("\n").trim();
+			values.set(key, blockValue);
+			continue;
+		}
+
+		if (value.startsWith("[") && value.endsWith("]")) {
+			values.set(key, parseInlineArray(value));
+			continue;
+		}
+
+		values.set(key, stripQuotes(value));
+	}
+
+	return { values, nextIndex: index };
+}
+
 function collectFoldedLines(lines: string[]): string {
 	const paragraphs: string[] = [];
 	let current: string[] = [];
@@ -242,75 +397,7 @@ function parseFrontMatter(content: string): FrontMatterParseResult {
 	}
 
 	const lines = normalized.slice(4, endIndex).split("\n");
-	const values = new Map<string, FrontMatterValue>();
-
-	for (let index = 0; index < lines.length; index += 1) {
-		const rawLine = lines[index] ?? "";
-		if (rawLine.trim().length === 0) {
-			continue;
-		}
-
-		const keyMatch = rawLine.match(/^([A-Za-z0-9_-]+):(.*)$/);
-		if (!keyMatch) {
-			continue;
-		}
-
-		const key = keyMatch[1] ?? "";
-		const rawValue = keyMatch[2] ?? "";
-		const value = rawValue.trim();
-
-		if (value === "" || value === "[]") {
-			const list: string[] = [];
-			let nextIndex = index + 1;
-			for (; nextIndex < lines.length; nextIndex += 1) {
-				const nextLine = lines[nextIndex] ?? "";
-				if (/^[A-Za-z0-9_-]+:\s*/.test(nextLine)) {
-					break;
-				}
-
-				const listMatch = nextLine.match(/^\s*-\s+(.*)$/);
-				if (!listMatch) {
-					if (nextLine.trim().length === 0) {
-						continue;
-					}
-					break;
-				}
-
-				list.push(stripQuotes(listMatch[1] ?? ""));
-			}
-
-			values.set(key, list);
-			index = nextIndex - 1;
-			continue;
-		}
-
-		if (value === ">" || value === ">-" || value === "|" || value === "|-") {
-			const blockLines: string[] = [];
-			let nextIndex = index + 1;
-			for (; nextIndex < lines.length; nextIndex += 1) {
-				const nextLine = lines[nextIndex] ?? "";
-				if (/^[A-Za-z0-9_-]+:\s*/.test(nextLine) || (!/^\s/.test(nextLine) && nextLine.trim().length > 0)) {
-					break;
-				}
-
-				blockLines.push(nextLine.replace(/^\s+/, ""));
-			}
-
-			const blockValue = value.startsWith(">") ? collectFoldedLines(blockLines) : blockLines.join("\n").trim();
-			values.set(key, blockValue);
-			index = nextIndex - 1;
-			continue;
-		}
-
-		if (value.startsWith("[") && value.endsWith("]")) {
-			values.set(key, parseInlineArray(value));
-			continue;
-		}
-
-		values.set(key, stripQuotes(value));
-	}
-
-	return { found: true, values };
+	return { found: true, values: parseFrontMatterMap(lines, 0, 0).values };
 }
 
 function stringField(values: Map<string, FrontMatterValue>, key: string): string | null {
@@ -334,6 +421,39 @@ function stringArrayField(values: Map<string, FrontMatterValue>, key: string): s
 	}
 
 	return compactStrings(value);
+}
+
+function objectField(values: Map<string, FrontMatterValue>, key: string): FrontMatterObject | null {
+	const value = values.get(key);
+	if (!(value instanceof Map)) {
+		return null;
+	}
+
+	return value;
+}
+
+function parseDeclaredSections(values: Map<string, FrontMatterValue>): Map<string, DeclaredSection> {
+	const sectionValues = objectField(values, "sections");
+	if (!sectionValues) {
+		return new Map();
+	}
+
+	const sections = new Map<string, DeclaredSection>();
+	for (const [key, value] of sectionValues.entries()) {
+		if (!(value instanceof Map)) {
+			continue;
+		}
+
+		sections.set(key, {
+			key,
+			kind: stringField(value, "kind"),
+			title: stringField(value, "title"),
+			summary: stringField(value, "summary"),
+			guideBody: stringField(value, "guide"),
+		});
+	}
+
+	return sections;
 }
 
 function contentWithoutFrontMatter(content: string): string {
@@ -433,7 +553,7 @@ function parseMarkdownEntry(content: string): Pick<MarkdownEntry, "title" | "sum
 	}
 
 	return {
-		title: parseMarkdownTitle(content),
+		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
 		summary: stringField(frontMatter.values, "summary"),
 		readWhen: stringArrayField(frontMatter.values, "read_when"),
 	};
@@ -458,7 +578,7 @@ function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 		absolutePath: "",
 		relativePath,
 		name: stringField(frontMatter.values, "name") ?? fallbackName,
-		title: parseMarkdownTitle(content),
+		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
 		description: stringField(frontMatter.values, "description"),
 		referencePaths: [],
 	};
@@ -581,15 +701,16 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> {
 	const guidePath = path.join(directoryPath, META_FILE);
 	if (!(await Bun.file(guidePath).exists())) {
-		return { title: null, summary: null, guideBody: null };
+		return { title: null, summary: null, guideBody: null, sections: new Map() };
 	}
 
 	const content = await Bun.file(guidePath).text();
 	const frontMatter = parseFrontMatter(content);
 	return {
-		title: parseMarkdownTitle(content),
-		summary: parseGuideSummary(content),
+		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
+		summary: stringField(frontMatter.values, "summary") ?? parseGuideSummary(content),
 		guideBody: parseGuideBody(content),
+		sections: parseDeclaredSections(frontMatter.values),
 		error: frontMatter.error,
 	};
 }
@@ -643,7 +764,7 @@ async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
 		.sort((a, b) => a.localeCompare(b));
 }
 
-async function listSectionKeys(topicDir: string): Promise<string[]> {
+async function listSectionKeys(topicDir: string, declaredSections: Iterable<string>): Promise<string[]> {
 	const sectionKeys = new Set<string>();
 
 	let entries;
@@ -662,6 +783,12 @@ async function listSectionKeys(topicDir: string): Promise<string[]> {
 		}
 
 		sectionKeys.add(entry.name);
+	}
+
+	for (const key of declaredSections) {
+		if (key && !hasHiddenOrExcludedSegment(key)) {
+			sectionKeys.add(key);
+		}
 	}
 
 	async function walk(currentDir: string): Promise<void> {
@@ -770,7 +897,11 @@ async function extractReferencePaths(skillDir: string, content: string): Promise
 	return Array.from(discovered).sort((a, b) => a.localeCompare(b));
 }
 
-async function readSectionEntry(topicDir: string, sectionKey: string): Promise<SectionEntry> {
+async function readSectionEntry(
+	topicDir: string,
+	sectionKey: string,
+	declaredSection: DeclaredSection | null,
+): Promise<SectionEntry> {
 	const absolutePath = normalizePath(path.join(topicDir, sectionKey));
 	const guide = await readGuideMetadata(absolutePath);
 	const markdownEntries = await listMarkdownEntries(absolutePath);
@@ -788,9 +919,9 @@ async function readSectionEntry(topicDir: string, sectionKey: string): Promise<S
 	return {
 		key: sectionKey,
 		absolutePath,
-		title: guide.title ?? humanizeSlug(path.basename(sectionKey)),
-		summary: guide.summary,
-		guideBody: guide.guideBody,
+		title: declaredSection?.title ?? guide.title ?? humanizeSlug(path.basename(sectionKey)),
+		summary: declaredSection?.summary ?? guide.summary,
+		guideBody: declaredSection?.guideBody ?? guide.guideBody,
 		error: guide.error,
 		markdownEntries,
 		skills: skills.sort((a, b) => a.relativePath.localeCompare(b.relativePath)),
@@ -805,11 +936,11 @@ async function readTopicContribution(docsRoot: string, topicName: string): Promi
 
 	const guide = await readGuideMetadata(topicDir);
 	const markdownEntries = await listMarkdownEntries(topicDir);
-	const sectionKeys = await listSectionKeys(topicDir);
+	const sectionKeys = await listSectionKeys(topicDir, guide.sections.keys());
 	const sectionEntries: SectionEntry[] = [];
 
 	for (const sectionKey of sectionKeys) {
-		sectionEntries.push(await readSectionEntry(topicDir, sectionKey));
+		sectionEntries.push(await readSectionEntry(topicDir, sectionKey, guide.sections.get(sectionKey) ?? null));
 	}
 
 	return {
@@ -848,7 +979,7 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 			if (!existing.summary && guide.summary) {
 				existing.summary = guide.summary;
 			}
-			if (existing.title === humanizeSlug(topicName) && guide.title) {
+			if (guide.title) {
 				existing.title = guide.title;
 			}
 		}
@@ -960,7 +1091,7 @@ function printSectionSummary(topicName: string, section: SectionEntry): void {
 
 	const contains = formatContains(section);
 	if (contains) {
-		printLine(`contains: ${contains}`);
+		printLine(`${pc.dim("contains:")} ${contains}`);
 	}
 	printLine(`${pc.dim("view:")} ${pc.dim(`ndex ${topicName} ${section.key}`)}`);
 }
@@ -977,13 +1108,6 @@ function printExpandedSection(section: SectionEntry): void {
 		printLine(errorText(section.error));
 	}
 
-	if (section.markdownEntries.length > 0) {
-		printLine("Docs:");
-		for (const entry of section.markdownEntries) {
-			printLine(`- ${entry.title ?? entry.relativePath}`, 2);
-		}
-	}
-
 	for (const skill of section.skills) {
 		printLine(heading(3, skill.title ?? skill.name));
 
@@ -996,6 +1120,17 @@ function printExpandedSection(section: SectionEntry): void {
 		}
 		for (const name of referenceNames(skill)) {
 			printLine(`- ${pc.gray(name)}`, 2);
+		}
+	}
+
+	if (section.skills.length > 0 && section.markdownEntries.length > 0) {
+		printLine();
+	}
+
+	if (section.markdownEntries.length > 0) {
+		printLine(pc.dim("docs:"));
+		for (const entry of section.markdownEntries) {
+			printLine(`- ${entry.title ?? entry.relativePath}`, 2);
 		}
 	}
 }
@@ -1020,7 +1155,7 @@ function printSkillSummary(skill: SkillEntry, showReferenceIndex: boolean): void
 		return;
 	}
 
-	printLine("Reference Index:");
+	printLine(pc.dim("references:"));
 	for (const name of names) {
 		printLine(`- ${pc.gray(name)}`, 2);
 	}
@@ -1072,7 +1207,7 @@ function printRootDocs(docs: MarkdownEntry[]): void {
 		printLine(`- ${title}: ${summary}`);
 		printLine(`${pc.dim("  path:")} ${pc.dim(entry.absolutePath)}`);
 		if (entry.readWhen.length > 0) {
-			printLine(`${pc.dim("  Read when:")} ${entry.readWhen.join("; ")}`);
+			printLine(`${pc.dim("  read when:")} ${entry.readWhen.join("; ")}`);
 		}
 		if (entry.error) {
 			printLine(`  ${errorText(entry.error)}`);
@@ -1099,7 +1234,7 @@ function printTopicIndex(topics: TopicIndexRow[], docs: MarkdownEntry[], showGlo
 		const titleWidth = Math.max(titleLabel.length, ...topics.map(topic => topic.title.length));
 		printLine(pc.bold(`${topicLabel.padEnd(topicWidth)}  ${titleLabel.padEnd(titleWidth)}  ${descriptionLabel}`));
 		for (const topic of topics) {
-			const description = topic.summary ?? "No topic description available.";
+			const description = topic.summary ?? pc.gray("-");
 			printLine(`${topic.name.padEnd(topicWidth)}  ${topic.title.padEnd(titleWidth)}  ${description}`);
 		}
 	}
@@ -1123,20 +1258,24 @@ function topicExampleSection(topic: MergedTopic): string | null {
 function printTopicTips(topic: MergedTopic, expand: boolean): void {
 	const exampleSection = topicExampleSection(topic);
 	if (!expand) {
-		printLine(`Tip: run \`ndex ${topic.name} --expand\` for a full file-level table of contents.`);
 		if (exampleSection) {
-			printLine(`Tip: pass a section name to focus one section, like \`ndex ${topic.name} ${exampleSection}\`.`);
+			printLine(
+				`Tip: use \`--expand\` for a full file-level table of contents, or pass a section like \`${exampleSection}\`.`,
+			);
+			return;
 		}
+
+		printLine("Tip: use `--expand` for a full file-level table of contents.");
 		return;
 	}
 
 	if (exampleSection) {
-		printLine(`Tip: pass a section name to focus one section, like \`ndex ${topic.name} ${exampleSection}\`.`);
+		printLine(`Tip: pass a section like \`${exampleSection}\` to focus one section.`);
 	}
 }
 
 function printFocusedTips(topicName: string, sectionKey: string): void {
-	printLine(`Tip: run \`ndex ${topicName} ${sectionKey} --expand\` for nested reference files.`);
+	printLine(`Tip: use \`ndex ${topicName} ${sectionKey} --expand\` for nested reference files.`);
 }
 
 function printTopicView(topic: MergedTopic, expand: boolean): void {
@@ -1146,7 +1285,7 @@ function printTopicView(topic: MergedTopic, expand: boolean): void {
 	printLine();
 
 	for (const [index, contribution] of topic.contributions.entries()) {
-		printLine(heading(2, `Source: ${contribution.absolutePath}`));
+		printLine(`${pc.dim("source:")} ${pc.dim(contribution.absolutePath)}`);
 		if (contribution.guideBody) {
 			printGuideBody(contribution.guideBody);
 		}
@@ -1192,7 +1331,7 @@ function printFocusedSection(topic: MergedTopic, sectionKey: string, sections: S
 	printLine();
 
 	for (const [index, section] of sections.entries()) {
-		printLine(`${pc.dim("Source:")} ${pc.dim(section.absolutePath)}`);
+		printLine(`${pc.dim("source:")} ${pc.dim(section.absolutePath)}`);
 		if (section.guideBody) {
 			printGuideBody(section.guideBody);
 		}
@@ -1203,11 +1342,6 @@ function printFocusedSection(topic: MergedTopic, sectionKey: string, sections: S
 			printLine();
 		}
 
-		for (const entry of section.markdownEntries) {
-			printMarkdownDetails(entry, 3);
-			printLine();
-		}
-
 		for (const [skillIndex, skill] of section.skills.entries()) {
 			if (expand) {
 				printExpandedSkill(skill);
@@ -1215,6 +1349,17 @@ function printFocusedSection(topic: MergedTopic, sectionKey: string, sections: S
 				printSkillSummary(skill, true);
 			}
 			if (skillIndex < section.skills.length - 1) {
+				printLine();
+			}
+		}
+
+		if (section.skills.length > 0 && section.markdownEntries.length > 0) {
+			printLine();
+		}
+
+		for (const [entryIndex, entry] of section.markdownEntries.entries()) {
+			printMarkdownDetails(entry, 3);
+			if (entryIndex < section.markdownEntries.length - 1) {
 				printLine();
 			}
 		}

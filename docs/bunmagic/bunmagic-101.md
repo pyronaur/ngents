@@ -14,6 +14,7 @@ Instead Use:
 	- Vanilla native Node 25+
 	- Clean & Focused npm packages
 More info: `migrate-bunmagic.md`
+For Bunmagic v2 usage and docs read: `docs/bmt.md`
 ===
 
 # Old Bunmagic 101 Reference:

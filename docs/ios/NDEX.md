@@ -1,6 +1,6 @@
 # iOS Library
 
-This library collects iOS-focused references and imported Apple HIG skills.
+This topic collects iOS-focused references and Apple HIG skills.
 
 Prioritize `hig-doctor` first when you need Apple HIG guidance or a skill index.
 

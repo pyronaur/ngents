@@ -1,12 +1,12 @@
 # ASO Library Guide
 
-This directory is a library entry, not an auto-loaded skill. Use it as reference material for App Store Optimization work, and pull in the upstream skill or Astro MCP only when you want them.
+This directory is a docs section, not an auto-loaded skill. Use it as reference material for App Store Optimization work, and pull in the upstream skill or Astro MCP only when you want them.
 
 ## Layout
 
 - `ASO.md`: local ASO guide and source of truth for the workflow and heuristics you already maintain.
 - `aso-store-aso-skill/`: upstream `app-store-aso-skill` content from Tim Broddin.
-- `../library.json`: library index mapping this directory to its upstream source.
+- `NDEX.md`: section guide for `ndex`.
 
 ## How to use the upstream ASO skill
 
@@ -32,15 +32,15 @@ Practical workflow:
 4. Run the validator after drafting metadata:
 
 ```bash
-python /Users/n14/.ngents/library/aso/aso-store-aso-skill/scripts/validate_metadata.py
+python /Users/n14/.ngents/docs/aso/aso-store-aso-skill/scripts/validate_metadata.py
 ```
 
 Example prompt pattern for an agent:
 
 ```text
-Use the ASO library guide at ~/.ngents/library/aso/README.md.
-Reference ~/.ngents/library/aso/ASO.md first.
-Then use ~/.ngents/library/aso/aso-store-aso-skill/SKILL.md and validate the final metadata with validate_metadata.py.
+Use the ASO docs section guide at ~/.ngents/docs/aso/NDEX.md.
+Reference ~/.ngents/docs/aso/ASO.md first.
+Then use ~/.ngents/docs/aso/aso-store-aso-skill/SKILL.md and validate the final metadata with validate_metadata.py.
 
 App: <name>
 Audience: <audience>
@@ -127,10 +127,10 @@ The two fit together well:
 
 ## References
 
-- Local ASO guide: [/Users/n14/.ngents/library/aso/ASO.md](/Users/n14/.ngents/library/aso/ASO.md)
-- Upstream skill instructions: [/Users/n14/.ngents/library/aso/aso-store-aso-skill/SKILL.md](/Users/n14/.ngents/library/aso/aso-store-aso-skill/SKILL.md)
-- Upstream ASO reference: [/Users/n14/.ngents/library/aso/aso-store-aso-skill/references/aso_learnings.md](/Users/n14/.ngents/library/aso/aso-store-aso-skill/references/aso_learnings.md)
-- Metadata validator: [/Users/n14/.ngents/library/aso/aso-store-aso-skill/scripts/validate_metadata.py](/Users/n14/.ngents/library/aso/aso-store-aso-skill/scripts/validate_metadata.py)
+- Local ASO guide: [/Users/n14/.ngents/docs/aso/ASO.md](/Users/n14/.ngents/docs/aso/ASO.md)
+- Upstream skill instructions: [/Users/n14/.ngents/docs/aso/aso-store-aso-skill/SKILL.md](/Users/n14/.ngents/docs/aso/aso-store-aso-skill/SKILL.md)
+- Upstream ASO reference: [/Users/n14/.ngents/docs/aso/aso-store-aso-skill/references/aso_learnings.md](/Users/n14/.ngents/docs/aso/aso-store-aso-skill/references/aso_learnings.md)
+- Metadata validator: [/Users/n14/.ngents/docs/aso/aso-store-aso-skill/scripts/validate_metadata.py](/Users/n14/.ngents/docs/aso/aso-store-aso-skill/scripts/validate_metadata.py)
 - app-store-aso-skill repo: <https://github.com/TimBroddin/app-store-aso-skill>
 - astro-mcp-server repo: <https://github.com/TimBroddin/astro-mcp-server>
 - mcporter repo: <https://github.com/steipete/mcporter>

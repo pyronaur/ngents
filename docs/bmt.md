@@ -6,7 +6,7 @@ read_when:
   - Writing new scripts that should run through `bmt`.
 ---
 
-## Mental Model
+## BMT
 
 `bmt` is a command runner that turns linked directories of plain scripts into discoverable shell commands.
 

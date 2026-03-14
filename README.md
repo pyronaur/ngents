@@ -28,8 +28,8 @@ This is where I keep the common scripts that agents can self-improve over time. 
 - `scripts/docs.ts`  
   Powers `ndex` and `ngents docs`, browsing root docs plus `docs/topics/*` with progressive disclosure and preserving `summary` / `read_when` metadata.
 
-- `scripts/qdocs.ts`
-  Powers `qdocs`, a small QMD-backed search command for the global `~/.ngents/docs` library with machine-local cache and config under `~/.ngents/local`.
+- `scripts/ndexq.ts`
+  Powers `ndexq`, a small QMD-backed search command for the global `~/.ngents/docs` library with machine-local cache and config under `~/.ngents/local`.
 
 - `scripts/bins.ts`  
   Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.

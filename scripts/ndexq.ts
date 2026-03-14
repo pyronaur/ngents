@@ -37,7 +37,7 @@ const CONFIG_ROOT = path.join(os.homedir(), '.ngents', 'local', 'qmd-config');
 const DEFAULT_LIMIT = 5;
 const DEFAULT_MIN_SCORE = '0.35';
 const DEFAULT_TIP =
-	'Tip: Use exact product names, API names, error text, file names, or short mechanism terms. If results are broad, retry with words from the top hit title or context.';
+	'Tip: Write anchored queries, not conversational ones: <product/library> <mechanism> <exact term if known>';
 const docFrontmatterCache = new Map<string, DocFrontmatter>();
 
 const { positionals, values } = parseCommandArgs({
@@ -338,16 +338,18 @@ function printResult(result: SearchResult, index: number): void {
 	const overview = pickOverview(filePath, result.context);
 	const quotedSnippet = formatQuotedSnippet(snippet.body);
 
+	if (index > 0) {
+		console.log('');
+		console.log('');
+	}
 	console.log(`## ${title}: ${scoreLabel(result.score)}`);
 	if (overview) {
 		console.log(overview);
+		console.log('');
 	}
 	console.log(formatPathWithAnchor(filePath, snippet.anchor));
 	if (quotedSnippet) {
 		console.log(quotedSnippet);
-	}
-	if (index >= 0) {
-		console.log('');
 	}
 }
 

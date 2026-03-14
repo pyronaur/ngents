@@ -7,6 +7,7 @@
  */
 import os from 'node:os';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fail, parseCommandArgs } from './_argv';
 
@@ -39,6 +40,8 @@ const DEFAULT_MIN_SCORE = '0.35';
 const DEFAULT_TIP =
 	'Tip: Write anchored queries, not conversational ones: <product/library> <mechanism> <exact term if known>';
 const docFrontmatterCache = new Map<string, DocFrontmatter>();
+const require = createRequire(import.meta.url);
+const pc: typeof import('picocolors') = require('picocolors');
 
 const { positionals, values } = parseCommandArgs({
 	limit: { type: 'string' },
@@ -315,6 +318,10 @@ function scoreLabel(score: number | undefined): string {
 	return `${Math.round(score * 100)}%`;
 }
 
+function formatHeading(title: string, score: string): string {
+	return pc.bold(`## ${title}: ${score}`);
+}
+
 function formatQuotedSnippet(body: string | null): string | null {
 	if (!body) {
 		return null;
@@ -322,7 +329,7 @@ function formatQuotedSnippet(body: string | null): string | null {
 
 	return body
 		.split('\n')
-		.map(line => `> ${line}`)
+		.map(line => pc.yellow(`> ${line}`))
 		.join('\n');
 }
 
@@ -342,7 +349,7 @@ function printResult(result: SearchResult, index: number): void {
 		console.log('');
 		console.log('');
 	}
-	console.log(`## ${title}: ${scoreLabel(result.score)}`);
+	console.log(formatHeading(title, scoreLabel(result.score)));
 	if (overview) {
 		console.log(overview);
 		console.log('');
@@ -354,7 +361,7 @@ function printResult(result: SearchResult, index: number): void {
 }
 
 function printResults(results: SearchResult[]): void {
-	console.log(DEFAULT_TIP);
+	console.log(pc.gray(DEFAULT_TIP));
 	console.log('');
 
 	if (results.length === 0) {

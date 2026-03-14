@@ -108,8 +108,8 @@ It uses a dedicated named QMD index so it does not mix this docs library with un
 Result output includes:
 
 - the QMD title
+- a short file-specific summary line when available, preferring file frontmatter `overview`, then `read_when`, then QMD context
 - the absolute file path, with a line range when QMD exposes one in the snippet
-- a compact `Overview:` line when available, preferring file frontmatter `overview`, then `read_when`, then QMD context
 - a lightly cleaned snippet with more structure preserved for follow-up reading
 - a short `Tip:` line at the top of every search output with guidance for sharpening future queries
 

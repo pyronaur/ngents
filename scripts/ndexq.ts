@@ -327,10 +327,10 @@ function printResult(result: SearchResult, index: number): void {
 	const overview = pickOverview(filePath, result.context);
 
 	console.log(`## ${title}: ${scoreLabel(result.score)}`);
-	console.log(formatPathWithAnchor(filePath, snippet.anchor));
 	if (overview) {
-		console.log(`Overview: ${overview}`);
+		console.log(overview);
 	}
+	console.log(formatPathWithAnchor(filePath, snippet.anchor));
 	console.log('---');
 	if (snippet.body) {
 		console.log(snippet.body);

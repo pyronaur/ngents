@@ -110,7 +110,7 @@ Result output includes:
 - the QMD title
 - a short file-specific summary line when available, preferring file frontmatter `overview`, then `read_when`, then QMD context
 - the absolute file path, with a line range when QMD exposes one in the snippet
-- a lightly cleaned snippet with more structure preserved for follow-up reading
+- a lightly cleaned snippet rendered as a quoted excerpt for follow-up reading
 - a short `Tip:` line at the top of every search output with guidance for sharpening future queries
 
 ## Machine setup

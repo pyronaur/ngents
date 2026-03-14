@@ -315,6 +315,17 @@ function scoreLabel(score: number | undefined): string {
 	return `${Math.round(score * 100)}%`;
 }
 
+function formatQuotedSnippet(body: string | null): string | null {
+	if (!body) {
+		return null;
+	}
+
+	return body
+		.split('\n')
+		.map(line => `> ${line}`)
+		.join('\n');
+}
+
 function printResult(result: SearchResult, index: number): void {
 	const filePath = typeof result.file === 'string' ? result.file : null;
 	if (!filePath) {
@@ -325,17 +336,16 @@ function printResult(result: SearchResult, index: number): void {
 	const title = typeof result.title === 'string' && result.title.trim().length > 0 ? result.title.trim() : path.basename(relativePath);
 	const snippet = cleanSnippet(result.snippet);
 	const overview = pickOverview(filePath, result.context);
+	const quotedSnippet = formatQuotedSnippet(snippet.body);
 
 	console.log(`## ${title}: ${scoreLabel(result.score)}`);
 	if (overview) {
 		console.log(overview);
 	}
 	console.log(formatPathWithAnchor(filePath, snippet.anchor));
-	console.log('---');
-	if (snippet.body) {
-		console.log(snippet.body);
+	if (quotedSnippet) {
+		console.log(quotedSnippet);
 	}
-	console.log('---');
 	if (index >= 0) {
 		console.log('');
 	}

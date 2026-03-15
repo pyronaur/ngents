@@ -9,11 +9,15 @@ type ParsedValues<T extends Record<string, OptionConfig>> = {
 	[K in keyof T]: T[K]["type"] extends "boolean" ? boolean | undefined : string | undefined;
 };
 
-function scriptArgs(): string[] {
+function scriptArgs(args?: string[]): string[] {
+	if (args) {
+		return [...args];
+	}
+
 	return process.argv.slice(2);
 }
 
-export function parseCommandArgs<T extends Record<string, OptionConfig>>(options: T) {
+export function parseCommandArgs<T extends Record<string, OptionConfig>>(options: T, args?: string[]) {
 	const boolean: string[] = [];
 	const string: string[] = [];
 	const alias: Record<string, string> = {};
@@ -30,12 +34,17 @@ export function parseCommandArgs<T extends Record<string, OptionConfig>>(options
 		}
 	}
 
-	const parsed = mri(scriptArgs(), {
-		alias,
-		boolean,
-		string,
-		"--": true,
-	});
+	const parsed = mri(
+		scriptArgs(args),
+		Object.assign(
+			{
+				alias,
+				boolean,
+				string,
+			},
+			{ "--": true },
+		),
+	);
 
 	const values = {} as ParsedValues<T>;
 	for (const [name, config] of Object.entries(options) as [keyof T, T[keyof T]][]) {

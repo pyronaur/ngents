@@ -1,10 +1,3 @@
-/**
- * Query the global ngents docs library with QMD and print concise formatted results.
- * @autohelp
- * @usage ndexq [--limit <n>] <query...> | ndexq status
- * @flag --limit <n> Limit the number of results (default: 5)
- * @global ndexq
- */
 import os from 'node:os';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -42,10 +35,6 @@ const DEFAULT_TIP =
 const docFrontmatterCache = new Map<string, DocFrontmatter>();
 const require = createRequire(import.meta.url);
 const pc: typeof import('picocolors') = require('picocolors');
-
-const { positionals, values } = parseCommandArgs({
-	limit: { type: 'string' },
-});
 
 function ensureQmd(): void {
 	if (Bun.which('qmd')) {
@@ -99,7 +88,12 @@ function parseSnippetAnchor(line: string): SnippetAnchor | null {
 		return null;
 	}
 
-	const startLine = Number.parseInt(match[1], 10);
+	const startText = match[1];
+	if (!startText) {
+		return null;
+	}
+
+	const startLine = Number.parseInt(startText, 10);
 	if (!Number.isFinite(startLine) || startLine <= 0) {
 		return null;
 	}
@@ -206,7 +200,7 @@ function parseInlineFrontmatterValue(line: string, key: string): string | null {
 		return null;
 	}
 
-	const value = match[1].trim().replace(/^['"]|['"]$/g, '');
+	const value = (match[1] ?? '').trim().replace(/^['"]|['"]$/g, '');
 	return value.length > 0 ? value : null;
 }
 
@@ -233,6 +227,9 @@ function readDocFrontmatter(absolutePath: string): DocFrontmatter {
 		const frontmatterLines: string[] = [];
 		for (let index = 1; index < lines.length; index += 1) {
 			const line = lines[index];
+			if (line === undefined) {
+				break;
+			}
 			if (line.trim() === '---') {
 				break;
 			}
@@ -297,12 +294,12 @@ function readDocFrontmatter(absolutePath: string): DocFrontmatter {
 function pickOverview(filePath: string, context: string | undefined): string | null {
 	const absolutePath = toAbsoluteDocPath(filePath);
 	const frontmatter = readDocFrontmatter(absolutePath);
-	const overview = cleanOverview(frontmatter.overview);
+	const overview = cleanOverview(frontmatter.overview ?? undefined);
 	if (overview) {
 		return overview;
 	}
 
-	const readWhen = cleanOverview(frontmatter.readWhen);
+	const readWhen = cleanOverview(frontmatter.readWhen ?? undefined);
 	if (readWhen) {
 		return readWhen;
 	}
@@ -374,14 +371,14 @@ function printResults(results: SearchResult[]): void {
 	}
 }
 
-async function runStatus(): Promise<void> {
+async function runStatus(commandLabel: string): Promise<void> {
 	const result = await runQmd(['status']);
 	if (result.exitCode !== 0) {
 		process.stderr.write(result.stderr || result.stdout);
 		process.exit(result.exitCode);
 	}
 
-	console.log(`# ndexq status`);
+	console.log(`# ${commandLabel} status`);
 	console.log('');
 	console.log(`- Index: ${INDEX_NAME}`);
 	console.log(`- Collection: ${COLLECTION_NAME}`);
@@ -392,8 +389,8 @@ async function runStatus(): Promise<void> {
 	process.stdout.write(result.stdout);
 }
 
-async function runQuery(query: string): Promise<void> {
-	const requestedLimit = Number.parseInt(values.limit ?? '', 10);
+async function runQuery(query: string, limitArg: string | undefined): Promise<void> {
+	const requestedLimit = Number.parseInt(limitArg ?? '', 10);
 	const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : DEFAULT_LIMIT;
 	const result = await runQmd([
 		'query',
@@ -421,26 +418,30 @@ async function runQuery(query: string): Promise<void> {
 		fail('Failed to parse qmd JSON output');
 	}
 
-	const filtered = parsed.filter(result => {
-		if (typeof result.file !== 'string') {
-			return false;
-		}
-
-		return stripVirtualPrefix(result.file) !== 'ngents/ndexq.md';
-	});
+	const filtered = parsed.filter(result => typeof result.file === 'string');
 
 	printResults(filtered);
 }
 
-ensureQmd();
+export async function runNdexQuery(args: string[], commandLabel = 'ndex query'): Promise<void> {
+	ensureQmd();
 
-if (positionals.length === 0) {
-	fail('Usage: ndexq [--limit <n>] <query...> | ndexq status');
+	const usage = `${commandLabel} [--limit <n>] <query...> | ${commandLabel} status`;
+	const { positionals, values } = parseCommandArgs(
+		{
+			limit: { type: 'string' },
+		},
+		args,
+	);
+
+	if (positionals.length === 0) {
+		fail(`Usage: ${usage}`);
+	}
+
+	if (positionals.length === 1 && positionals[0] === 'status') {
+		await runStatus(commandLabel);
+		return;
+	}
+
+	await runQuery(positionals.join(' '), values.limit);
 }
-
-if (positionals.length === 1 && positionals[0] === 'status') {
-	await runStatus();
-	process.exit(0);
-}
-
-await runQuery(positionals.join(' '));

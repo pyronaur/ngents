@@ -1193,11 +1193,22 @@ function printRootDocs(docs: MarkdownEntry[]): void {
 	}
 }
 
-function printTopicIndex(topics: TopicIndexRow[], docs: MarkdownEntry[], showGlobalTip: boolean): void {
+function printTopicIndex(
+	topics: TopicIndexRow[],
+	docs: MarkdownEntry[],
+	options: {
+		showGlobalTip: boolean;
+		showQueryTip: boolean;
+	},
+): void {
 	printLine("Usage: ndex [topic] [section] [--expand] [--global]");
 	printLine();
-	if (showGlobalTip) {
+	if (options.showGlobalTip) {
 		printLine("> Tip: use `--global` to view global documentation.");
+		printLine();
+	}
+	if (options.showQueryTip) {
+		printLine("> Tip: use `ndex query <subject>` to search using vector search");
 		printLine();
 	}
 
@@ -1412,7 +1423,10 @@ export async function runNdex(): Promise<void> {
 
 	if (!requestedTopic) {
 		const index = await buildIndexData(docsRoots);
-		printTopicIndex(index.topics, index.docs, !globalFlag);
+		printTopicIndex(index.topics, index.docs, {
+			showGlobalTip: !globalFlag,
+			showQueryTip: globalFlag,
+		});
 		return;
 	}
 

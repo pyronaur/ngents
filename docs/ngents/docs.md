@@ -8,7 +8,7 @@ read_when:
 
 
 # ndex
-`ndex` is the docs browser for repo-local and global documentation.
+`ndex` is the docs browser for repo-local and global documentation, with a global vector-search subcommand.
 
 ## Command shape
 
@@ -18,6 +18,9 @@ read_when:
 - `ndex <topic> <section>` focuses a nested section inside that topic.
 - `ndex <topic> --expand` expands the topic into a file-level table of contents.
 - `ndex <topic> <section> --expand` expands a focused section into nested references and file paths.
+- `ndex query <query...>` runs a QMD query against the global `~/.ngents/docs` library.
+- `ndex query --limit <n> <query...>` limits the number of search results.
+- `ndex query status` shows the query wrapper config and the underlying QMD status.
 
 ## How `ndex` reads `docs/`
 
@@ -93,17 +96,17 @@ Start with `hig-doctor` when you need structured Apple HIG guidance.
 8. Keep external child sections unmodified and let `ndex` discover them by placement.
 
 
-# ndexq
+## ndex query
 
-`ndexq` queries the global `~/.ngents/docs` tree with QMD and formats the results for fast reading and quick terminal follow-up.
+`ndex query` searches the global `~/.ngents/docs` tree with QMD and formats the results for fast reading and quick terminal follow-up.
 
 It uses a dedicated named QMD index so it does not mix this docs library with unrelated QMD collections elsewhere on the machine.
 
 ## Command shape
 
-- `ndexq <query...>` runs a QMD query against the dedicated docs index and prints compact formatted results.
-- `ndexq --limit <n> <query...>` limits the number of results.
-- `ndexq status` shows the wrapper config and the underlying QMD status.
+- `ndex query <query...>` runs a QMD query against the dedicated docs index and prints compact formatted results.
+- `ndex query --limit <n> <query...>` limits the number of results.
+- `ndex query status` shows the wrapper config and the underlying QMD status.
 
 Result output includes:
 
@@ -120,13 +123,13 @@ Result output includes:
 - Docs root: `~/.ngents/docs`
 - Cache root: `~/.ngents/local/qmd-cache`
 - Config root: `~/.ngents/local/qmd-config`
-- Search backend used by `ndexq`: `qmd query --json`
+- Search backend used by `ndex query`: `qmd query --json`
 - Default result count: `5`
 - Default min score: `0.35`
 
 The QMD collection and embeddings for this index are already set up on this machine.
 
-If the setup ever needs inspection or repair, start with `ndexq status`, then use the upstream QMD docs in `docs/topics/qmd/` for the actual QMD commands.
+If the setup ever needs inspection or repair, start with `ndex query status`, then use the upstream QMD docs in `docs/topics/qmd/` for the actual QMD commands.
 
 Known local note:
 
@@ -135,8 +138,8 @@ Known local note:
 ## Examples
 
 ```sh
-ndexq swiftui scroll view best practices
-ndexq --limit 3 swiftui scroll view best practices
-ndexq shell environment policy
-ndexq status
+ndex query swiftui scroll view best practices
+ndex query --limit 3 swiftui scroll view best practices
+ndex query shell environment policy
+ndex query status
 ```

@@ -1,6 +1,7 @@
 import { Command, CommanderError } from "commander";
 
 import { commandDefinitions } from "../commands/index.ts";
+import { runNdexRootHelp } from "../runtime/help.ts";
 import { registerCommand } from "./command-definition.ts";
 import { usageError } from "./errors.ts";
 
@@ -60,12 +61,26 @@ async function parseProgram(program: Command, argv: string[]): Promise<void> {
 	await program.parseAsync(argv, { from: "user" });
 }
 
-export async function runNdexCli(argv: string[], projectDir: string): Promise<void> {
-	const program = await createProgram(projectDir);
+function isRootHelpRequest(argv: string[]): { isHelp: boolean; includeDocsIndex: boolean } {
 	if (argv.length === 0) {
-		program.outputHelp();
+		return { isHelp: true, includeDocsIndex: true };
+	}
+	if (argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help")) {
+		return { isHelp: true, includeDocsIndex: false };
+	}
+	return { isHelp: false, includeDocsIndex: false };
+}
+
+export async function runNdexCli(argv: string[], projectDir: string): Promise<void> {
+	const helpRequest = isRootHelpRequest(argv);
+	if (helpRequest.isHelp) {
+		await runNdexRootHelp({
+			includeDocsIndex: helpRequest.includeDocsIndex,
+		});
 		return;
 	}
+
+	const program = await createProgram(projectDir);
 	try {
 		await parseProgram(program, argv);
 	} catch (error) {

@@ -20,6 +20,7 @@ export type FrontMatterParseResult = {
 
 export type GuideMetadata = {
 	title: string | null;
+	short: string | null;
 	summary: string | null;
 	guideBody: string | null;
 	readWhen: string[];
@@ -30,6 +31,7 @@ export type MarkdownEntry = {
 	absolutePath: string;
 	relativePath: string;
 	title: string | null;
+	short: string | null;
 	summary: string | null;
 	readWhen: string[];
 	error?: string;
@@ -48,6 +50,7 @@ export type SkillEntry = {
 type BrowseNode = {
 	absolutePath: string;
 	title: string;
+	short: string | null;
 	summary: string | null;
 	guideBody: string | null;
 	readWhen: string[];
@@ -74,17 +77,24 @@ export type MergedTopic = {
 export type TopicIndexRow = {
 	name: string;
 	title: string;
+	short: string | null;
 	summary: string | null;
 };
 
-export type IndexData = {
-	topics: TopicIndexRow[];
+export type DocsIndexData = {
 	docs: MarkdownEntry[];
 };
 
-export type BrowseOptions = {
-	expand: boolean;
-	global: boolean;
+export type IndexData = DocsIndexData & {
+	topics: TopicIndexRow[];
+};
+
+export type DocsSources = {
+	currentDir: string;
+	repoRoot: string | null;
+	localDocsRoots: string[];
+	globalDocsRoots: string[];
+	mergedDocsRoots: string[];
 };
 
 function toDisplayPath(value: string): string {
@@ -153,6 +163,32 @@ function normalizeInlineText(value: string | null): string | null {
 	}
 
 	return normalized;
+}
+
+function truncateCompactText(value: string, maxLength: number): string {
+	if (value.length <= maxLength) {
+		return value;
+	}
+
+	if (maxLength <= 3) {
+		return ".".repeat(Math.max(0, maxLength));
+	}
+
+	return `${value.slice(0, maxLength - 3)}...`;
+}
+
+function compactDescription(short: string | null, summary: string | null): string | null {
+	const normalizedShort = normalizeInlineText(short);
+	if (normalizedShort) {
+		return normalizedShort;
+	}
+
+	const normalizedSummary = normalizeInlineText(summary);
+	if (!normalizedSummary) {
+		return null;
+	}
+
+	return truncateCompactText(normalizedSummary, 64);
 }
 
 function heading(level: 1 | 2 | 3, text: string): string {
@@ -224,6 +260,7 @@ export default {
 	POSIX_SEP,
 	TOPICS_DIR,
 	compactStrings,
+	compactDescription,
 	errorText,
 	formatContains,
 	hasHiddenOrExcludedSegment,

@@ -410,11 +410,12 @@ function parseGuideSummary(content: string): string | null {
 
 function parseMarkdownEntry(
 	content: string,
-): Pick<MarkdownEntry, "title" | "summary" | "readWhen" | "error"> {
+): Pick<MarkdownEntry, "title" | "short" | "summary" | "readWhen" | "error"> {
 	const frontMatter = parseFrontMatter(content);
 	if (frontMatter.error) {
 		return {
 			title: parseMarkdownTitle(content),
+			short: null,
 			summary: null,
 			readWhen: [],
 			error: frontMatter.error,
@@ -423,6 +424,7 @@ function parseMarkdownEntry(
 
 	return {
 		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
+		short: stringField(frontMatter.values, "short"),
 		summary: stringField(frontMatter.values, "summary"),
 		readWhen: stringArrayField(frontMatter.values, "read_when"),
 	};

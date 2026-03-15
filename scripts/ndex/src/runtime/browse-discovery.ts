@@ -117,7 +117,7 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> {
 	const guidePath = path.join(directoryPath, META_FILE);
 	if (!(await fileExists(guidePath))) {
-		return { title: null, summary: null, guideBody: null, readWhen: [] };
+		return { title: null, short: null, summary: null, guideBody: null, readWhen: [] };
 	}
 
 	const content = await readFile(guidePath, "utf8");
@@ -125,6 +125,7 @@ async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> 
 	return {
 		title: browseParse.stringField(frontMatter.values, "title")
 			?? browseParse.parseMarkdownTitle(content),
+		short: browseParse.stringField(frontMatter.values, "short"),
 		summary: browseParse.stringField(frontMatter.values, "summary")
 			?? browseParse.parseGuideSummary(content),
 		guideBody: browseParse.parseGuideBody(content),
@@ -342,6 +343,7 @@ async function readSectionEntry(topicDir: string, sectionKey: string): Promise<S
 		key: sectionKey,
 		absolutePath,
 		title: guide.title ?? path.basename(sectionKey),
+		short: guide.short,
 		summary: guide.summary,
 		guideBody: guide.guideBody,
 		readWhen: guide.readWhen,
@@ -372,6 +374,7 @@ async function readTopicContribution(
 		name: topicName,
 		absolutePath: topicDir,
 		title: guide.title ?? humanizeSlug(topicName),
+		short: guide.short,
 		summary: guide.summary,
 		guideBody: guide.guideBody,
 		readWhen: guide.readWhen,
@@ -393,11 +396,15 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 				topicMap.set(topicName, {
 					name: topicName,
 					title: guide.title ?? humanizeSlug(topicName),
+					short: guide.short,
 					summary: guide.summary,
 				});
 				continue;
 			}
 
+			if (!existing.short && guide.short) {
+				existing.short = guide.short;
+			}
 			if (!existing.summary && guide.summary) {
 				existing.summary = guide.summary;
 			}
@@ -413,6 +420,10 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 		topics: Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
 		docs: docs.sort((a, b) => a.absolutePath.localeCompare(b.absolutePath)),
 	};
+}
+
+async function readDocsEntriesUnder(directoryPath: string): Promise<MarkdownEntry[]> {
+	return listDocsEntries(directoryPath);
 }
 
 async function readMergedTopic(
@@ -447,5 +458,6 @@ export default {
 	buildIndexData,
 	discoverDocsRoots,
 	discoverRepoRoot,
+	readDocsEntriesUnder,
 	readMergedTopic,
 };

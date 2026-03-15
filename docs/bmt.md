@@ -154,8 +154,7 @@ Example:
 /**
  * Show current docs index.
  * @autohelp
- * @usage ndex ls [--global]
- * @flag --global Only include ~/.ngents/docs
+ * @usage ndex ls [where]
  */
 ```
 

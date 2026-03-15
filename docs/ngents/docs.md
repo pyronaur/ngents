@@ -6,7 +6,6 @@ read_when:
   - Need the shortest path from command discovery to the deeper command-specific docs.
 ---
 
-
 # ndex
 `ndex` is the docs CLI for repo-local and global documentation.
 
@@ -20,13 +19,16 @@ npm link
 
 ## Command shape
 
-- `ndex` prints top-level help.
-- `ndex ls` browses repo-local docs.
-- `ndex ls --global` browses `~/.ngents/docs`.
-- `ndex ls <topic>` opens a topic.
-- `ndex ls <topic> <section>` focuses a nested section inside that topic.
-- `ndex ls <topic> --expand` expands the topic into a file-level table of contents.
-- `ndex ls <topic> <section> --expand` expands a focused section into nested references and file paths.
+- `ndex` prints compact Markdown help with the command walkthrough, topic index, and merged docs index.
+- `ndex --help` prints the same Markdown help style without the docs index.
+- `ndex help` prints the same Markdown help style without the docs index.
+- `ndex ls` browses merged local and global docs with expanded descriptions.
+- `ndex ls .` browses project docs only.
+- `ndex ls global` browses `~/.ngents/docs` only.
+- `ndex ls docs/subdir` browses one project docs subtree.
+- `ndex topic` browses the merged topic index.
+- `ndex topic <topic>` opens the merged topic view.
+- `ndex topic <topic> <section>` focuses a merged section view.
 - `ndex query <query...>` runs a QMD query against the global `~/.ngents/docs` library.
 - `ndex query --limit <n> <query...>` limits the number of search results.
 - `ndex query status` shows the query wrapper config and the underlying QMD status.
@@ -46,36 +48,25 @@ npm link
 `.ndex.md` is an optional directory guide and metadata file.
 
 - `.ndex.md` is hidden and excluded from normal scans and lists.
-- `.ndex.md` is intentionally sparse. Do not add it just to improve index cosmetics.
 - Prefer one `.ndex.md` at a meaningful topic boundary over many small child `.ndex.md` files.
 - `.ndex.md` does not decide whether something is a topic or a section.
 - `.ndex.md` does not decide whether a file belongs to a topic.
 - Frontmatter `title` takes precedence over markdown heading parsing.
-- Frontmatter `summary` takes precedence over summary parsing.
+- Frontmatter `short` is the compact one-line description for indexes and compact help output.
+- Frontmatter `summary` is the fuller description for expanded browsing.
 - Frontmatter `read_when` is available when a directory guide needs it.
 - The first `#` heading is the fallback title when frontmatter `title` is absent.
 - The first non-list paragraph is the fallback summary when frontmatter `summary` is absent.
 - The rest of the body is rendered when the topic or section is opened.
 
-Use `.ndex.md` to explain:
-
-- what the topic or section contains
-- how to use it
-- what to prioritize first
-
-Add a child `.ndex.md` only when that child directory genuinely needs its own guide text.
-
-For external or imported directories:
-
-- do not modify the external directory
-- do not add `.ndex.md` inside the external directory
-- let `ndex` discover the section from directory placement and fall back to the directory name when no guide exists
+Use `short` for punchy one-line descriptions such as `web browser tools`.
 
 Example:
 
 ```md
 ---
 title: iOS Library
+short: Apple-platform docs
 summary: This topic collects iOS-focused references and Apple HIG skills.
 read_when:
   - Working on Apple-platform UI, UX, or HIG questions.
@@ -90,20 +81,7 @@ Start with `hig-doctor` when you need structured Apple HIG guidance.
 
 - `SKILL.md` files are discovered recursively inside a section.
 - Local links inside `SKILL.md` become the skill reference index.
-- Compact focused views show skill titles, descriptions, and reference names.
-- Expanded views show nested reference file paths.
-
-## Authoring checklist
-
-1. Create or choose the target `docs/` root.
-2. Put free-floating docs directly under that `docs/` root when they are not part of a topic.
-3. Put topic docs under `docs/topics/<topic>/`.
-4. Add `.ndex.md` only when a topic or owned local section needs a real guide body.
-5. Add `SKILL.md` files inside a section when that section exposes skills.
-6. Link local reference files from each `SKILL.md` when they should show up in `ndex`.
-7. Let local files and child directories join a topic by placement instead of adding wiring.
-8. Keep external child sections unmodified and let `ndex` discover them by placement.
-
+- Focused section views show skill titles, descriptions, and reference names.
 
 ## ndex query
 
@@ -111,7 +89,7 @@ Start with `hig-doctor` when you need structured Apple HIG guidance.
 
 It uses a dedicated named QMD index so it does not mix this docs library with unrelated QMD collections elsewhere on the machine.
 
-## Command shape
+## Query shape
 
 - `ndex query <query...>` runs a QMD query against the dedicated docs index and prints compact formatted results.
 - `ndex query --limit <n> <query...>` limits the number of results.
@@ -148,8 +126,14 @@ Known local note:
 
 ```sh
 ndex
+ndex --help
 ndex ls
-ndex ls --global
+ndex ls .
+ndex ls global
+ndex ls docs/architecture
+ndex topic
+ndex topic qmd
+ndex topic qmd references
 ndex query swiftui scroll view best practices
 ndex query --limit 3 swiftui scroll view best practices
 ndex query shell environment policy

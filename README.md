@@ -26,7 +26,7 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
 This is where I keep the common scripts that agents can self-improve over time. Still WIP.
 
 - `scripts/ndex/`  
-  Standalone Node/NPM command package for `ndex`, including `ndex ls` for browsing and `ndex query` for global QMD-backed search.
+  Standalone Node/NPM command package for `ndex`, including compact root help, `ndex ls` docs browsing, `ndex topic` topic browsing, and `ndex query` global QMD-backed search.
 
 - `scripts/bins.ts`  
   Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.

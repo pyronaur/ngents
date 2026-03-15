@@ -1,0 +1,494 @@
+import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import pc from "picocolors";
+
+import { runtimeError } from "../core/errors.ts";
+
+type SearchResult = {
+	docid?: string;
+	score?: number;
+	file?: string;
+	title?: string;
+	context?: string;
+	snippet?: string;
+};
+
+type SnippetAnchor = {
+	startLine: number;
+	endLine: number;
+};
+
+type DocFrontmatter = {
+	overview: string | null;
+	readWhen: string | null;
+};
+
+const INDEX_NAME = "ngents-docs";
+const COLLECTION_NAME = "global-docs";
+const DOCS_ROOT = path.join(os.homedir(), ".ngents", "docs");
+const CACHE_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-cache");
+const CONFIG_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-config");
+const DEFAULT_LIMIT = 5;
+const DEFAULT_MIN_SCORE = "0.35";
+const DEFAULT_TIP =
+	"Tip: Write anchored queries, not conversational ones: <product/library> <mechanism> <exact term if known>";
+const docFrontmatterCache = new Map<string, DocFrontmatter>();
+function fail(message: string): never {
+	throw runtimeError(message);
+}
+
+function qmdEnv(): NodeJS.ProcessEnv {
+	return {
+		...process.env,
+		XDG_CACHE_HOME: CACHE_ROOT,
+		XDG_CONFIG_HOME: CONFIG_ROOT,
+	};
+}
+
+async function runQmd(
+	args: string[],
+): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+	return new Promise((resolve, reject) => {
+		const child = spawn("qmd", ["--index", INDEX_NAME, ...args], {
+			env: qmdEnv(),
+		});
+
+		let stdout = "";
+		let stderr = "";
+
+		child.stdout.on("data", (chunk: Buffer | string) => {
+			stdout += chunk.toString();
+		});
+		child.stderr.on("data", (chunk: Buffer | string) => {
+			stderr += chunk.toString();
+		});
+		child.on("error", (error: NodeJS.ErrnoException) => {
+			if (error.code === "ENOENT") {
+				reject(runtimeError("qmd is required"));
+				return;
+			}
+
+			reject(error);
+		});
+		child.on("close", (exitCode) => {
+			resolve({
+				exitCode: exitCode ?? 1,
+				stdout,
+				stderr,
+			});
+		});
+	});
+}
+
+function stripVirtualPrefix(filePath: string): string {
+	const prefix = `qmd://${COLLECTION_NAME}/`;
+	if (!filePath.startsWith(prefix)) {
+		return filePath;
+	}
+
+	return filePath.slice(prefix.length);
+}
+
+function toAbsoluteDocPath(filePath: string): string {
+	return path.join(DOCS_ROOT, stripVirtualPrefix(filePath));
+}
+
+function parseSnippetAnchor(line: string): SnippetAnchor | null {
+	const match = line.match(/^@@\s+-(\d+)(?:,(\d+))?\s+@@/);
+	if (!match) {
+		return null;
+	}
+
+	const startText = match[1];
+	if (!startText) {
+		return null;
+	}
+
+	const startLine = Number.parseInt(startText, 10);
+	if (!Number.isFinite(startLine) || startLine <= 0) {
+		return null;
+	}
+
+	const count = Number.parseInt(match[2] ?? "1", 10);
+	const safeCount = Number.isFinite(count) && count > 0 ? count : 1;
+	return {
+		startLine,
+		endLine: startLine + safeCount - 1,
+	};
+}
+
+function formatPathWithAnchor(filePath: string, anchor: SnippetAnchor | null): string {
+	const absolutePath = toAbsoluteDocPath(filePath);
+	if (!anchor) {
+		return absolutePath;
+	}
+
+	return `${absolutePath}:${anchor.startLine}-${anchor.endLine}`;
+}
+
+function visibleSnippetLines(lines: string[]): string[] {
+	return lines.filter(line => {
+		const trimmed = line.trim();
+		if (trimmed.length === 0 || trimmed === "---") {
+			return false;
+		}
+		if (/^(summary|read_when|source):/i.test(trimmed)) {
+			return false;
+		}
+		return true;
+	});
+}
+
+function clipSnippetLines(lines: string[]): string[] {
+	const clipped: string[] = [];
+	let totalLength = 0;
+
+	for (const line of lines) {
+		const nextLength = totalLength === 0 ? line.length : totalLength + 1 + line.length;
+		if (nextLength > 700) {
+			break;
+		}
+
+		clipped.push(line);
+		totalLength = nextLength;
+		if (clipped.length >= 8) {
+			break;
+		}
+	}
+
+	return clipped;
+}
+
+function cleanSnippet(
+	snippet: string | undefined,
+): { anchor: SnippetAnchor | null; body: string | null } {
+	if (!snippet) {
+		return { anchor: null, body: null };
+	}
+
+	const rawLines = snippet.split("\n");
+	let anchor: SnippetAnchor | null = null;
+	const [firstLine, ...restLines] = rawLines;
+	const firstAnchor = parseSnippetAnchor(firstLine ?? "");
+	const lines = firstAnchor ? restLines : rawLines;
+	anchor = firstAnchor ?? null;
+
+	const visibleLines = visibleSnippetLines(lines);
+	if (visibleLines.length === 0) {
+		return { anchor, body: null };
+	}
+
+	const clipped = clipSnippetLines(visibleLines);
+	if (clipped.length === 0) {
+		return { anchor, body: null };
+	}
+
+	let body = clipped.join("\n").trim();
+	if (clipped.length < visibleLines.length) {
+		body = `${body}\n...`;
+	}
+
+	return { anchor, body };
+}
+
+function clipLine(text: string, maxLength: number): string {
+	if (text.length <= maxLength) {
+		return text;
+	}
+
+	return `${text.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+function cleanOverview(text: string | undefined): string | null {
+	if (!text) {
+		return null;
+	}
+
+	const normalized = text.replace(/\s+/g, " ").trim();
+	if (normalized.length === 0) {
+		return null;
+	}
+
+	return clipLine(normalized, 220);
+}
+
+function parseInlineFrontmatterValue(line: string, key: string): string | null {
+	const match = line.match(new RegExp(`^${key}:\\s*(.*)$`, "i"));
+	if (!match) {
+		return null;
+	}
+
+	const value = (match[1] ?? "").trim().replace(/^['"]|['"]$/g, "");
+	return value.length > 0 ? value : null;
+}
+
+function isFrontmatterKey(line: string, key: string): boolean {
+	return new RegExp(`^${key}:\\s*$`, "i").test(line);
+}
+
+function frontmatterLines(text: string): string[] {
+	const lines = text.split("\n");
+	if (lines[0]?.trim() !== "---") {
+		return [];
+	}
+
+	const result: string[] = [];
+	for (let index = 1; index < lines.length; index += 1) {
+		const line = lines[index];
+		if (line === undefined || line.trim() === "---" || index > 40) {
+			break;
+		}
+		result.push(line);
+	}
+
+	return result;
+}
+
+function collectReadWhenItems(lines: string[]): string[] {
+	const items: string[] = [];
+	let readWhenActive = false;
+
+	for (const line of lines) {
+		const trimmedLine = line.trim();
+		const readWhen = parseInlineFrontmatterValue(trimmedLine, "read_when");
+		if (readWhen !== null) {
+			readWhenActive = true;
+			if (readWhen.length > 0) {
+				items.push(readWhen);
+			}
+			continue;
+		}
+
+		if (isFrontmatterKey(trimmedLine, "read_when")) {
+			readWhenActive = true;
+			continue;
+		}
+		if (!readWhenActive) {
+			continue;
+		}
+		if (trimmedLine.startsWith("- ")) {
+			items.push(trimmedLine.slice(2).trim());
+			continue;
+		}
+		if (trimmedLine.length === 0) {
+			continue;
+		}
+
+		readWhenActive = false;
+	}
+
+	return items;
+}
+
+function parseDocFrontmatterFromText(text: string): DocFrontmatter {
+	const parsed: DocFrontmatter = { overview: null, readWhen: null };
+	const lines = frontmatterLines(text);
+	if (lines.length === 0) {
+		return parsed;
+	}
+
+	for (const line of lines) {
+		const overview = parseInlineFrontmatterValue(line.trim(), "overview");
+		if (overview) {
+			parsed.overview = overview;
+		}
+	}
+
+	const readWhenItems = collectReadWhenItems(lines);
+	if (readWhenItems.length > 0) {
+		parsed.readWhen = readWhenItems.join(" ");
+	}
+
+	return parsed;
+}
+
+function readDocFrontmatter(absolutePath: string): DocFrontmatter {
+	const cached = docFrontmatterCache.get(absolutePath);
+	if (cached) {
+		return cached;
+	}
+
+	let parsed: DocFrontmatter = { overview: null, readWhen: null };
+
+	try {
+		parsed = parseDocFrontmatterFromText(readFileSync(absolutePath, "utf8"));
+	} catch {
+		docFrontmatterCache.set(absolutePath, parsed);
+		return parsed;
+	}
+
+	docFrontmatterCache.set(absolutePath, parsed);
+	return parsed;
+}
+
+function pickOverview(filePath: string, context: string | undefined): string | null {
+	const absolutePath = toAbsoluteDocPath(filePath);
+	const frontmatter = readDocFrontmatter(absolutePath);
+	const overview = cleanOverview(frontmatter.overview ?? undefined);
+	if (overview) {
+		return overview;
+	}
+
+	const readWhen = cleanOverview(frontmatter.readWhen ?? undefined);
+	if (readWhen) {
+		return readWhen;
+	}
+
+	return cleanOverview(context);
+}
+
+function scoreLabel(score: number | undefined): string {
+	if (typeof score !== "number" || Number.isNaN(score)) {
+		return "n/a";
+	}
+
+	return `${Math.round(score * 100)}%`;
+}
+
+function formatHeading(title: string, score: string): string {
+	return pc.bold(`## ${title}: ${score}`);
+}
+
+function formatQuotedSnippet(body: string | null): string | null {
+	if (!body) {
+		return null;
+	}
+
+	return body
+		.split("\n")
+		.map(line => pc.yellow(`> ${line}`))
+		.join("\n");
+}
+
+function isSearchResultArray(value: unknown): value is SearchResult[] {
+	if (!Array.isArray(value)) {
+		return false;
+	}
+
+	return value.every(item => item !== null && typeof item === "object");
+}
+
+function printResult(result: SearchResult, index: number): void {
+	const filePath = typeof result.file === "string" ? result.file : null;
+	if (!filePath) {
+		return;
+	}
+
+	const relativePath = stripVirtualPrefix(filePath);
+	const title = typeof result.title === "string" && result.title.trim().length > 0
+		? result.title.trim()
+		: path.basename(relativePath);
+	const snippet = cleanSnippet(result.snippet);
+	const overview = pickOverview(filePath, result.context);
+	const quotedSnippet = formatQuotedSnippet(snippet.body);
+
+	if (index > 0) {
+		console.log("");
+		console.log("");
+	}
+	console.log(formatHeading(title, scoreLabel(result.score)));
+	if (overview) {
+		console.log(overview);
+		console.log("");
+	}
+	console.log(formatPathWithAnchor(filePath, snippet.anchor));
+	if (quotedSnippet) {
+		console.log(quotedSnippet);
+	}
+}
+
+function printResults(results: SearchResult[]): void {
+	console.log(pc.gray(DEFAULT_TIP));
+	console.log("");
+
+	if (results.length === 0) {
+		console.log("No results.");
+		return;
+	}
+
+	for (const [index, result] of results.entries()) {
+		printResult(result, index);
+	}
+}
+
+async function runStatus(commandLabel: string): Promise<void> {
+	const result = await runQmd(["status"]);
+	if (result.exitCode !== 0) {
+		fail(result.stderr.trim() || result.stdout.trim() || "qmd status failed");
+	}
+
+	console.log(`# ${commandLabel} status`);
+	console.log("");
+	console.log(`- Index: ${INDEX_NAME}`);
+	console.log(`- Collection: ${COLLECTION_NAME}`);
+	console.log(`- Docs root: ${DOCS_ROOT}`);
+	console.log(`- Cache root: ${CACHE_ROOT}`);
+	console.log(`- Config root: ${CONFIG_ROOT}`);
+	console.log("");
+	process.stdout.write(result.stdout);
+}
+
+async function runQuery(query: string, limitArg: string | undefined): Promise<void> {
+	const requestedLimit = Number.parseInt(limitArg ?? "", 10);
+	const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+		? requestedLimit
+		: DEFAULT_LIMIT;
+	const result = await runQmd([
+		"query",
+		query,
+		"-c",
+		COLLECTION_NAME,
+		"-n",
+		String(limit),
+		"--min-score",
+		DEFAULT_MIN_SCORE,
+		"--json",
+	]);
+
+	if (result.exitCode !== 0) {
+		fail(result.stderr.trim() || result.stdout.trim() || "qmd query failed");
+	}
+
+	let parsed: SearchResult[];
+	try {
+		const candidate: unknown = JSON.parse(result.stdout);
+		if (!isSearchResultArray(candidate)) {
+			fail("Failed to parse qmd JSON output");
+		}
+		parsed = candidate;
+	} catch {
+		process.stdout.write(result.stdout);
+		process.stderr.write(result.stderr);
+		fail("Failed to parse qmd JSON output");
+	}
+
+	const filtered = parsed.filter(result => typeof result.file === "string");
+
+	printResults(filtered);
+}
+
+type QueryOptions = {
+	limit?: string;
+};
+
+export async function runNdexQuery(
+	args: string[],
+	options: QueryOptions = {},
+	commandLabel = "ndex query",
+): Promise<void> {
+	const usage = `${commandLabel} [--limit <n>] <query...> | ${commandLabel} status`;
+	const positionals = [...args];
+
+	if (positionals.length === 0) {
+		fail(`Usage: ${usage}`);
+	}
+
+	if (positionals.length === 1 && positionals[0] === "status") {
+		await runStatus(commandLabel);
+		return;
+	}
+
+	await runQuery(positionals.join(" "), options.limit);
+}

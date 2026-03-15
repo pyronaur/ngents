@@ -8,6 +8,7 @@
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
+- When user says `what?` you have likely made an incorrect assumption. You have to immediately do your best to attempt to recover the context and get on the same page with the user.
 
 ## Communication Style
 Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.
@@ -44,7 +45,7 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 - Do not guess host aliases, SSH targets, or network topology.
 
 ## Docs
-- Start: run docs list (`ngents docs`); open docs before coding.
+- Start: run docs list (`ndex ls`); open docs before coding.
 - Order: docs -> source -> execute. No deep search before docs scan.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
@@ -84,7 +85,7 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 
 ## Language/Stack Notes
 - Swift: use workspace helper/daemon; validate `swift build` + tests; keep concurrency attrs right.
-- TypeScript: use repo PM; run `ngents docs`; keep files small; follow existing patterns.
+- TypeScript: use repo PM; run `ndex ls`; keep files small; follow existing patterns.
 
 ## Architecture
 - Less is more

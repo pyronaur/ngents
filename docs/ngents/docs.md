@@ -8,16 +8,25 @@ read_when:
 
 
 # ndex
-`ndex` is the docs browser for repo-local and global documentation, with a global vector-search subcommand.
+`ndex` is the docs CLI for repo-local and global documentation.
+
+Install and link it from [scripts/ndex](/Users/n14/.ngents/scripts/ndex):
+
+```sh
+cd ~/.../.ngents/scripts/ndex
+npm install
+npm link
+```
 
 ## Command shape
 
-- `ndex` browses repo-local docs.
-- `ndex --global` browses `~/.ngents/docs`.
-- `ndex <topic>` opens a topic.
-- `ndex <topic> <section>` focuses a nested section inside that topic.
-- `ndex <topic> --expand` expands the topic into a file-level table of contents.
-- `ndex <topic> <section> --expand` expands a focused section into nested references and file paths.
+- `ndex` prints top-level help.
+- `ndex ls` browses repo-local docs.
+- `ndex ls --global` browses `~/.ngents/docs`.
+- `ndex ls <topic>` opens a topic.
+- `ndex ls <topic> <section>` focuses a nested section inside that topic.
+- `ndex ls <topic> --expand` expands the topic into a file-level table of contents.
+- `ndex ls <topic> <section> --expand` expands a focused section into nested references and file paths.
 - `ndex query <query...>` runs a QMD query against the global `~/.ngents/docs` library.
 - `ndex query --limit <n> <query...>` limits the number of search results.
 - `ndex query status` shows the query wrapper config and the underlying QMD status.
@@ -138,6 +147,9 @@ Known local note:
 ## Examples
 
 ```sh
+ndex
+ndex ls
+ndex ls --global
 ndex query swiftui scroll view best practices
 ndex query --limit 3 swiftui scroll view best practices
 ndex query shell environment policy

@@ -25,8 +25,8 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
 
 This is where I keep the common scripts that agents can self-improve over time. Still WIP.
 
-- `scripts/docs.ts`  
-  Powers `ndex` and `ngents docs`, browsing root docs plus `docs/topics/*` with progressive disclosure and exposing global QMD-backed search through `ndex query`.
+- `scripts/ndex/`  
+  Standalone Node/NPM command package for `ndex`, including `ndex ls` for browsing and `ndex query` for global QMD-backed search.
 
 - `scripts/bins.ts`  
   Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.

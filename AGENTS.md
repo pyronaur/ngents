@@ -45,12 +45,13 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 - Do not guess host aliases, SSH targets, or network topology.
 
 ## Docs
-- Start: run docs list (`ndex ls`); open docs before coding.
-- Order: docs -> source -> execute. No deep search before docs scan.
+- Read & Maintain Docs
+- Before Code: run `ndex`
+- Order: `ndex` -> source -> execute. No deep search before docs scan.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
 - Add `read_when` hints on cross-cutting docs.
-- Skill docs live in `skills/<name>/SKILL.md`.
+- Add `short` summary for compact `ndex` output
 
 ## Critical Thinking
 - Fix root cause (not band-aid).

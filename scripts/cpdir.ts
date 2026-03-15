@@ -6,9 +6,8 @@
  */
 import { $ } from 'bun';
 import { realpath } from 'node:fs/promises';
-import { parseCommandArgs } from './_argv';
 
-const { positionals: query } = parseCommandArgs({});
+const query = process.argv.slice(2);
 
 async function copyPath(dir: string): Promise<void> {
 	const resolvedDir = await realpath(dir);
@@ -59,7 +58,12 @@ if (matches.length === 0) {
 }
 
 if (matches.length === 1) {
-	await copyPath(matches[0]);
+	const [match] = matches;
+	if (!match) {
+		console.error(`No zoxide matches for "${query.join(' ')}"`);
+		process.exit(1);
+	}
+	await copyPath(match);
 	process.exit(0);
 }
 

@@ -9,6 +9,7 @@ description: Create or amend high-signal git commits with clear rationale. Use w
 
 Produce high-signal commits that are easy to review and easy to understand later.
 Prioritize clarity and rationale quality over matching historical wording patterns.
+When the user says `$git-commit chunks`, propose multiple commit chunks grouped by coherent areas of code instead of a single commit.
 
 ## Commit Message Quality Bar
 
@@ -31,11 +32,18 @@ When in doubt, make the why explicit.
 - Keep conventions that improve readability; do not copy weak patterns.
 - If local style conflicts with the quality bar, follow the quality bar.
 
-3. Prepare a single-commit proposal
+3. Choose proposal mode
+- Default mode: prepare a single-commit proposal.
+- `$git-commit chunks` mode: prepare a multi-commit chunk proposal.
+
+4. Prepare the proposal
 - Use this skill for one commit at a time.
-- You MUST ALWAYS present a single commit plan and ask for approval before committing.
-- Exception: if the user invokes this skill and says `ok` in the same message, treat that as pre-approval for the commit.
-- Use this template:
+- You MUST ALWAYS present the proposal and ask for approval before committing.
+- Exception: if the user invokes this skill and says `ok` in the same message, treat that as pre-approval for the proposal.
+- In `$git-commit chunks` mode, group changes by coherent code areas or behaviors.
+- Chunks must never rely on hunks.
+- If a clean split would require hunk staging, collapse the work into fewer chunks that stage whole files only.
+- Use the matching template:
 
 <single_commit_example>
 ## Single commit:
@@ -49,12 +57,33 @@ Files:
 - <path>
 </single_commit_example>
 
-4. Validate staging after approval
-- After the user approves the plan, stage only the intended files or hunks.
+<chunk_commit_example>
+## Commit chunks:
+
+### Chunk 1: <Title>
+- <Bullet 1>
+- <Bullet 2>
+
+Files:
+- <path>
+- <path>
+
+### Chunk 2: <Title>
+- <Bullet 1>
+- <Bullet 2>
+
+Files:
+- <path>
+- <path>
+</chunk_commit_example>
+
+5. Validate staging after approval
+- After the user approves the plan, stage only the intended files.
 - Verify the staged diff before committing.
 - Keep unrelated edits unstaged.
+- In `$git-commit chunks` mode, stage and commit one approved chunk at a time.
 
-5. Compose the message
+6. Compose the message
 - Subject: imperative, concise, no trailing period.
 - Body: blank line, then `-` bullets.
 - Each bullet starts with a verb and is a single sentence.
@@ -63,7 +92,7 @@ Files:
 - Cover the important parts of the change instead of forcing a fixed bullet count.
 - Keep lines reasonably short.
 
-6. Commit safely
+7. Commit safely
 - Prefer a heredoc with `-F -` to avoid escaped `\n`:
 
 ```bash
@@ -75,16 +104,17 @@ Subject in imperative mood
 EOF
 ```
 
-7. Why-check before commit
+8. Why-check before commit
 - Ask: "Could a reviewer answer why this change exists from this message alone?"
 - If no, rewrite the body before committing.
 
-8. Amend only when asked
+9. Amend only when asked
 - If the user asks to fix an existing commit message, use `git commit --amend -F - <<'EOF' ... EOF`.
 - Otherwise, do not amend.
 
-9. Post-commit sanity check
+10. Post-commit sanity check
 - After committing, run `git status -sb` to confirm expected remaining changes before proceeding.
+- In `$git-commit chunks` mode, repeat the staging, verification, commit, and sanity check flow for each approved chunk.
 
 ## Quick Template
 
@@ -110,6 +140,8 @@ Weak:
 
 - Favor clarity over cleverness; optimize for future readability.
 - If automated tools touched many files, validate that those changes are actually present in the diff and propose a separate commit or explicitly confirm the user wants them included.
+- In `$git-commit chunks` mode, optimize for reviewable groups of code, not maximum commit count.
+- Never propose hunk-based chunking.
 - If commit examples include a prefix or scope, use it consistently.
 - If the repo uses single-line subjects only, omit the body.
 - Never offer to push commits. Only discuss or run push operations when the user explicitly asks to push.

@@ -36,6 +36,13 @@ These instructions are mandatory. When this document applies, follow it exactly 
 - Keep updating the document as the process is clarified.
 - Write down only what you know and only what you are certain about.
 
+## Information Boundaries
+- Creating a process produces one target document: `$process_document`.
+- `$process_document` contains only the documented process.
+- `$meta_thread` and `$meta_reflection` belong to the conversation used to discover the documented process.
+- This document defines the process for creating `$process_document`.
+- Never write `$meta_thread`, `$meta_reflection`, or any other process-creation scaffolding into `$process_document`.
+
 ## Process Format
 - Only use the process section for threads that the current user message meaningfully affects.
 - If a message does not affect a tracked process, skip that process thread.

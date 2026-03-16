@@ -4,11 +4,18 @@
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Guardrails: use `trash` for deletes.
+- Context: Prioritize `ndex` purpose built for 
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
-- When user says `what?` you have likely made an incorrect assumption. You have to immediately do your best to attempt to recover the context and get on the same page with the user.
+- Guardrails: use `trash` for deletes.
+- Process: streamlined step by step processes we follow in docs/process
+
+## Documentation Protocol
+- `ndex` used as canonical source for docs: index, list, search
+- `ndex` scans docs directories, allows organization by larger topics, indexes for semantic search
+- Prioritize: Use `ndex` to build context. Prefer over `rg` docs search.
+- Documentation Gap: if docs missing, follow ndex process to plug the gap
 
 ## Communication Style
 Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.
@@ -30,8 +37,6 @@ Revert to chat immediately after.
 Switch when the question contains words like: explain, describe, walk me through,
 how does X work, what is X, why does X exist.
 Also switch when the user wants concept, feature, system, architecture, or codebase understanding, or when a correct answer would require more than three paragraphs to be useful.
-
-
 
 ## Mac
 - Projects root: `~/Projects`
@@ -86,7 +91,7 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 
 ## Language/Stack Notes
 - Swift: use workspace helper/daemon; validate `swift build` + tests; keep concurrency attrs right.
-- TypeScript: use repo PM; run `ndex ls`; keep files small; follow existing patterns.
+- TypeScript: use repo PM; keep files small; follow existing patterns.
 
 ## Architecture
 - Less is more

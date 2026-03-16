@@ -93,7 +93,8 @@ function printCompactDocsIndex(docs: MarkdownEntry[]): void {
 	printLine(heading(2, "Docs"));
 	printLine("ndex ls [where]");
 	printLine("ndex ls . - Project docs, expanded descriptions");
-	printLine("ndex ls docs/subdir - Project docs in dir");
+	printLine("ndex ls ./docs/subdir - Project docs in dir");
+	printLine("ndex ls docs/subdir - Matching local and global docs dirs");
 	printLine("ndex ls global - Global docs, expanded descriptions");
 	printLine();
 

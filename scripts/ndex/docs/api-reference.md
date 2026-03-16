@@ -49,7 +49,9 @@ Entry point: `ndex` (`bin/ndex.ts`).
 
 - browses docs only
 - merges local and global docs by default
-- accepts `.`, `global`, and `docs/...` selectors
+- accepts `.`, `global`, `./docs/...`, and `docs/...` selectors
+- treats `./docs/...` as a project-only subtree selector
+- treats bare `docs/...` as a merged local/global subtree selector
 - prints expanded doc descriptions
 
 `topic`:

@@ -33,6 +33,15 @@ function isWithinDocsRoots(targetPath: string, docsRoots: string[]): boolean {
 	);
 }
 
+function docsRelativeSelector(selector: string): string {
+	const normalizedSelector = selector.replaceAll("\\", path.posix.sep);
+	const relativeSelector = path.posix.relative(
+		"docs",
+		path.posix.normalize(normalizedSelector),
+	);
+	return relativeSelector.length > 0 ? relativeSelector : ".";
+}
+
 export async function discoverDocsSources(currentDir: string): Promise<DocsSources> {
 	const normalizedCurrentDir = normalizePath(currentDir);
 	const repoRoot = await browseDiscovery.discoverRepoRoot(normalizedCurrentDir);
@@ -71,4 +80,31 @@ export async function resolveLocalDocsDirectory(
 	}
 
 	return directoryPath;
+}
+
+export async function resolveMergedDocsDirectories(
+	sources: DocsSources,
+	selector: string,
+): Promise<string[]> {
+	const docsRoots = uniquePaths([...sources.localDocsRoots, ...sources.globalDocsRoots]);
+	const relativeSelector = docsRelativeSelector(selector);
+	const matchingDirectories: string[] = [];
+
+	for (const docsRoot of docsRoots) {
+		const directoryPath = normalizePath(path.resolve(docsRoot, relativeSelector));
+		if (!isWithinDocsRoots(directoryPath, [docsRoot])) {
+			throw runtimeError(`Docs directory is outside docs roots: ${selector}`);
+		}
+		if (!(await isDirectory(directoryPath))) {
+			continue;
+		}
+
+		matchingDirectories.push(directoryPath);
+	}
+
+	if (matchingDirectories.length === 0) {
+		throw runtimeError(`Docs directory not found: ${selector}`);
+	}
+
+	return uniquePaths(matchingDirectories);
 }

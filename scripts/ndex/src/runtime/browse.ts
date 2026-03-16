@@ -2,7 +2,11 @@ import { runtimeError } from "../core/errors.ts";
 import browseContracts from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
-import { discoverDocsSources, resolveLocalDocsDirectory } from "./browse-sources.ts";
+import {
+	discoverDocsSources,
+	resolveLocalDocsDirectory,
+	resolveMergedDocsDirectories,
+} from "./browse-sources.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -39,6 +43,15 @@ async function docsEntriesForWhere(currentDir: string, where: string | null) {
 	if (where === "global") {
 		ensureDocsRoots(sources.globalDocsRoots, "~/.ngents/docs");
 		const index = await browseDiscovery.buildIndexData(sources.globalDocsRoots);
+		return {
+			docs: index.docs,
+		};
+	}
+
+	if (where.startsWith("docs/")) {
+		ensureDocsRoots(sources.mergedDocsRoots, currentDir);
+		const directories = await resolveMergedDocsDirectories(sources, where);
+		const index = await browseDiscovery.buildIndexData(directories);
 		return {
 			docs: index.docs,
 		};

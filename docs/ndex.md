@@ -1,7 +1,6 @@
 ---
-title: Documentation Commands
+title: NDEX CLI - Agent Docs
 read_when:
-  - Need one place that explains which `ngents` script commands exist and how to run them.
   - Need a command-focused handoff doc to point another agent at before using local helpers.
   - Need the shortest path from command discovery to the deeper command-specific docs.
 ---
@@ -24,8 +23,9 @@ npm link
 - `ndex help` prints the same Markdown help style without the docs index.
 - `ndex ls` browses merged local and global docs with expanded descriptions.
 - `ndex ls .` browses project docs only.
+- `ndex ls ./docs/subdir` browses one project docs subtree.
 - `ndex ls global` browses `~/.ngents/docs` only.
-- `ndex ls docs/subdir` browses one project docs subtree.
+- `ndex ls docs/subdir` browses matching local and global docs subtrees.
 - `ndex topic` browses the merged topic index.
 - `ndex topic <topic>` opens the merged topic view.
 - `ndex topic <topic> <section>` focuses a merged section view.
@@ -129,6 +129,7 @@ ndex
 ndex --help
 ndex ls
 ndex ls .
+ndex ls ./docs/architecture
 ndex ls global
 ndex ls docs/architecture
 ndex topic

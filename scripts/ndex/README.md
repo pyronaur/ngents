@@ -27,6 +27,7 @@ ndex
 ndex --help
 ndex ls
 ndex ls .
+ndex ls ./docs/architecture
 ndex ls global
 ndex ls docs/architecture
 ndex topic

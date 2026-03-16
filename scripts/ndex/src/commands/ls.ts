@@ -10,7 +10,7 @@ export const lsCommand = defineCommand({
 	description: "Browse local and global docs directories.",
 	configure: (command) => {
 		command
-			.argument("[where]", "Optional docs selector: `.`, `global`, or `docs/...`.")
+			.argument("[where]", "Optional docs selector: `.`, `global`, `./docs/...`, or `docs/...`.")
 			.usage("[where]");
 	},
 	optionsSchema: lsOptionsSchema,

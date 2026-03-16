@@ -122,6 +122,21 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 		].join("\n"),
 	);
 	await writeText(
+		path.join(repoDir, "docs", "architecture", "local-only.md"),
+		[
+			"---",
+			"title: Local Architecture Notes",
+			"short: local architecture notes",
+			"summary: Local architecture-only notes.",
+			"---",
+			"",
+			"# Local Architecture Notes",
+			"",
+			"Local architecture details.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
 		path.join(repoDir, "docs", "web-fetching.md"),
 		[
 			"---",
@@ -214,6 +229,21 @@ async function seedGlobalDocsHome(homeDir: string): Promise<void> {
 		].join("\n"),
 	);
 	await writeText(
+		path.join(homeDir, ".ngents", "docs", "architecture", "global-only.md"),
+		[
+			"---",
+			"title: Global Architecture Notes",
+			"short: global architecture notes",
+			"summary: Global architecture-only notes.",
+			"---",
+			"",
+			"# Global Architecture Notes",
+			"",
+			"Global architecture details.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
 		path.join(homeDir, ".ngents", "docs", "ngents", "docs.md"),
 		[
 			"---",
@@ -226,6 +256,21 @@ async function seedGlobalDocsHome(homeDir: string): Promise<void> {
 			"# Documentation Commands",
 			"",
 			"`ndex query` searches docs.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(homeDir, ".ngents", "docs", "process", "qa.md"),
+		[
+			"---",
+			"title: QA Process",
+			"short: qa process notes",
+			"summary: Need a structured way to surface confusion instead of making assumptions.",
+			"---",
+			"",
+			"# QA Process",
+			"",
+			"Global process details.",
 			"",
 		].join("\n"),
 	);
@@ -391,8 +436,29 @@ test("ndex ls global shows only global docs", async () => {
 	});
 });
 
-test("ndex ls docs/subdir focuses a local docs subtree", async () => {
+test("ndex ls ./docs/subdir focuses a local docs subtree", async () => {
 	await withTempDir("ndex-ls-subdir-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+
+		const result = await runNdexCli(["ls", "./docs/architecture"], {
+			cwd: repoDir,
+			env: ndexEnv(homeDir),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
+		expect(result.stdout).toContain("main.md");
+		expect(result.stdout).toContain("local-only.md");
+		expect(result.stdout).not.toContain("web-fetching.md");
+		expect(result.stdout).not.toContain(path.join(homeDir, ".ngents", "docs"));
+	});
+});
+
+test("ndex ls docs/subdir merges matching local and global doc subtrees", async () => {
+	await withTempDir("ndex-ls-subdir-merged-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
 		await seedLocalDocsRepo(repoDir);
@@ -405,9 +471,48 @@ test("ndex ls docs/subdir focuses a local docs subtree", async () => {
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
+		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
 		expect(result.stdout).toContain("main.md");
+		expect(result.stdout).toContain("local-only.md");
+		expect(result.stdout).toContain("global-only.md");
 		expect(result.stdout).not.toContain("web-fetching.md");
-		expect(result.stdout).not.toContain(path.join(homeDir, ".ngents", "docs"));
+		expect(result.stdout).not.toContain("cdp.md");
+	});
+});
+
+test("ndex ls docs/subdir succeeds when only the global subtree exists", async () => {
+	await withTempDir("ndex-ls-subdir-global-only-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+
+		const result = await runNdexCli(["ls", "docs/process"], {
+			cwd: repoDir,
+			env: ndexEnv(homeDir),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "process"));
+		expect(result.stdout).toContain("qa.md");
+		expect(result.stdout).not.toContain(path.join(repoDir, "docs", "process"));
+	});
+});
+
+test("ndex ls docs/subdir fails only when the subtree is missing everywhere", async () => {
+	await withTempDir("ndex-ls-subdir-missing-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+
+		const result = await runNdexCli(["ls", "docs/missing"], {
+			cwd: repoDir,
+			env: ndexEnv(homeDir),
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Docs directory not found: docs/missing");
 	});
 });
 

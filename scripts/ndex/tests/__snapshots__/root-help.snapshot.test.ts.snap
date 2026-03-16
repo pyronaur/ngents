@@ -3,7 +3,14 @@
 exports[`printRootHelp renders the bare root help snapshot 1`] = `
 "Usage: ndex [options] [command]
 
-# Agent Doc Utils
+# ndex
+ndex organizes project local and global documentation optimized for information quality.
+
+## Overview & Organization
+- All topics & docs are kept in and organized in \`docs\` directories
+- \`docs\` includes project documentation, notes, etc. It also includes global machine documentation, flows, patterns, available tools, etc.
+- \`docs/topics\` includes larger organized sets of documentation within the given topic - useful to keep \`docs\` lean.
+- \`query\` indexes everything in global \`docs/**\` for lookup when quick scan with \`ls\` and \`topic\` doesn't include promising results at a glance. \`query\` doesn't index project docs directory.
 
 ## Query
 ndex query [options] [terms...]
@@ -15,8 +22,9 @@ Returns matches optimized for quick context gathering with cat/sed followups.
 ndex topic [topic] [section]
 
 Topics contain specialized docs, available anywhere.
-ndex topic foo - view foo about/index first
-ndex topic foo bar - learn about bar section
+Use \`ndex topic <name>\` to expand available docs for topic.
+\`ndex topic foo\` - view foo about/index first
+\`ndex topic foo bar\` - learn about bar section
 
 TOPIC  TITLE        DESCRIPTION
 ios    iOS Library  Apple-platform docs
@@ -55,7 +63,14 @@ ndex ls global - Global docs, expanded descriptions
 exports[`printRootHelp renders the help-only root help snapshot 1`] = `
 "Usage: ndex [options] [command]
 
-# Agent Doc Utils
+# ndex
+ndex organizes project local and global documentation optimized for information quality.
+
+## Overview & Organization
+- All topics & docs are kept in and organized in \`docs\` directories
+- \`docs\` includes project documentation, notes, etc. It also includes global machine documentation, flows, patterns, available tools, etc.
+- \`docs/topics\` includes larger organized sets of documentation within the given topic - useful to keep \`docs\` lean.
+- \`query\` indexes everything in global \`docs/**\` for lookup when quick scan with \`ls\` and \`topic\` doesn't include promising results at a glance. \`query\` doesn't index project docs directory.
 
 ## Query
 ndex query [options] [terms...]
@@ -67,8 +82,9 @@ Returns matches optimized for quick context gathering with cat/sed followups.
 ndex topic [topic] [section]
 
 Topics contain specialized docs, available anywhere.
-ndex topic foo - view foo about/index first
-ndex topic foo bar - learn about bar section
+Use \`ndex topic <name>\` to expand available docs for topic.
+\`ndex topic foo\` - view foo about/index first
+\`ndex topic foo bar\` - learn about bar section
 
 TOPIC  TITLE        DESCRIPTION
 ios    iOS Library  Apple-platform docs

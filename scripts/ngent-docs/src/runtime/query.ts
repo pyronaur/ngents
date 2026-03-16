@@ -3,6 +3,7 @@ import path from "node:path";
 import pc from "picocolors";
 
 import { runtimeError } from "../core/errors.ts";
+import { docsCommandUsage } from "../core/usage.ts";
 import {
 	CACHE_ROOT,
 	COLLECTION_NAME,
@@ -436,7 +437,7 @@ export async function runDocsQuery(
 	options: QueryOptions = {},
 	commandLabel = "docs query",
 ): Promise<void> {
-	const usage = `${commandLabel} [--limit <n>] <query...> | ${commandLabel} status`;
+	const usage = `${commandLabel} ${docsCommandUsage.query}`;
 	const positionals = [...args];
 
 	if (positionals.length === 0) {

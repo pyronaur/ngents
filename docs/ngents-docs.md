@@ -68,8 +68,7 @@ docs --help
 docs help
 docs ls [where]
 docs topic [topic] [section]
-docs query [--limit <n>] <query...>
-docs query status
+docs query [--limit <n>] <query...> | status
 docs update
 ```
 

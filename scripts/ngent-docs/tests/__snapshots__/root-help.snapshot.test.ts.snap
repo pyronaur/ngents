@@ -13,7 +13,7 @@ docs organizes project local and global documentation optimized for information 
 - \`query\` indexes everything in global \`docs/**\` for lookup when quick scan with \`ls\` and \`topic\` doesn't include promising results at a glance. \`query\` doesn't index project docs directory.
 
 ## Query
-docs query [options] [terms...]
+docs query [--limit <n>] <query...> | status
 
 Use this to search through global docs and topics with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
@@ -73,7 +73,7 @@ docs organizes project local and global documentation optimized for information 
 - \`query\` indexes everything in global \`docs/**\` for lookup when quick scan with \`ls\` and \`topic\` doesn't include promising results at a glance. \`query\` doesn't index project docs directory.
 
 ## Query
-docs query [options] [terms...]
+docs query [--limit <n>] <query...> | status
 
 Use this to search through global docs and topics with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.

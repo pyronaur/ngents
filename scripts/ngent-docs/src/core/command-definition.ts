@@ -110,6 +110,7 @@ export function registerCommand<TSchema extends ZodType>(input: {
 }): void {
 	const command = createRegisteredCommand(input.program, input.definition);
 	input.definition.configure?.(command);
+	command.usage(input.definition.usage);
 	registerCommandAction({
 		command,
 		definition: input.definition,

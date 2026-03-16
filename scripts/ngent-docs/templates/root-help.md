@@ -10,18 +10,18 @@ docs organizes project local and global documentation optimized for information 
 - `query` indexes everything in global `docs/**` for lookup when quick scan with `ls` and `topic` doesn't include promising results at a glance. `query` doesn't index project docs directory.
 
 ## Query
-docs query [options] [terms...]
+{{ query_usage }}
 
 Use this to search through global docs and topics with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
 
 ## Topics
-docs topic [topic] [section]
+{{ topic_usage }}
 
 Topics contain specialized docs, available anywhere.
-Use `docs topic <name>` to expand available docs for topic.
-`docs topic foo` - view foo about/index first
-`docs topic foo bar` - learn about bar section
+Use `{{ topic_command }} <name>` to expand available docs for topic.
+`{{ topic_command }} foo` - view foo about/index first
+`{{ topic_command }} foo bar` - learn about bar section
 
 {% if topic_lines.size == 0 %}
 - [no topics found]
@@ -35,11 +35,11 @@ Use `docs topic <name>` to expand available docs for topic.
 {% if show_docs_index %}
 
 ## Docs
-docs ls [where]
-docs ls . - Project docs, expanded descriptions
-docs ls ./docs/subdir - Project docs in dir
-docs ls docs/subdir - Matching local and global docs dirs
-docs ls global - Global docs, expanded descriptions
+{{ ls_usage }}
+{{ ls_command }} . - Project docs, expanded descriptions
+{{ ls_command }} ./docs/subdir - Project docs in dir
+{{ ls_command }} docs/subdir - Matching local and global docs dirs
+{{ ls_command }} global - Global docs, expanded descriptions
 
 {% for docs_group in docs_groups %}
 {{ docs_group.directory_path }}

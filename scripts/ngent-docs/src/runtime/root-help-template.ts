@@ -14,8 +14,13 @@ export type RootHelpDocsGroup = {
 };
 
 export type RootHelpTemplateContext = {
+	ls_command: string;
 	docs_groups: RootHelpDocsGroup[];
+	ls_usage: string;
+	query_usage: string;
 	show_docs_index: boolean;
+	topic_command: string;
+	topic_usage: string;
 	topic_lines: string[];
 	topics_header: string;
 };

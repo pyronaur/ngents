@@ -12,7 +12,12 @@ import {
 
 const rootHelpTemplateContext: RootHelpTemplateContext = {
 	docs_groups: [],
+	ls_command: "docs ls",
+	ls_usage: "docs ls [where]",
+	query_usage: "docs query [--limit <n>] <query...> | status",
 	show_docs_index: false,
+	topic_command: "docs topic",
+	topic_usage: "docs topic [topic] [section]",
 	topic_lines: [],
 	topics_header: "TOPIC  TITLE  DESCRIPTION",
 };

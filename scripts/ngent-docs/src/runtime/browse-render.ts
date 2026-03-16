@@ -14,6 +14,7 @@ import {
 	printFocusedSkillsBlock,
 } from "./browse-focused-skills.ts";
 import { printTopicOverview } from "./browse-topic-overview.ts";
+import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
 import rootHelpTemplate, {
 	type RootHelpDocsGroup,
 	type RootHelpTemplateContext,
@@ -137,7 +138,12 @@ function rootHelpTemplateContext(
 	const docsGroups = rootHelpDocsGroups(docs);
 	return {
 		docs_groups: docsGroups,
+		ls_command: rootHelpCommandLines.ls,
+		ls_usage: rootHelpUsageLines.ls,
+		query_usage: rootHelpUsageLines.query,
 		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
+		topic_command: rootHelpCommandLines.topic,
+		topic_usage: rootHelpUsageLines.topic,
 		topic_lines: rootHelpTopicLines(topics),
 		topics_header: renderTopicTableHeader(topics),
 	};

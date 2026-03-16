@@ -5,6 +5,9 @@ import { expect, test } from "vitest";
 
 import { runDocsCli } from "./helpers/cli.ts";
 
+const CANONICAL_QUERY_USAGE = "docs query [--limit <n>] <query...> | status";
+const STALE_QUERY_USAGE = "docs query [options] [terms...]";
+
 async function makeTempDir(prefix: string): Promise<string> {
 	return mkdtemp(path.join(os.tmpdir(), prefix));
 }
@@ -478,6 +481,8 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# docs");
+		expect(result.stdout).toContain(CANONICAL_QUERY_USAGE);
+		expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
 		expect(result.stdout).toContain("docs topic [topic] [section]");
 		expect(result.stdout).toContain("docs ls [where]");
 		expect(result.stdout).toContain("qmd");
@@ -522,12 +527,30 @@ test("docs --help uses the same markdown help style without the docs index", asy
 		expect(help.exitCode).toBe(0);
 		expect(helpCommand.exitCode).toBe(0);
 		expect(help.stdout).toContain("# docs");
+		expect(help.stdout).toContain(CANONICAL_QUERY_USAGE);
+		expect(help.stdout).not.toContain(STALE_QUERY_USAGE);
 		expect(help.stdout).toContain("docs topic [topic] [section]");
 		expect(help.stdout).not.toContain("web-fetching.md - web browser tools");
 		expect(help.stdout).not.toContain("## Project Docs");
 		expect(helpCommand.stdout).toBe(help.stdout);
 		expect(bare.stdout).not.toBe(help.stdout);
 	});
+});
+
+test("docs query --help uses the canonical query signature", async () => {
+	const result = await runDocsCli(["query", "--help"]);
+
+	expect(result.exitCode).toBe(0);
+	expect(result.stdout).toContain(`Usage: ${CANONICAL_QUERY_USAGE}`);
+	expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
+});
+
+test("docs reference doc uses the canonical query signature", async () => {
+	const docPath = new URL("../../../docs/ngents-docs.md", import.meta.url);
+	const contents = await readFile(docPath, "utf8");
+
+	expect(contents).toContain(CANONICAL_QUERY_USAGE);
+	expect(contents).not.toContain(STALE_QUERY_USAGE);
 });
 
 test("docs ls merges local and global docs by default", async () => {

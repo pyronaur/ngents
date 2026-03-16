@@ -32,7 +32,7 @@ Practical workflow:
 4. Run the validator after drafting metadata:
 
 ```bash
-python /Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.py
+python ~/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.py
 ```
 
 Example prompt pattern for an agent:
@@ -127,11 +127,11 @@ The two fit together well:
 
 ## References
 
-- Local ASO guide: [/Users/n14/.ngents/docs/topics/aso/ASO.md](/Users/n14/.ngents/docs/topics/aso/ASO.md)
-- Upstream skill instructions: [/Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/SKILL.md](/Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/SKILL.md)
-- Upstream ASO reference: [/Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/references/aso_learnings.md](/Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/references/aso_learnings.md)
-- Metadata validator: [/Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.py](/Users/n14/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.py)
+- Local ASO guide: [~/.ngents/docs/topics/aso/ASO.md](~/.ngents/docs/topics/aso/ASO.md)
+- Upstream skill instructions: [~/.ngents/docs/topics/aso/aso-store-aso-skill/SKILL.md](~/.ngents/docs/topics/aso/aso-store-aso-skill/SKILL.md)
+- Upstream ASO reference: [~/.ngents/docs/topics/aso/aso-store-aso-skill/references/aso_learnings.md](~/.ngents/docs/topics/aso/aso-store-aso-skill/references/aso_learnings.md)
+- Metadata validator: [~/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.py](~/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.py)
 - app-store-aso-skill repo: <https://github.com/TimBroddin/app-store-aso-skill>
 - astro-mcp-server repo: <https://github.com/TimBroddin/astro-mcp-server>
 - mcporter repo: <https://github.com/steipete/mcporter>
-- Local mcporter tool reference: [/Users/n14/.ngents/TOOLS.md](/Users/n14/.ngents/TOOLS.md)
+- Local mcporter tool reference: [~/.ngents/docs/tools.md](~/.ngents/docs/tools.md)

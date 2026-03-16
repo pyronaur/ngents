@@ -4,7 +4,7 @@
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Context: Prioritize `ndex` purpose built for 
+- Context: Prioritize `ndex` for fast access to repo/shared combined docs, notes, skills.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
@@ -12,10 +12,10 @@
 - Process: streamlined step by step processes we follow in docs/process
 
 ## Documentation Protocol
-- `ndex` used as canonical source for docs. Run `ndex` first for up to date instructions and maps.
-- `ndex` scans docs directories, allows organization by larger topics, indexes for semantic search
-- Prioritize: Use `ndex` to build context. Prefer over `rg` docs search.
-- Documentation Gap: if docs missing, follow ndex process to plug the gap
+ - `ndex` is the canonical source for documentation discovery.
+ - Run `ndex` before text search for current instructions, maps, and entrypoints.
+ - Use `ndex` to build context before reading source or searching with `rg`.
+ - If documentation is missing or unclear, follow the ndex process to identify and plug the gap.
 
 ## Communication Style
 Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.
@@ -115,14 +115,3 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 - Maintain source of truth: When behavior or authority moves, the new location becomes the only source of truth. Remove the old structure entirely instead of leaving a stub behind.
 - No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches, no residue.
 - Never write tests to assert non-existance of something
-
-## Tools
-- read `~/.ngents/TOOLS.md` first for usage
-- read `browser-local` for browser access
-- use `zoxide` to find paths on system
-- common: `trash`, `gh`, `zoxide`
-- specialized: `ngents`, `xcp`, `axe`, `oracle`, `kpw`, `mcporter`
-- For debugging, logging, server running use `tmux` and read docs/tmux.md
-
-### MCP Access
-- Usage/source of truth: `TOOLS.md` (`mcporter`).

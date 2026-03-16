@@ -9,7 +9,7 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
 - `AGENTS.md`  
   Core behavior contract for the agent.
 
-- `TOOLS.md`  
+- `docs/tools.md`  
   Practical guidance for the command-line tools used in this workflow.
 
 - `skills/`  

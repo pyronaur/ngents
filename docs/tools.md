@@ -1,4 +1,14 @@
-# TOOLS.md
+---
+title: Tool Catalog
+short: Shared CLI tool catalog.
+read_when:
+  - Need the canonical reference for shared command-line tools in `~/.ngents`.
+  - Need the approved workflow or baseline commands for a tool used across repos.
+  - Need to verify whether a tool belongs in portable docs or host-specific docs.
+overview: Portable tool catalog for `~/.ngents`.
+---
+
+# Tool Catalog
 
 Portable tool catalog for `~/.ngents`.
 

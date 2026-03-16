@@ -70,18 +70,18 @@ A topic can contain:
 - `.ndex.md` documents
 - `SKILL.md` files and related skill assets
 
-### Dynamic Skills
+### Skills
 
-Within ndex, a topic may expose skill files as **Dynamic Skills**.
+Within ndex, a topic may expose skill files as **Skills**.
 
 A Dynamic Skill is still a normal `SKILL.md` skill. The distinction is about discovery and loading strategy:
 
 - built-in session skills are already present in the active skill context
-- Dynamic Skills are discovered through ndex topics and loaded only when the task needs them
+- Skills are discovered through ndex topics and loaded only when the task needs them
 
 This keeps unrelated skills out of the initial context while still making them easy to find and use on demand.
 
-Dynamic Skills are especially useful when the machine has many language- or framework-specific skills, but only a small subset is relevant to the current project.
+Skills are especially useful when the machine has many language- or framework-specific skills, but only a small subset is relevant to the current project.
 
 Not everything inside a topic is a Dynamic Skill. Topics can freely mix skills and ordinary documentation when that grouping makes the domain easier to understand.
 
@@ -146,7 +146,9 @@ Behavior:
 - merges same-name local and global topic contributions
 - accepts an optional section selector
 - is the main browse surface for grouped reusable knowledge
-- may expose regular topic docs and Dynamic Skills together
+- may expose regular topic docs and Skills together
+- labels skill-bearing sections as Skills in topic output
+- can derive Dynamic Skill summaries directly from `SKILL.md` when a section has no `.ndex.md`
 
 ### `query`
 

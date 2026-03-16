@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
@@ -36,12 +36,93 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 			"---",
 			"title: iOS Library",
 			"short: Apple-platform docs",
-			"summary: This topic collects iOS-focused references and Apple HIG skills.",
+			"summary: This topic collects iOS-focused references, Apple HIG skills, and Dynamic Skills for Apple-platform work.",
 			"---",
 			"",
-			"# iOS Library",
+			"Use `ndex topic ios <section>` to focus one section.",
+			"This topic collects iOS-focused references, Apple HIG skills, and Skill for Apple-platform work.",
 			"",
-			"Start with local iOS docs.",
+			"- Prioritize `hig-doctor` first when you need Apple HIG guidance",
+			"- Use `SOSUMI.md` when you need Apple Developer docs in Markdown.",
+			"- Use `hig-doctor` when you need curated Apple HIG skills and references.",
+			"- Use the Skill sections when you need an on-demand iOS, Swift, SwiftUI, SwiftData, or Apple-tooling skill without loading it into the always-available skill context.",
+			"- Prefer `hig-doctor` before raw Apple docs when both could answer the question.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(repoDir, "docs", "topics", "ios", "SOSUMI.md"),
+		[
+			"---",
+			"title: Sosumi CLI",
+			"summary: Sosumi CLI and MCP reference for fetching Apple Developer docs as Markdown.",
+			"---",
+			"",
+			"# Sosumi CLI",
+			"",
+			"Use Sosumi when you want Apple Developer documentation in AI-readable Markdown from the command line.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(repoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md"),
+		[
+			"---",
+			"name: ios-debugger-agent",
+			"title: iOS Debugger Agent",
+			"description: Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
+			"---",
+			"",
+			"# iOS Debugger Agent",
+			"",
+			"Start with the booted simulator and default session setup.",
+			"",
+			"See [Quickstart](references/quickstart.md).",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(repoDir, "docs", "topics", "ios", "ios-debugger-agent", "references", "quickstart.md"),
+		[
+			"# Quickstart",
+			"",
+			"Launch the app in the simulator.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(repoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md"),
+		[
+			"---",
+			"name: swiftui-pro",
+			"title: SwiftUI Pro",
+			"description: Review and improve SwiftUI code.",
+			"---",
+			"",
+			"# SwiftUI Pro",
+			"",
+			"Use this skill for SwiftUI code review.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(
+			repoDir,
+			"docs",
+			"topics",
+			"ios",
+			"ios-debugger-agent",
+			"SCREENSHOT_WORKFLOW.md",
+		),
+		[
+			"---",
+			"title: Screenshot Workflow",
+			"summary: Capture simulator screenshots during debugging.",
+			"---",
+			"",
+			"# Screenshot Workflow",
+			"",
+			"Capture screenshots after UI changes.",
 			"",
 		].join("\n"),
 	);
@@ -165,6 +246,59 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 			"",
 		].join("\n"),
 	);
+}
+
+async function seedSkillBackedSection(repoDir: string): Promise<void> {
+	const sectionDir = path.join(repoDir, "docs", "topics", "ios", "hig-doctor");
+	const skillDir = path.join(sectionDir, "skills", "hig-components-content");
+	await writeText(
+		path.join(skillDir, "SKILL.md"),
+		[
+			"---",
+			"name: hig-components-content",
+			"title: Apple HIG: Content Components",
+			"description: Apple Human Interface Guidelines for content display components.",
+			"---",
+			"",
+			"# Apple HIG: Content Components",
+			"",
+			"Reference index:",
+			"- [Alpha](references/alpha.md)",
+			"- [Beta](references/beta.md)",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(skillDir, "references", "alpha.md"),
+		[
+			"---",
+			"title: Alpha",
+			"summary: Alpha reference.",
+			"---",
+			"",
+			"# Alpha",
+			"",
+			"Alpha reference body.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(skillDir, "references", "beta.md"),
+		[
+			"---",
+			"title: Beta",
+			"summary: Beta reference.",
+			"---",
+			"",
+			"# Beta",
+			"",
+			"Beta reference body.",
+			"",
+		].join("\n"),
+	);
+	await writeText(path.join(sectionDir, "README.md"), "# Hidden README\n");
+	await writeText(path.join(sectionDir, "AGENTS.md"), "# Hidden AGENTS\n");
+	await writeText(path.join(sectionDir, "package.json"), "{\n  \"name\": \"hidden-root-file\"\n}\n");
 }
 
 async function seedGlobalDocsHome(homeDir: string): Promise<void> {
@@ -323,7 +457,7 @@ test("bare ndex renders compact markdown help with merged topics and docs", asyn
 		});
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("# Agent Doc Utils");
+		expect(result.stdout).toContain("# ndex");
 		expect(result.stdout).toContain("ndex topic [topic] [section]");
 		expect(result.stdout).toContain("ndex ls [where]");
 		expect(result.stdout).toContain("qmd");
@@ -367,7 +501,7 @@ test("ndex --help uses the same markdown help style without the docs index", asy
 
 		expect(help.exitCode).toBe(0);
 		expect(helpCommand.exitCode).toBe(0);
-		expect(help.stdout).toContain("# Agent Doc Utils");
+		expect(help.stdout).toContain("# ndex");
 		expect(help.stdout).toContain("ndex topic [topic] [section]");
 		expect(help.stdout).not.toContain("web-fetching.md - web browser tools");
 		expect(help.stdout).not.toContain("## Project Docs");
@@ -561,6 +695,78 @@ test("ndex topic merges local and global topic contributions", async () => {
 	});
 });
 
+test("ndex topic renders docs and skills in the topic overview", async () => {
+	await withTempDir("ndex-topic-dynamic-skills-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+		await seedSkillBackedSection(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		const normalizedRepoDir = await realpath(repoDir);
+
+		const result = await runNdexCli(["topic", "ios"], {
+			cwd: repoDir,
+			env: ndexEnv(homeDir),
+		});
+
+		const expected = [
+			"# iOS Library",
+			path.join(normalizedRepoDir, "docs", "topics", "ios"),
+			"",
+			"Use `ndex topic ios <section>` to focus one section.",
+			"This topic collects iOS-focused references, Apple HIG skills, and Skill for Apple-platform work.",
+			"",
+			"- Prioritize `hig-doctor` first when you need Apple HIG guidance",
+			"- Use `SOSUMI.md` when you need Apple Developer docs in Markdown.",
+			"- Use `hig-doctor` when you need curated Apple HIG skills and references.",
+			"- Use the Skill sections when you need an on-demand iOS, Swift, SwiftUI, SwiftData, or Apple-tooling skill without loading it into the always-available skill context.",
+			"- Prefer `hig-doctor` before raw Apple docs when both could answer the question.",
+			"",
+			"---",
+			"",
+			"## Docs",
+			"",
+			"### Sosumi CLI",
+			path.join(normalizedRepoDir, "docs", "topics", "ios", "SOSUMI.md"),
+			"",
+			"Sosumi CLI and MCP reference for fetching Apple Developer docs as Markdown.",
+			"",
+			"---",
+			"",
+			"## Skills",
+			"",
+			"Expand skill information in this topic with: `ndex topic <topic> <section|glob>`",
+			"For example: `ndex topic foo bar/lux*`",
+			"",
+			"### hig-doctor - 1 skill",
+			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor")}/`,
+			"",
+			"#### hig-components-content",
+			path.join(
+				normalizedRepoDir,
+				"docs",
+				"topics",
+				"ios",
+				"hig-doctor",
+				"skills",
+				"hig-components-content",
+				"SKILL.md",
+			),
+			"contains: 2 reference files",
+			"",
+			"### ios-debugger-agent",
+			path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md"),
+			"contains: 1 reference file",
+			"",
+			"### swiftui-pro",
+			path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md"),
+		].join("\n");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout.trim()).toBe(expected);
+	});
+});
+
 test("ndex topic section focuses a merged section view", async () => {
 	await withTempDir("ndex-topic-section-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
@@ -579,6 +785,101 @@ test("ndex topic section focuses a merged section view", async () => {
 		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "topics", "qmd", "references"));
 		expect(result.stdout).toContain("Local Indexing");
 		expect(result.stdout).toContain("Global Indexing");
+	});
+});
+
+test("ndex topic section renders a skill-backed section without root docs", async () => {
+	await withTempDir("ndex-topic-skill-section-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		const normalizedRepoDir = await realpath(repoDir);
+
+		const result = await runNdexCli(["topic", "ios", "ios-debugger-agent"], {
+			cwd: repoDir,
+			env: ndexEnv(homeDir),
+		});
+
+		const referencesDir = path.join(
+			normalizedRepoDir,
+			"docs",
+			"topics",
+			"ios",
+			"ios-debugger-agent",
+			"references",
+		);
+		const expected = [
+			"# iOS Library",
+			"## ios-debugger-agent",
+			"",
+			`source: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent")}`,
+			"### Skills",
+			"",
+			"#### iOS Debugger Agent",
+			`path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md")}`,
+			"Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
+			"",
+			`##### ${referencesDir}/:`,
+			"- quickstart.md",
+		].join("\n");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout.trim()).toBe(expected);
+	});
+});
+
+test("ndex topic skill-backed sections show only skills and grouped references", async () => {
+	await withTempDir("ndex-topic-skills-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+		await seedSkillBackedSection(repoDir);
+		const normalizedRepoDir = await realpath(repoDir);
+
+		const result = await runNdexCli(["topic", "ios", "hig-doctor"], {
+			cwd: repoDir,
+			env: ndexEnv(path.join(tempDir, "home")),
+		});
+
+		const referencesDir = path.join(
+			normalizedRepoDir,
+			"docs",
+			"topics",
+			"ios",
+			"hig-doctor",
+			"skills",
+			"hig-components-content",
+			"references",
+		);
+		const expected = [
+			"# iOS Library",
+			"## hig-doctor",
+			"",
+			`source: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor")}`,
+			"### Skills",
+			"",
+			"#### Apple HIG: Content Components",
+			`path: ${
+				path.join(
+					normalizedRepoDir,
+					"docs",
+					"topics",
+					"ios",
+					"hig-doctor",
+					"skills",
+					"hig-components-content",
+					"SKILL.md",
+				)
+			}`,
+			"Apple Human Interface Guidelines for content display components.",
+			"",
+			`##### ${referencesDir}/:`,
+			"- alpha.md",
+			"- beta.md",
+		].join("\n");
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout.trim()).toBe(expected);
 	});
 });
 

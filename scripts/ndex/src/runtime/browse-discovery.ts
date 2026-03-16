@@ -16,7 +16,6 @@ import browseParse from "./browse-parse.ts";
 const {
 	EXCLUDED_DIRS,
 	hasHiddenOrExcludedSegment,
-	humanizeSlug,
 	META_FILE,
 	normalizePath,
 	sameFileName,
@@ -124,7 +123,7 @@ async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> 
 	const frontMatter = browseParse.parseFrontMatter(content);
 	return {
 		title: browseParse.stringField(frontMatter.values, "title")
-			?? browseParse.parseMarkdownTitle(content),
+			?? browseParse.stringField(frontMatter.values, "name"),
 		short: browseParse.stringField(frontMatter.values, "short"),
 		summary: browseParse.stringField(frontMatter.values, "summary")
 			?? browseParse.parseGuideSummary(content),
@@ -226,7 +225,7 @@ async function readMarkdownEntryFromFile(
 	absolutePath: string,
 	relativePath: string,
 ): Promise<MarkdownEntry> {
-	const parsed = browseParse.parseMarkdownEntry(await readFile(absolutePath, "utf8"));
+	const parsed = browseParse.parseMarkdownEntry(await readFile(absolutePath, "utf8"), relativePath);
 	return {
 		absolutePath,
 		relativePath,
@@ -324,8 +323,8 @@ async function extractReferencePaths(skillDir: string, content: string): Promise
 async function readSectionEntry(topicDir: string, sectionKey: string): Promise<SectionEntry> {
 	const absolutePath = normalizePath(path.join(topicDir, sectionKey));
 	const guide = await readGuideMetadata(absolutePath);
-	const markdownEntries = await listMarkdownEntries(absolutePath);
 	const skillFiles = await listSkillFiles(absolutePath);
+	const markdownEntries = skillFiles.length > 0 ? [] : await listMarkdownEntries(absolutePath);
 	const skills: SkillEntry[] = [];
 
 	for (const skillFile of skillFiles) {
@@ -373,7 +372,7 @@ async function readTopicContribution(
 	return {
 		name: topicName,
 		absolutePath: topicDir,
-		title: guide.title ?? humanizeSlug(topicName),
+		title: guide.title ?? topicName,
 		short: guide.short,
 		summary: guide.summary,
 		guideBody: guide.guideBody,
@@ -395,7 +394,7 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 			if (!existing) {
 				topicMap.set(topicName, {
 					name: topicName,
-					title: guide.title ?? humanizeSlug(topicName),
+					title: guide.title ?? topicName,
 					short: guide.short,
 					summary: guide.summary,
 				});
@@ -445,7 +444,7 @@ async function readMergedTopic(
 
 	const sharedTitle =
 		contributions.find(contribution => contribution.title.trim().length > 0)?.title
-			?? humanizeSlug(topicName);
+			?? topicName;
 
 	return {
 		name: topicName,

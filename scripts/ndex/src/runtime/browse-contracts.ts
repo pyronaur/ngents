@@ -138,20 +138,6 @@ function stripQuotes(value: string): string {
 	return value.replace(/^['"]|['"]$/g, "").trim();
 }
 
-function humanizeSlug(value: string): string {
-	return value
-		.split(/[-_/]+/g)
-		.filter(Boolean)
-		.map(part => {
-			if (part === part.toUpperCase() && part.length <= 5) {
-				return part;
-			}
-
-			return part.charAt(0).toUpperCase() + part.slice(1);
-		})
-		.join(" ");
-}
-
 function normalizeInlineText(value: string | null): string | null {
 	if (!value) {
 		return null;
@@ -221,12 +207,6 @@ function hasHiddenOrExcludedSegment(relativePath: string): boolean {
 	return false;
 }
 
-function referenceNames(skill: SkillEntry): string[] {
-	return Array.from(
-		new Set(skill.referencePaths.map(referencePath => path.basename(referencePath))),
-	).sort((a, b) => a.localeCompare(b));
-}
-
 function formatContains(section: SectionEntry): string | null {
 	const parts: string[] = [];
 	if (section.markdownEntries.length > 0) {
@@ -265,11 +245,9 @@ export default {
 	formatContains,
 	hasHiddenOrExcludedSegment,
 	heading,
-	humanizeSlug,
 	normalizeInlineText,
 	normalizePath,
 	printLine,
-	referenceNames,
 	sameFileName,
 	stripQuotes,
 	toDisplayPath,

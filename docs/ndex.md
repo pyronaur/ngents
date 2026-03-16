@@ -51,11 +51,10 @@ npm link
 - Prefer one `.ndex.md` at a meaningful topic boundary over many small child `.ndex.md` files.
 - `.ndex.md` does not decide whether something is a topic or a section.
 - `.ndex.md` does not decide whether a file belongs to a topic.
-- Frontmatter `title` takes precedence over markdown heading parsing.
+- Display titles resolve from frontmatter `title`, then frontmatter `name`, then the raw basename.
 - Frontmatter `short` is the compact one-line description for indexes and compact help output.
 - Frontmatter `summary` is the fuller description for expanded browsing.
 - Frontmatter `read_when` is available when a directory guide needs it.
-- The first `#` heading is the fallback title when frontmatter `title` is absent.
 - The first non-list paragraph is the fallback summary when frontmatter `summary` is absent.
 - The rest of the body is rendered when the topic or section is opened.
 
@@ -80,8 +79,14 @@ Start with `hig-doctor` when you need structured Apple HIG guidance.
 ## Skills and references
 
 - `SKILL.md` files are discovered recursively inside a section.
-- Local links inside `SKILL.md` become the skill reference index.
-- Focused section views show skill titles, descriptions, and reference names.
+- `ndex topic <topic>` renders topic-root markdown docs under `Docs`.
+- `ndex topic <topic>` renders skill-backed sections under `Skills`.
+- If a focused section contains any recursive `SKILL.md`, `ndex` treats it as a skill-backed section.
+- Skill-backed focused sections render only the discovered skills plus the local files linked from those skills.
+- Skill-backed focused sections group skills under `Skills`.
+- Each skill keeps its resolved title, absolute `SKILL.md` path, and description.
+- Linked local references render under that skill, grouped by absolute parent directory.
+- Focused sections without any `SKILL.md` continue rendering markdown docs as usual.
 
 ## ndex query
 

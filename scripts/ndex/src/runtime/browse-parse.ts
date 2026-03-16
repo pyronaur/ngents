@@ -8,7 +8,7 @@ import type {
 } from "./browse-contracts.ts";
 import browseContracts from "./browse-contracts.ts";
 
-const { compactStrings, humanizeSlug, stripQuotes } = browseContracts;
+const { compactStrings, stripQuotes } = browseContracts;
 
 type PositionedLine = {
 	index: number;
@@ -314,20 +314,12 @@ function stringArrayField(values: Map<string, FrontMatterValue>, key: string): s
 	return compactStrings(value);
 }
 
-function parseMarkdownTitle(content: string): string | null {
-	for (const rawLine of contentWithoutFrontMatter(content).split("\n")) {
-		const line = rawLine.trim();
-		if (!line.startsWith("#")) {
-			continue;
-		}
+function markdownBasename(relativePath: string): string {
+	return path.basename(relativePath, path.extname(relativePath));
+}
 
-		const title = line.replace(/^#+\s*/, "").trim();
-		if (title.length > 0) {
-			return title;
-		}
-	}
-
-	return null;
+function titleField(values: Map<string, FrontMatterValue>): string | null {
+	return stringField(values, "title") ?? stringField(values, "name");
 }
 
 function collectFoldedLines(lines: string[]): string {
@@ -410,11 +402,12 @@ function parseGuideSummary(content: string): string | null {
 
 function parseMarkdownEntry(
 	content: string,
+	relativePath: string,
 ): Pick<MarkdownEntry, "title" | "short" | "summary" | "readWhen" | "error"> {
 	const frontMatter = parseFrontMatter(content);
 	if (frontMatter.error) {
 		return {
-			title: parseMarkdownTitle(content),
+			title: markdownBasename(relativePath),
 			short: null,
 			summary: null,
 			readWhen: [],
@@ -423,7 +416,7 @@ function parseMarkdownEntry(
 	}
 
 	return {
-		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
+		title: titleField(frontMatter.values) ?? markdownBasename(relativePath),
 		short: stringField(frontMatter.values, "short"),
 		summary: stringField(frontMatter.values, "summary"),
 		readWhen: stringArrayField(frontMatter.values, "read_when"),
@@ -432,13 +425,13 @@ function parseMarkdownEntry(
 
 function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 	const frontMatter = parseFrontMatter(content);
-	const fallbackName = path.basename(path.dirname(relativePath)) || humanizeSlug(relativePath);
+	const fallbackName = path.basename(path.dirname(relativePath)) || path.basename(relativePath);
 	if (frontMatter.error) {
 		return {
 			absolutePath: "",
 			relativePath,
 			name: fallbackName,
-			title: parseMarkdownTitle(content),
+			title: fallbackName,
 			description: null,
 			error: frontMatter.error,
 			referencePaths: [],
@@ -449,7 +442,7 @@ function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 		absolutePath: "",
 		relativePath,
 		name: stringField(frontMatter.values, "name") ?? fallbackName,
-		title: stringField(frontMatter.values, "title") ?? parseMarkdownTitle(content),
+		title: titleField(frontMatter.values) ?? fallbackName,
 		description: stringField(frontMatter.values, "description"),
 		referencePaths: [],
 	};
@@ -460,7 +453,6 @@ export default {
 	parseGuideBody,
 	parseGuideSummary,
 	parseMarkdownEntry,
-	parseMarkdownTitle,
 	parseSkillEntry,
 	stringArrayField,
 	stringField,

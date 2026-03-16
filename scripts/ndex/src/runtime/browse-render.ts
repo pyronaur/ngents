@@ -6,10 +6,10 @@ import browseContracts, {
 	type MarkdownEntry,
 	type MergedTopic,
 	type SectionEntry,
-	type SkillEntry,
-	type TopicContribution,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
+import { printFocusedSkillsBlock } from "./browse-focused-skills.ts";
+import { printTopicOverview } from "./browse-topic-overview.ts";
 import rootHelpTemplate, {
 	type RootHelpDocsGroup,
 	type RootHelpTemplateContext,
@@ -18,13 +18,10 @@ import rootHelpTemplate, {
 const {
 	compactDescription,
 	errorText,
-	formatContains,
 	heading,
-	humanizeSlug,
 	normalizeInlineText,
 	normalizePath,
 	printLine,
-	referenceNames,
 } = browseContracts;
 
 function printGuideBody(guideBody: string): void {
@@ -256,110 +253,19 @@ function printMarkdownDetails(entry: MarkdownEntry, level: 3 | 2): void {
 	}
 }
 
-function printSectionHeader(section: SectionEntry): void {
-	printLine(heading(3, section.title));
-	printLine(`${pc.dim("path:")} ${pc.dim(section.absolutePath)}`);
-
-	const summary = normalizeInlineText(section.summary) ?? compactDescription(section.short, null);
-	if (summary) {
-		printLine(summary);
-	}
-	if (section.error) {
-		printLine(errorText(section.error));
-	}
-	if (section.readWhen.length > 0) {
-		printLine(`${pc.dim("Read when:")} ${section.readWhen.join("; ")}`);
-	}
-}
-
-function printSkillHeader(skill: SkillEntry): void {
-	printLine(heading(3, skill.title ?? skill.name));
-	printLine(`${pc.dim("path:")} ${pc.dim(skill.absolutePath)}`);
-
-	const description = normalizeInlineText(skill.description);
-	if (description) {
-		printLine(description);
-	}
-	if (skill.error) {
-		printLine(errorText(skill.error));
-	}
-}
-
-function printSkillSummary(skill: SkillEntry): void {
-	printSkillHeader(skill);
-
-	const names = referenceNames(skill);
-	if (names.length === 0) {
-		return;
-	}
-
-	printLine(pc.dim("references:"));
-	for (const name of names) {
-		printLine(`- ${pc.gray(name)}`, 2);
-	}
-}
-
-function printSectionSummary(topicName: string, section: SectionEntry): void {
-	printSectionHeader(section);
-
-	const contains = formatContains(section);
-	if (contains) {
-		printLine(`${pc.dim("contains:")} ${contains}`);
-	}
-
-	printLine(`${pc.dim("view:")} ${pc.dim(`ndex topic ${topicName} ${section.key}`)}`);
-}
-
-function printContribution(topicName: string, contribution: TopicContribution): void {
-	printLine(`${pc.dim("source:")} ${pc.dim(contribution.absolutePath)}`);
-	if (contribution.guideBody) {
-		printGuideBody(contribution.guideBody);
-	}
-	if (contribution.error) {
-		printLine(errorText(contribution.error));
-	}
-	if (contribution.readWhen.length > 0) {
-		printLine(`${pc.dim("Read when:")} ${contribution.readWhen.join("; ")}`);
-	}
-	if (
-		contribution.markdownEntries.length > 0
-		|| contribution.sectionEntries.length > 0
-		|| contribution.guideBody
-		|| contribution.error
-		|| contribution.readWhen.length > 0
-	) {
-		printLine();
-	}
-
-	for (const entry of contribution.markdownEntries) {
-		printMarkdownDetails(entry, 3);
-		printLine();
-	}
-	for (const [index, section] of contribution.sectionEntries.entries()) {
-		printSectionSummary(topicName, section);
-		if (index < contribution.sectionEntries.length - 1) {
-			printLine();
-		}
-	}
-}
-
 function printTopicView(topic: MergedTopic): void {
-	printLine(heading(1, topic.title));
-	printLine();
-	printLine(`Tip: use \`ndex topic ${topic.name} <section>\` to focus one section.`);
-	printLine();
-
-	for (const [index, contribution] of topic.contributions.entries()) {
-		printContribution(topic.name, contribution);
-		if (index < topic.contributions.length - 1) {
-			printLine();
-		}
-	}
+	printTopicOverview(topic);
 }
 
 function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): string {
-	return sections.find(section => section.title.trim().length > 0)?.title
-		?? humanizeSlug(path.basename(sectionKey));
+	for (const section of sections) {
+		const title = section.title.trim();
+		if (title.length > 0) {
+			return title;
+		}
+	}
+
+	return path.basename(sectionKey);
 }
 
 function printGuideSectionMetadata(
@@ -385,12 +291,7 @@ function printFocusedSectionBody(section: SectionEntry): void {
 	printLine(`${pc.dim("source:")} ${pc.dim(section.absolutePath)}`);
 	printGuideSectionMetadata(section.guideBody, section.error, section.readWhen);
 
-	for (const [index, skill] of section.skills.entries()) {
-		printSkillSummary(skill);
-		if (index < section.skills.length - 1) {
-			printLine();
-		}
-	}
+	printFocusedSkillsBlock(section);
 	if (section.skills.length > 0 && section.markdownEntries.length > 0) {
 		printLine();
 	}

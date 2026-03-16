@@ -85,5 +85,5 @@ export async function runNdexTopic(positionals: string[]): Promise<void> {
 	}
 
 	const sections = sectionsOrFail(topic, requestedTopic, requestedSection);
-	browseRender.printFocusedSection(topic, { key: requestedSection, sections });
+	browseRender.printFocusedSection({ key: requestedSection, sections });
 }

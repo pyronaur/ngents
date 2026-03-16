@@ -8,7 +8,11 @@ import browseContracts, {
 	type SectionEntry,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
-import { printFocusedSkillsBlock } from "./browse-focused-skills.ts";
+import {
+	isCompactFocusedSkillSection,
+	printCompactFocusedSkillSection,
+	printFocusedSkillsBlock,
+} from "./browse-focused-skills.ts";
 import { printTopicOverview } from "./browse-topic-overview.ts";
 import rootHelpTemplate, {
 	type RootHelpDocsGroup,
@@ -307,11 +311,15 @@ function printFocusedSectionBody(section: SectionEntry): void {
 	}
 }
 
-function printFocusedSection(
-	topic: MergedTopic,
-	sectionView: { key: string; sections: SectionEntry[] },
-): void {
-	printLine(heading(1, topic.title));
+function printFocusedSection(sectionView: { key: string; sections: SectionEntry[] }): void {
+	if (sectionView.sections.length === 1) {
+		const [section] = sectionView.sections;
+		if (section && isCompactFocusedSkillSection(section)) {
+			printCompactFocusedSkillSection(section);
+			return;
+		}
+	}
+
 	printLine(heading(2, sharedSectionTitle(sectionView.key, sectionView.sections)));
 	printLine();
 

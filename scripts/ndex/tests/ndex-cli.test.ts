@@ -808,7 +808,7 @@ test("ndex topic section focuses a merged section view", async () => {
 	});
 });
 
-test("ndex topic section renders a skill-backed section without root docs", async () => {
+test("ndex topic section renders a single root skill directly", async () => {
 	await withTempDir("ndex-topic-skill-section-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
@@ -830,22 +830,77 @@ test("ndex topic section renders a skill-backed section without root docs", asyn
 			"references",
 		);
 		const expected = [
-			"# iOS Library",
-			"## ios-debugger-agent",
+			"## iOS Debugger Agent",
+			path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md"),
 			"",
-			`source: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent")}`,
-			"### Skills",
-			"",
-			"#### iOS Debugger Agent",
-			`path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md")}`,
 			"Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
 			"",
-			`##### ${referencesDir}/:`,
+			`### ${referencesDir}/:`,
 			"- quickstart.md",
 		].join("\n");
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout.trim()).toBe(expected);
+	});
+});
+
+test("ndex topic section resolves single-skill titles as title then name then basename", async () => {
+	await withTempDir("ndex-topic-skill-title-fallback-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "title-skill", "SKILL.md"),
+			[
+				"---",
+				"title: Explicit Skill Title",
+				"name: name-fallback-should-not-win",
+				"description: Title frontmatter should win.",
+				"---",
+				"",
+				"Skill body.",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "name-skill", "SKILL.md"),
+			[
+				"---",
+				"name: Name Frontmatter Title",
+				"description: Name frontmatter should win when title is absent.",
+				"---",
+				"",
+				"Skill body.",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "basename-skill", "SKILL.md"),
+			[
+				"Skill body without frontmatter.",
+				"",
+			].join("\n"),
+		);
+
+		const titleResult = await runNdexCli(["topic", "ios", "title-skill"], {
+			cwd: repoDir,
+			env: ndexEnv(path.join(tempDir, "home")),
+		});
+		const nameResult = await runNdexCli(["topic", "ios", "name-skill"], {
+			cwd: repoDir,
+			env: ndexEnv(path.join(tempDir, "home")),
+		});
+		const basenameResult = await runNdexCli(["topic", "ios", "basename-skill"], {
+			cwd: repoDir,
+			env: ndexEnv(path.join(tempDir, "home")),
+		});
+
+		expect(titleResult.exitCode).toBe(0);
+		expect(titleResult.stdout).toContain("## Explicit Skill Title");
+		expect(nameResult.exitCode).toBe(0);
+		expect(nameResult.stdout).toContain("## Name Frontmatter Title");
+		expect(basenameResult.exitCode).toBe(0);
+		expect(basenameResult.stdout).toContain("## basename-skill");
 	});
 });
 
@@ -872,7 +927,6 @@ test("ndex topic skill-backed sections show only skills and grouped references",
 			"references",
 		);
 		const expected = [
-			"# iOS Library",
 			"## hig-doctor",
 			"",
 			`source: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor")}`,

@@ -83,7 +83,9 @@ Start with `hig-doctor` when you need structured Apple HIG guidance.
 - `ndex topic <topic>` renders topic-root markdown docs under `Docs`.
 - `ndex topic <topic>` renders skill-backed sections under `Skills`.
 - If a focused section contains any recursive `SKILL.md`, `ndex` treats it as a skill-backed section.
+- Focused section views render the section or skill directly, without repeating the topic heading.
 - Skill-backed focused sections render only the discovered skills plus the local files linked from those skills.
+- A focused section that is exactly one root `SKILL.md` renders that skill directly.
 - Skill-backed focused sections group skills under `Skills`.
 - Each skill keeps its resolved title, absolute `SKILL.md` path, and description.
 - Linked local references render under that skill, grouped by absolute parent directory.

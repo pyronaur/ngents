@@ -1,40 +1,139 @@
 ---
-title: NDEX CLI - Agent Docs
+title: ndex
+short: Docs-first CLI for discovering local and global documentation.
+summary: Purpose, principles, commands, and docs model for ndex.
 read_when:
-  - Need a command-focused handoff doc to point another agent at before using local helpers.
-  - Need the shortest path from command discovery to the deeper command-specific docs.
+  - Need to understand what ndex is for and why it exists.
+  - Need the exact ndex CLI behavior and docs layout rules.
 ---
 
-# ndex
-`ndex` is the docs CLI for repo-local and global documentation.
+ndex is a docs-first CLI for fast context acquisition.
 
-Install and link it from [scripts/ndex](/Users/n14/.ngents/scripts/ndex):
+Its job is to help people and agents find the right local or global documentation quickly, without guessing project structure or defaulting to web search first.
 
-```sh
-cd ~/.../.ngents/scripts/ndex
-npm install
-npm link
+## Why ndex exists
+
+Every project has a local `docs/` directory with project-specific context such as workflows, architecture, notes, and operating conventions.
+
+There is also a global machine-level `docs/` corpus with reusable guidance, tool docs, patterns, and shared workflows that apply across projects.
+
+ndex exists so both sources can be discovered through one consistent interface.
+
+This matters because:
+
+1. Agents need a deterministic path to context.
+2. Shared local documentation is cheaper and more reliable than repeated web search.
+3. Knowledge often needs to be reused across multiple projects of the same type.
+
+## Core principles
+
+### Docs-first context
+
+The intended workflow is:
+
+1. Browse local and global docs with `ndex`.
+2. Read the most promising files.
+3. Fall back to semantic search only when browse-first discovery is not enough.
+4. Read source code after the documentation domain is clear.
+
+ndex is the entrypoint for that flow.
+
+### One `docs` convention
+
+Project-local documentation lives in a project `docs/` directory.
+Reusable machine-level documentation also lives in `docs/` directories.
+That gives agents one stable convention instead of project-specific guessing.
+
+### Merge local and global knowledge
+
+ndex intentionally merges project-local and global documentation where that is useful.
+That lets a project inherit reusable knowledge without copying it into every repository.
+
+### Browse before query
+
+`ls` and `topic` are the primary discovery surfaces.
+`query` exists for cases where quick browse-first inspection does not surface the right document quickly enough.
+
+### Topics and skills
+
+Topics group reusable knowledge under `docs/topics`.
+A topic can contain regular markdown docs, `.ndex.md` guides, `SKILL.md` files, and related skill assets.
+This keeps reusable knowledge organized by domain instead of flattening everything into one large docs tree.
+
+## CLI commands
+
+```bash
+ndex
+ndex --help
+ndex help
+ndex ls [where]
+ndex topic [topic] [section]
+ndex query [--limit <n>] <query...>
+ndex query status
+ndex update
 ```
 
-## Command shape
+## Help behavior
 
-- `ndex` prints compact Markdown help with the command walkthrough, topic index, and merged docs index.
+- `ndex` prints compact Markdown help with the command walkthrough, merged topic index, and merged docs index.
 - `ndex --help` prints the same Markdown help style without the docs index.
 - `ndex help` prints the same Markdown help style without the docs index.
-- `ndex ls` browses merged local and global docs with expanded descriptions.
-- `ndex ls .` browses project docs only.
-- `ndex ls ./docs/subdir` browses one project docs subtree.
-- `ndex ls global` browses `~/.ngents/docs` only.
-- `ndex ls docs/subdir` browses matching local and global docs subtrees.
-- `ndex topic` browses the merged topic index.
-- `ndex topic <topic>` opens the merged topic view.
-- `ndex topic <topic> <section>` focuses a merged section view.
-- `ndex query <query...>` runs a QMD query against the global `~/.ngents/docs` library.
-- `ndex query --limit <n> <query...>` limits the number of search results.
-- `ndex query status` shows the query wrapper config and the underlying QMD status.
-- `ndex update` refreshes the global QMD docs index and embeddings used by `ndex query`.
+- `ndex help <command>` prints Commander command usage.
+- `ndex <command> --help` prints usage for that command.
 
-## How `ndex` reads `docs/`
+## Browse behavior
+
+### `ls`
+
+`ls` browses docs only.
+
+- It merges local and global docs by default.
+- It accepts `.`, `global`, `./docs/...`, and `docs/...` selectors.
+- `.` means project docs only.
+- `global` means `~/.ngents/docs` only.
+- `./docs/...` means one project-local docs subtree.
+- `docs/...` means matching local and global docs subtrees.
+- It prints expanded doc descriptions.
+
+### `topic`
+
+`topic` browses topics only.
+
+- It merges same-name local and global topic contributions.
+- It accepts an optional section selector.
+- It is the main browse surface for grouped reusable knowledge.
+- It may expose regular topic docs and skill-backed sections together.
+- It labels skill-bearing sections as `Skills` in topic output.
+- It can derive skill summaries directly from `SKILL.md` when a section has no `.ndex.md`.
+
+### `query`
+
+`query` is the fallback discovery surface when browse-first inspection is not enough.
+
+- It searches the global `~/.ngents/docs` library, including topics.
+- It does not search the current project's docs directory.
+- It supports `--limit <n>` to cap results.
+- `ndex query status` shows the wrapper config and underlying QMD status.
+- It prints formatted results for fast terminal follow-up.
+
+Result output includes:
+
+- the QMD title
+- a short file summary when available
+- the absolute file path, with a line range when QMD exposes one
+- a lightly cleaned snippet for quick follow-up reading
+
+### `update`
+
+`update` refreshes the same global QMD index that `ndex query` reads.
+
+It runs `qmd update` first, then `qmd embed`.
+
+Use it when the global docs library changed and `query` needs a refreshed index.
+
+## Docs model
+
+### How ndex reads `docs/`
 
 - Markdown files directly under a `docs/` root are free-floating docs.
 - Topics live under `docs/topics/<topic>/`.
@@ -44,115 +143,41 @@ npm link
 - Hidden directories and files are ignored.
 - `archive`, `research`, and `node_modules` are ignored.
 
-## `.ndex.md`
+### `.ndex.md`
 
-`.ndex.md` is an optional directory guide and metadata file.
+`.ndex.md` is an optional hidden directory guide and metadata file.
 
-- `.ndex.md` is hidden and excluded from normal scans and lists.
+- `.ndex.md` is excluded from normal scans and lists.
 - Prefer one `.ndex.md` at a meaningful topic boundary over many small child `.ndex.md` files.
-- `.ndex.md` does not decide whether something is a topic or a section.
+- `.ndex.md` does not decide whether something is a topic or section.
 - `.ndex.md` does not decide whether a file belongs to a topic.
 - Display titles resolve from frontmatter `title`, then frontmatter `name`, then the raw basename.
-- Frontmatter `short` is the compact one-line description for indexes and compact help output.
-- Frontmatter `summary` is the fuller description for expanded browsing.
-- Frontmatter `read_when` is available when a directory guide needs it.
-- The first non-list paragraph is the fallback summary when frontmatter `summary` is absent.
+- `short` is the compact one-line description for indexes and compact help output.
+- `summary` is the fuller expanded description for browsing.
+- `read_when` adds browse hints.
+- The first non-list paragraph is the fallback summary when `summary` is absent.
 - The rest of the body is rendered when the topic or section is opened.
 
-Use `short` for punchy one-line descriptions such as `web browser tools`.
-
-Example:
-
-```md
----
-title: iOS Library
-short: Apple-platform docs
-summary: This topic collects iOS-focused references and Apple HIG skills.
-read_when:
-  - Working on Apple-platform UI, UX, or HIG questions.
----
-
-# iOS Library
-
-Start with `hig-doctor` when you need structured Apple HIG guidance.
-```
-
-## Skills and references
+### Skills
 
 - `SKILL.md` files are discovered recursively inside a section.
 - `ndex topic <topic>` renders topic-root markdown docs under `Docs`.
 - `ndex topic <topic>` renders skill-backed sections under `Skills`.
-- If a focused section contains any recursive `SKILL.md`, `ndex` treats it as a skill-backed section.
-- Focused section views render the section or skill directly, without repeating the topic heading.
-- Skill-backed focused sections render only the discovered skills plus the local files linked from those skills.
+- If a focused section contains any recursive `SKILL.md`, ndex treats it as a skill-backed section.
 - A focused section that is exactly one root `SKILL.md` renders that skill directly.
-- Skill-backed focused sections group skills under `Skills`.
-- Each skill keeps its resolved title, absolute `SKILL.md` path, and description.
-- Linked local references render under that skill, grouped by absolute parent directory.
+- Skill-backed focused sections render the discovered skills plus the local files linked from those skills.
 - Focused sections without any `SKILL.md` continue rendering markdown docs as usual.
-
-## ndex query
-
-`ndex query` searches the global `~/.ngents/docs` tree with QMD and formats the results for fast reading and quick terminal follow-up.
-
-It uses a dedicated named QMD index so it does not mix this docs library with unrelated QMD collections elsewhere on the machine.
-
-## Query shape
-
-- `ndex query <query...>` runs a QMD query against the dedicated docs index and prints compact formatted results.
-- `ndex query --limit <n> <query...>` limits the number of results.
-- `ndex query status` shows the wrapper config and the underlying QMD status.
-
-Result output includes:
-
-- the QMD title
-- a short file-specific summary line when available, preferring file frontmatter `overview`, then `read_when`, then QMD context
-- the absolute file path, with a line range when QMD exposes one in the snippet
-- a lightly cleaned snippet rendered as a quoted excerpt for follow-up reading
-- a short `Tip:` line at the top of every search output with anchored-query guidance
-
-## ndex update
-
-`ndex update` refreshes the same global QMD index that `ndex query` reads.
-
-It runs `qmd update` first, then `qmd embed`, using the dedicated ndex index and the ndex-specific cache/config roots.
-
-## Machine setup
-
-- Index name: `ngents-docs`
-- Collection name: `global-docs`
-- Docs root: `~/.ngents/docs`
-- Cache root: `~/.ngents/local/qmd-cache`
-- Config root: `~/.ngents/local/qmd-config`
-- Search backend used by `ndex query`: `qmd query --json`
-- Maintenance backend used by `ndex update`: `qmd update`, then `qmd embed`
-- Default result count: `5`
-- Default min score: `0.35`
-
-The QMD collection and embeddings for this index are already set up on this machine.
-
-If the setup ever needs inspection or repair, start with `ndex query status`, then use the upstream QMD docs in `docs/topics/qmd/` for the actual QMD commands.
-
-Known local note:
-
-- The npm registry tarball for `@tobilu/qmd@2.0.1` shipped an older launcher that could incorrectly choose Bun when `BUN_INSTALL` was set. The machine-local install was rebuilt from the local source repo tarball so `qmd` uses the correct runtime selection logic.
 
 ## Examples
 
-```sh
+```bash
 ndex
-ndex --help
 ndex ls
 ndex ls .
-ndex ls ./docs/architecture
-ndex ls global
-ndex ls docs/architecture
-ndex topic
 ndex topic qmd
 ndex topic qmd references
-ndex query swiftui scroll view best practices
-ndex query --limit 3 swiftui scroll view best practices
 ndex query shell environment policy
+ndex query --limit 3 swiftui scroll view best practices
 ndex query status
 ndex update
 ```

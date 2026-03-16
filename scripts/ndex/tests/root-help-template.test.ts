@@ -1,0 +1,94 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+import { expect, test } from "vitest";
+
+import {
+	createRootHelpLiquidEngine,
+	renderRootHelpTemplate,
+	type RootHelpTemplateContext,
+} from "../src/runtime/root-help-template.ts";
+
+const rootHelpTemplateContext: RootHelpTemplateContext = {
+	docs_groups: [],
+	show_docs_index: false,
+	topic_lines: [],
+	topics_header: "TOPIC  TITLE  DESCRIPTION",
+};
+
+async function makeTempDir(prefix: string): Promise<string> {
+	return mkdtemp(path.join(os.tmpdir(), prefix));
+}
+
+async function writeText(filePath: string, contents: string): Promise<void> {
+	await mkdir(path.dirname(filePath), { recursive: true });
+	await writeFile(filePath, contents);
+}
+
+async function withTempDir<T>(prefix: string, run: (dir: string) => Promise<T>): Promise<T> {
+	const dir = await makeTempDir(prefix);
+	try {
+		return await run(dir);
+	} finally {
+		await rm(dir, { force: true, recursive: true });
+	}
+}
+
+test("renderRootHelpTemplate fails with a clear error when the template file is missing", async () => {
+	await withTempDir("ndex-root-help-template-missing-", async tempDir => {
+		const engine = createRootHelpLiquidEngine(tempDir);
+
+		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
+			'Failed to render root help template "root-help.md":',
+		);
+	});
+});
+
+test("renderRootHelpTemplate fails on Liquid syntax errors", async () => {
+	await withTempDir("ndex-root-help-template-parse-", async tempDir => {
+		await writeText(path.join(tempDir, "root-help.md"), "{% if show_docs_index %}");
+		const engine = createRootHelpLiquidEngine(tempDir);
+
+		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
+			'Failed to render root help template "root-help.md":',
+		);
+	});
+});
+
+test("renderRootHelpTemplate fails when a required variable is missing", async () => {
+	await withTempDir("ndex-root-help-template-var-", async tempDir => {
+		await writeText(path.join(tempDir, "root-help.md"), "{{ missing_var }}");
+		const engine = createRootHelpLiquidEngine(tempDir);
+
+		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
+			'Failed to render root help template "root-help.md": undefined variable: missing_var',
+		);
+	});
+});
+
+test("renderRootHelpTemplate fails on unknown filters", async () => {
+	await withTempDir("ndex-root-help-template-filter-", async tempDir => {
+		await writeText(path.join(tempDir, "root-help.md"), "{{ 'x' | missing_filter }}");
+		const engine = createRootHelpLiquidEngine(tempDir);
+
+		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
+			'Failed to render root help template "root-help.md": undefined filter: missing_filter',
+		);
+	});
+});
+
+test("renderRootHelpTemplate supports standard Liquid composition from the templates root", async () => {
+	await withTempDir("ndex-root-help-template-render-", async tempDir => {
+		await writeText(
+			path.join(tempDir, "root-help.md"),
+			["Before", "{% render shared.md %}", "After"].join("\n"),
+		);
+		await writeText(path.join(tempDir, "shared.md"), "Shared");
+		const engine = createRootHelpLiquidEngine(tempDir);
+
+		expect(renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toBe(
+			["Before", "Shared", "After"].join("\n"),
+		);
+	});
+});

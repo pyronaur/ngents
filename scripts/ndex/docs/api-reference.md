@@ -134,3 +134,5 @@ Validation behavior:
 - `src/runtime/query.ts` => query execution and formatting
 - `src/runtime/browse-discovery.ts` => docs and topic discovery
 - `src/runtime/browse-render.ts` => help, docs, and topic rendering
+
+Root help Liquid markdown template: `templates/root-help.md`

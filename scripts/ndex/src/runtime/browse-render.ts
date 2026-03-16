@@ -10,6 +10,10 @@ import browseContracts, {
 	type TopicContribution,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
+import rootHelpTemplate, {
+	type RootHelpDocsGroup,
+	type RootHelpTemplateContext,
+} from "./root-help-template.ts";
 
 const {
 	compactDescription,
@@ -29,34 +33,57 @@ function printGuideBody(guideBody: string): void {
 	}
 }
 
-function printTopicDescription(row: TopicIndexRow): string {
+function renderBlock(
+	renderLines: (pushLine: (text?: string, indent?: number) => void) => void,
+): string {
+	const lines: string[] = [];
+	renderLines((text = "", indent = 0) => {
+		lines.push(`${" ".repeat(indent)}${text}`);
+	});
+	return lines.join("\n");
+}
+
+function printTopicDescription(
+	row: Pick<TopicIndexRow, "short" | "summary">,
+): string {
 	return compactDescription(row.short, row.summary) ?? pc.gray("-");
 }
 
-function printTopicsTable(topics: TopicIndexRow[]): void {
-	if (topics.length === 0) {
-		printLine("- [no topics found]");
-		return;
-	}
+function topicColumnWidths(topics: TopicIndexRow[]): { titleWidth: number; topicWidth: number } {
+	return {
+		topicWidth: Math.max("TOPIC".length, ...topics.map(topic => topic.name.length)),
+		titleWidth: Math.max("TITLE".length, ...topics.map(topic => topic.title.length)),
+	};
+}
 
-	const topicLabel = "TOPIC";
-	const titleLabel = "TITLE";
-	const descriptionLabel = "DESCRIPTION";
-	const topicWidth = Math.max(topicLabel.length, ...topics.map(topic => topic.name.length));
-	const titleWidth = Math.max(titleLabel.length, ...topics.map(topic => topic.title.length));
-	printLine(
-		pc.bold(
-			`${topicLabel.padEnd(topicWidth)}  ${titleLabel.padEnd(titleWidth)}  ${descriptionLabel}`,
-		),
-	);
+function renderTopicsTable(topics: TopicIndexRow[]): string {
+	return renderBlock(pushLine => {
+		if (topics.length === 0) {
+			pushLine("- [no topics found]");
+			return;
+		}
 
-	for (const topic of topics) {
-		printLine(
-			`${topic.name.padEnd(topicWidth)}  ${topic.title.padEnd(titleWidth)}  ${
-				printTopicDescription(topic)
-			}`,
-		);
-	}
+		const widths = topicColumnWidths(topics);
+		pushLine(renderTopicTableHeader(topics));
+
+		for (const topic of topics) {
+			pushLine(renderTopicTableRow(topic, widths));
+		}
+	});
+}
+
+function renderTopicTableHeader(topics: TopicIndexRow[]): string {
+	const { titleWidth, topicWidth } = topicColumnWidths(topics);
+	return pc.bold(`${"TOPIC".padEnd(topicWidth)}  ${"TITLE".padEnd(titleWidth)}  DESCRIPTION`);
+}
+
+function renderTopicTableRow(
+	topic: Pick<TopicIndexRow, "name" | "title" | "short" | "summary">,
+	widths: { titleWidth: number; topicWidth: number },
+): string {
+	return `${topic.name.padEnd(widths.topicWidth)}  ${topic.title.padEnd(widths.titleWidth)}  ${
+		printTopicDescription(topic)
+	}`;
 }
 
 function groupedDocs(docs: MarkdownEntry[]): Array<[string, MarkdownEntry[]]> {
@@ -75,42 +102,72 @@ function groupedDocs(docs: MarkdownEntry[]): Array<[string, MarkdownEntry[]]> {
 	return Array.from(grouped.entries()).sort((left, right) => left[0].localeCompare(right[0]));
 }
 
-function printCompactDocEntry(entry: MarkdownEntry): void {
-	const description = compactDescription(entry.short, entry.summary);
-	if (!description) {
-		printLine(path.basename(entry.absolutePath), 2);
-		return;
-	}
-
-	printLine(`${path.basename(entry.absolutePath)} - ${description}`, 2);
+function rootHelpTopicLines(topics: TopicIndexRow[]): string[] {
+	const widths = topicColumnWidths(topics);
+	return topics.map(topic => renderTopicTableRow(topic, widths));
 }
 
-function printCompactDocsIndex(docs: MarkdownEntry[]): void {
-	if (docs.length === 0) {
-		return;
+function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
+	return entries
+		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
+		.map(entry => {
+			const description = compactDescription(entry.short, entry.summary);
+			const fileName = path.basename(entry.absolutePath);
+			if (description === null) {
+				return `  ${fileName}`;
+			}
+
+			return `  ${fileName} - ${description}`;
+		});
+}
+
+function rootHelpDocsGroups(docs: MarkdownEntry[]): RootHelpDocsGroup[] {
+	return groupedDocs(docs).map(([directoryPath, entries]) => ({
+		directory_path: directoryPath,
+		entry_lines: rootHelpDocsEntryLines(entries),
+	}));
+}
+
+function rootHelpTemplateContext(
+	topics: TopicIndexRow[],
+	docs: MarkdownEntry[],
+	options: { includeDocsIndex: boolean },
+): RootHelpTemplateContext {
+	const docsGroups = rootHelpDocsGroups(docs);
+	return {
+		docs_groups: docsGroups,
+		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
+		topic_lines: rootHelpTopicLines(topics),
+		topics_header: renderTopicTableHeader(topics),
+	};
+}
+
+function formatRootHelpLine(line: string): string {
+	if (!line.startsWith("#")) {
+		return line;
 	}
 
-	printLine(heading(2, "Docs"));
-	printLine("ndex ls [where]");
-	printLine("ndex ls . - Project docs, expanded descriptions");
-	printLine("ndex ls ./docs/subdir - Project docs in dir");
-	printLine("ndex ls docs/subdir - Matching local and global docs dirs");
-	printLine("ndex ls global - Global docs, expanded descriptions");
-	printLine();
-
-	for (const [index, [directoryPath, entries]] of groupedDocs(docs).entries()) {
-		printLine(directoryPath);
-		for (
-			const entry of entries.sort((left, right) =>
-				left.absolutePath.localeCompare(right.absolutePath)
-			)
-		) {
-			printCompactDocEntry(entry);
-		}
-		if (index < groupedDocs(docs).length - 1) {
-			printLine();
-		}
+	const headingMatch = /^(#{1,3}) (.+)$/.exec(line);
+	if (!headingMatch) {
+		return line;
 	}
+
+	const hashes = headingMatch[1];
+	const text = headingMatch[2];
+	if (hashes === undefined || text === undefined) {
+		return line;
+	}
+	if (hashes.length === 1) {
+		return heading(1, text);
+	}
+	if (hashes.length === 2) {
+		return heading(2, text);
+	}
+	if (hashes.length === 3) {
+		return heading(3, text);
+	}
+
+	return line;
 }
 
 function printExpandedDocDescription(entry: MarkdownEntry): void {
@@ -158,43 +215,17 @@ function printExpandedDocsIndex(docs: MarkdownEntry[]): void {
 	}
 }
 
-function printRootHelpHeader(): void {
-	printLine("Usage: ndex [options] [command]");
-	printLine();
-	printLine(heading(1, "Agent Doc Utils"));
-	printLine();
-	printLine(heading(2, "Query"));
-	printLine("ndex query [options] [terms...]");
-	printLine();
-	printLine("Use this to search through global docs and topics with semantic search fast.");
-	printLine("Returns matches optimized for quick context gathering with cat/sed followups.");
-	printLine();
-}
-
-function printRootTopicSection(topics: TopicIndexRow[]): void {
-	printLine(heading(2, "Topics"));
-	printLine("ndex topic [topic] [section]");
-	printLine();
-	printLine("Topics contain specialized docs, available anywhere.");
-	printLine("ndex topic foo - view foo about/index first");
-	printLine("ndex topic foo bar - learn about bar section");
-	printLine();
-	printTopicsTable(topics);
-}
-
 function printRootHelp(
 	topics: TopicIndexRow[],
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
 ): void {
-	printRootHelpHeader();
-	printRootTopicSection(topics);
-	if (!options.includeDocsIndex) {
-		return;
+	const rendered = rootHelpTemplate.renderRootHelpTemplate(
+		rootHelpTemplateContext(topics, docs, options),
+	);
+	for (const line of rendered.split("\n")) {
+		printLine(formatRootHelpLine(line));
 	}
-
-	printLine();
-	printCompactDocsIndex(docs);
 }
 
 function printTopicBrowser(topics: TopicIndexRow[]): void {
@@ -204,7 +235,9 @@ function printTopicBrowser(topics: TopicIndexRow[]): void {
 	printLine("ndex topic foo - view foo about/index first");
 	printLine("ndex topic foo bar - learn about bar section");
 	printLine();
-	printTopicsTable(topics);
+	for (const line of renderTopicsTable(topics).split("\n")) {
+		printLine(line);
+	}
 }
 
 function printMarkdownDetails(entry: MarkdownEntry, level: 3 | 2): void {

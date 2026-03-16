@@ -42,6 +42,8 @@ ndex query status
 
 Use `short` in frontmatter for compact ndex output. Use `summary` for fuller expanded browse text.
 
+Root help copy and Liquid template logic live in `templates/root-help.md`.
+
 ## Development Commands
 
 ```bash

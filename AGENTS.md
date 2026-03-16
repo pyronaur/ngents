@@ -12,7 +12,7 @@
 - Process: streamlined step by step processes we follow in docs/process
 
 ## Documentation Protocol
-- `ndex` used as canonical source for docs: index, list, search
+- `ndex` used as canonical source for docs. Run `ndex` first for up to date instructions and maps.
 - `ndex` scans docs directories, allows organization by larger topics, indexes for semantic search
 - Prioritize: Use `ndex` to build context. Prefer over `rg` docs search.
 - Documentation Gap: if docs missing, follow ndex process to plug the gap

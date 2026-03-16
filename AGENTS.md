@@ -4,7 +4,7 @@
 - Instructions portable across machines.
 
 ## Agent Protocol
-- Context: Prioritize `ndex` for fast access to repo/shared combined docs, notes, skills.
+- Context: Prioritize `docs` for fast access to repo/shared combined docs, notes, skills.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
@@ -12,10 +12,10 @@
 - Process: streamlined step by step processes we follow in docs/process
 
 ## Documentation Protocol
- - `ndex` is the canonical source for documentation discovery.
- - Run `ndex` before text search for current instructions, maps, and entrypoints.
- - Use `ndex` to build context before reading source or searching with `rg`.
- - If documentation is missing or unclear, follow the ndex process to identify and plug the gap.
+ - `docs` is the canonical source for documentation discovery.
+ - Run `docs` before text search for current instructions, maps, and entrypoints.
+ - Use `docs` to build context before reading source or searching with `rg`.
+ - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 
 ## Communication Style
 Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.
@@ -51,12 +51,12 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 
 ## Docs
 - Read & Maintain Docs
-- Before Code: run `ndex`
-- Order: `ndex` -> source -> execute. No deep search before docs scan.
+- Before Code: run `docs`
+- Order: `docs` -> source -> execute. No deep search before docs scan.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
 - Add `read_when` hints on cross-cutting docs.
-- Add `short` summary for compact `ndex` output
+- Add `short` summary for compact `docs` output
 
 ## Critical Thinking
 - Fix root cause (not band-aid).

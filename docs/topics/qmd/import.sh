@@ -221,7 +221,7 @@ existing_frontmatter() {
 default_frontmatter() {
   local target="$1"
   case "$target" in
-    "$TARGET_DIR/.ndex.md")
+    "$TARGET_DIR/.docs.md")
       cat <<'EOF'
 ---
 title: QMD
@@ -340,7 +340,7 @@ write_target() {
   rm -f "$frontmatter_file"
 }
 
-write_local_ndex_body() {
+write_local_docs_body() {
   cat <<'EOF'
 # QMD
 
@@ -472,8 +472,8 @@ REVISION="$(git -C "$SOURCE_ROOT" rev-parse --short HEAD 2>/dev/null || printf '
 
 BODY_FILE="$(mktemp)"
 
-write_local_ndex_body > "$BODY_FILE"
-write_target "$TARGET_DIR/.ndex.md" "$BODY_FILE"
+write_local_docs_body > "$BODY_FILE"
+write_target "$TARGET_DIR/.docs.md" "$BODY_FILE"
 
 write_local_qmd_body "$REVISION" > "$BODY_FILE"
 write_target "$TARGET_DIR/QMD.md" "$BODY_FILE"

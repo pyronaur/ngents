@@ -154,7 +154,7 @@ Example:
 /**
  * Show current docs index.
  * @autohelp
- * @usage ndex ls [where]
+ * @usage docs ls [where]
  */
 ```
 

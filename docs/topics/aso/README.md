@@ -6,7 +6,7 @@ This directory is a docs topic, not an auto-loaded skill. Use it as reference ma
 
 - `ASO.md`: local ASO guide and source of truth for the workflow and heuristics you already maintain.
 - `aso-store-aso-skill/`: upstream `app-store-aso-skill` content from Tim Broddin.
-- `.ndex.md`: optional hidden section guide for `ndex`.
+- `.docs.md`: optional hidden section guide for `docs`.
 
 ## How to use the upstream ASO skill
 
@@ -38,7 +38,7 @@ python ~/.ngents/docs/topics/aso/aso-store-aso-skill/scripts/validate_metadata.p
 Example prompt pattern for an agent:
 
 ```text
-Use the ASO docs section guide at ~/.ngents/docs/topics/aso/.ndex.md.
+Use the ASO docs section guide at ~/.ngents/docs/topics/aso/.docs.md.
 Reference ~/.ngents/docs/topics/aso/ASO.md first.
 Then use ~/.ngents/docs/topics/aso/aso-store-aso-skill/SKILL.md and validate the final metadata with validate_metadata.py.
 

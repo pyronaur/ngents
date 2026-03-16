@@ -27,6 +27,7 @@ ndex ls [where]
 ndex topic [topic] [section]
 ndex query [--limit <n>] <query...>
 ndex query status
+ndex update
 ```
 
 Root help copy and Liquid template logic live in `templates/root-help.md`.
@@ -79,6 +80,7 @@ Validation behavior:
 - `ndex ls` browses docs trees.
 - `ndex topic` browses merged topic libraries.
 - `ndex query` is the semantic-search fallback over global docs and topics.
+- `ndex update` refreshes the global QMD index and embeddings that power `ndex query`.
 
 ## Exit Codes
 

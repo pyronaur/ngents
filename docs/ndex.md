@@ -32,6 +32,7 @@ npm link
 - `ndex query <query...>` runs a QMD query against the global `~/.ngents/docs` library.
 - `ndex query --limit <n> <query...>` limits the number of search results.
 - `ndex query status` shows the query wrapper config and the underlying QMD status.
+- `ndex update` refreshes the global QMD docs index and embeddings used by `ndex query`.
 
 ## How `ndex` reads `docs/`
 
@@ -108,6 +109,12 @@ Result output includes:
 - a lightly cleaned snippet rendered as a quoted excerpt for follow-up reading
 - a short `Tip:` line at the top of every search output with anchored-query guidance
 
+## ndex update
+
+`ndex update` refreshes the same global QMD index that `ndex query` reads.
+
+It runs `qmd update` first, then `qmd embed`, using the dedicated ndex index and the ndex-specific cache/config roots.
+
 ## Machine setup
 
 - Index name: `ngents-docs`
@@ -116,6 +123,7 @@ Result output includes:
 - Cache root: `~/.ngents/local/qmd-cache`
 - Config root: `~/.ngents/local/qmd-config`
 - Search backend used by `ndex query`: `qmd query --json`
+- Maintenance backend used by `ndex update`: `qmd update`, then `qmd embed`
 - Default result count: `5`
 - Default min score: `0.35`
 
@@ -144,4 +152,5 @@ ndex query swiftui scroll view best practices
 ndex query --limit 3 swiftui scroll view best practices
 ndex query shell environment policy
 ndex query status
+ndex update
 ```

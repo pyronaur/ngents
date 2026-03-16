@@ -1,10 +1,16 @@
-import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import pc from "picocolors";
 
 import { runtimeError } from "../core/errors.ts";
+import {
+	CACHE_ROOT,
+	COLLECTION_NAME,
+	CONFIG_ROOT,
+	DOCS_ROOT,
+	INDEX_NAME,
+	runQmd,
+} from "./qmd.ts";
 
 type SearchResult = {
 	docid?: string;
@@ -25,11 +31,6 @@ type DocFrontmatter = {
 	readWhen: string | null;
 };
 
-const INDEX_NAME = "ngents-docs";
-const COLLECTION_NAME = "global-docs";
-const DOCS_ROOT = path.join(os.homedir(), ".ngents", "docs");
-const CACHE_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-cache");
-const CONFIG_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-config");
 const DEFAULT_LIMIT = 5;
 const DEFAULT_MIN_SCORE = "0.35";
 const DEFAULT_TIP =
@@ -37,49 +38,6 @@ const DEFAULT_TIP =
 const docFrontmatterCache = new Map<string, DocFrontmatter>();
 function fail(message: string): never {
 	throw runtimeError(message);
-}
-
-function qmdEnv(): NodeJS.ProcessEnv {
-	return {
-		...process.env,
-		XDG_CACHE_HOME: CACHE_ROOT,
-		XDG_CONFIG_HOME: CONFIG_ROOT,
-	};
-}
-
-async function runQmd(
-	args: string[],
-): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-	return new Promise((resolve, reject) => {
-		const child = spawn("qmd", ["--index", INDEX_NAME, ...args], {
-			env: qmdEnv(),
-		});
-
-		let stdout = "";
-		let stderr = "";
-
-		child.stdout.on("data", (chunk: Buffer | string) => {
-			stdout += chunk.toString();
-		});
-		child.stderr.on("data", (chunk: Buffer | string) => {
-			stderr += chunk.toString();
-		});
-		child.on("error", (error: NodeJS.ErrnoException) => {
-			if (error.code === "ENOENT") {
-				reject(runtimeError("qmd is required"));
-				return;
-			}
-
-			reject(error);
-		});
-		child.on("close", (exitCode) => {
-			resolve({
-				exitCode: exitCode ?? 1,
-				stdout,
-				stderr,
-			});
-		});
-	});
 }
 
 function stripVirtualPrefix(filePath: string): string {

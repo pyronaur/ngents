@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
@@ -416,12 +416,32 @@ async function seedFakeQmd(binDir: string): Promise<void> {
 		"qmd",
 		[
 			"#!/bin/sh",
+			'log_file="${NDEX_TEST_QMD_LOG:-}"',
+			'if [ -n "$log_file" ]; then',
+			'  printf "%s\n" "$*" >> "$log_file"',
+			"fi",
 			'if [ "$3" = "status" ]; then',
 			"  cat <<'EOF'",
 			"QMD Status",
 			"",
 			"Index: fake.sqlite",
 			"EOF",
+			"  exit 0",
+			"fi",
+			'if [ "$3" = "update" ]; then',
+			'  if [ "${NDEX_TEST_QMD_FAIL_UPDATE:-0}" = "1" ]; then',
+			'    printf "fake update failure\\n" >&2',
+			"    exit 1",
+			"  fi",
+			'  printf "Updating fake index\\n"',
+			"  exit 0",
+			"fi",
+			'if [ "$3" = "embed" ]; then',
+			'  if [ "${NDEX_TEST_QMD_FAIL_EMBED:-0}" = "1" ]; then',
+			'    printf "fake embed failure\\n" >&2',
+			"    exit 1",
+			"  fi",
+			'  printf "Embedding fake index\\n"',
 			"  exit 0",
 			"fi",
 			'if [ "$3" = "query" ]; then',
@@ -899,6 +919,88 @@ test("ndex query status preserves the status output shape", async () => {
 		expect(result.stdout).toContain("# ndex query status");
 		expect(result.stdout).toContain("- Index: ngents-docs");
 		expect(result.stdout).toContain("QMD Status");
+	});
+});
+
+test("ndex update runs qmd update then embed for the ndex index", async () => {
+	await withTempDir("ndex-update-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+
+		const result = await runNdexCli(["update"], {
+			env: {
+				...ndexEnv(homeDir, binDir),
+				NDEX_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("Updating fake index");
+		expect(result.stdout).toContain("Embedding fake index");
+		expect(await readFile(logFile, "utf8")).toBe(
+			[
+				"--index ngents-docs update",
+				"--index ngents-docs embed",
+				"",
+			].join("\n"),
+		);
+	});
+});
+
+test("ndex update stops before embed when qmd update fails", async () => {
+	await withTempDir("ndex-update-fail-update-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+
+		const result = await runNdexCli(["update"], {
+			env: {
+				...ndexEnv(homeDir, binDir),
+				NDEX_TEST_QMD_FAIL_UPDATE: "1",
+				NDEX_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("fake update failure");
+		expect(await readFile(logFile, "utf8")).toBe("--index ngents-docs update\n");
+	});
+});
+
+test("ndex update fails when qmd embed fails after a successful update", async () => {
+	await withTempDir("ndex-update-fail-embed-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+
+		const result = await runNdexCli(["update"], {
+			env: {
+				...ndexEnv(homeDir, binDir),
+				NDEX_TEST_QMD_FAIL_EMBED: "1",
+				NDEX_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stdout).toContain("Updating fake index");
+		expect(result.stderr).toContain("fake embed failure");
+		expect(await readFile(logFile, "utf8")).toBe(
+			[
+				"--index ngents-docs update",
+				"--index ngents-docs embed",
+				"",
+			].join("\n"),
+		);
 	});
 });
 

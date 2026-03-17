@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: Create or amend high-signal git commits with clear rationale. Use when the user asks to commit, fix a commit message, or says to “match commit quality.”
+description: Only invoked by the user. Use this skill to learn the commit style guide, but the commit process should be invoked by user directly using $git-commit.
 ---
 
 # Git Commit

@@ -1,6 +1,7 @@
 ---
 title: How To Edit AGENTS.md
 summary: "Rules for deciding what information belongs in a global AGENTS.md file."
+short: "Use when updating AGENTS.md"
 read_when:
   - Deciding whether a rule belongs in a global AGENTS.md file.
   - Need to distinguish global guidance from task-specific guidance.

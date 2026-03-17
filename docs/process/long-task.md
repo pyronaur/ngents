@@ -1,6 +1,7 @@
 ---
 title: Long Task
 summary: "Workflow for long-running tasks."
+short: "Use when preparing a long-running agent task"
 read_when:
   - Working on a long task.
 ---

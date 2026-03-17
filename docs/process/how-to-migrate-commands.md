@@ -1,6 +1,7 @@
 ---
 title: How To Migrate Commands
 summary: "Compact process for classifying a command migration and reading the right docs before implementation."
+short: "Use migrating CLI script frameworks"
 read_when:
   - Migrating an existing command.
   - Need to determine which command-system docs apply before implementation.

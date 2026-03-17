@@ -1,6 +1,7 @@
 ---
 title: QA Process
 summary: "Step-by-step clarification process for you to lead with the user when you are confused, have made assumptions, or need to surface unresolved questions."
+short: "Use when confusion needs a structured clarification process"
 read_when:
   - Need a structured way to surface confusion instead of making assumptions.
   - Need to lead a clarification process one step at a time.

@@ -1,6 +1,7 @@
 ---
 title: Create Process Document
 summary: "How to create a new process document without inventing steps or overextending beyond what has been defined."
+short: "Use when creating or refining a process document"
 read_when:
   - Creating a new process document during a live conversation.
   - Need to formalize a process incrementally instead of writing the full guide upfront.

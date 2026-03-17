@@ -9,7 +9,6 @@ async function renderRootHelp(includeDocsIndex: boolean): Promise<string> {
 
 	process.env.NO_COLOR = "1";
 	delete process.env.FORCE_COLOR;
-	vi.resetModules();
 
 	const logSpy = vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
 		captured.push(args.map(value => String(value)).join(" "));
@@ -32,7 +31,6 @@ async function renderRootHelp(includeDocsIndex: boolean): Promise<string> {
 		} else {
 			process.env.FORCE_COLOR = originalForceColor;
 		}
-		vi.resetModules();
 	}
 
 	return `${captured.join("\n")}\n`;
@@ -43,9 +41,9 @@ afterEach(() => {
 });
 
 test("printRootHelp renders the bare root help snapshot", async () => {
-	await expect(renderRootHelp(true)).resolves.toMatchSnapshot();
+	expect(await renderRootHelp(true)).toMatchSnapshot();
 });
 
 test("printRootHelp renders the help-only root help snapshot", async () => {
-	await expect(renderRootHelp(false)).resolves.toMatchSnapshot();
+	expect(await renderRootHelp(false)).toMatchSnapshot();
 });

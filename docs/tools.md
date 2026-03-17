@@ -99,6 +99,16 @@ Machine-local Chrome CDP session commands.
 - Use `cdp stop` only when the shared local browser session should be shut down.
 - Read `docs/browser/cdp.md` for the tracked contract and config schema.
 
+## ngents hig-doctor
+
+Filtered HIG audit wrapper with repo-local YAML ignores.
+
+- Use `ngents hig-doctor [directory]` instead of calling `hig-doctor` directly from app repos.
+- Configure exact allowed concerns in `.higignore.yaml` at the current working directory.
+- Ignore entries must set `file`, `pattern`, `line`, and `reason`.
+- The command writes markdown to `stdout` only for remaining issues and a separate `Ignored Concerns` section for filtered matches.
+- When issues remain, `stderr` prints the concern count and the `docs topic ios hig-doctor` hint for the relevant HIG skill.
+
 ## mcporter
 
 Single MCP path for this repo.

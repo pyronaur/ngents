@@ -250,11 +250,12 @@ function renderIgnoredConcernsMarkdown(ignoredConcerns: IgnoredConcern[]): strin
 
 	for (const ignoredConcern of ignoredConcerns) {
 		const { match, reason } = ignoredConcern;
-		lines.push(`- \`${match.file}:${String(match.line)}\` \`${match.pattern}\`: ok because ${reason}`);
-		lines.push(`  > \`${formatLineContent(match.lineContent)}\``);
+		lines.push(`- \`${match.pattern}\`: ok because ${reason}`);
+		lines.push(`  -> in \`${match.file}:${String(match.line)}\``);
+		lines.push('');
 	}
 
-	return lines.join('\n');
+	return lines.join('\n').trimEnd();
 }
 
 function renderMarkdown(categories: CategorySummary[], ignoredConcerns: IgnoredConcern[]): string {

@@ -156,7 +156,8 @@ test('exact file pattern and line ignore suppresses only that concern', async ()
 		expect(result.stdout).toContain('# HIG Doctor Issues');
 		expect(result.stdout).toContain('Sources/Sample.swift:13');
 		expect(result.stdout).toContain('## Ignored Concerns');
-		expect(result.stdout).toContain('Sources/Sample.swift:6');
+		expect(result.stdout).toContain('`ignoresSafeArea`: ok because Full-bleed background must extend behind safe areas.');
+		expect(result.stdout).toContain('-> in `Sources/Sample.swift:6`');
 		expect(result.stderr).toContain('1 HIG concern(s) found.');
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
@@ -226,6 +227,9 @@ test('fully ignored concerns produce only ignored markdown and succeed', async (
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).not.toContain('# HIG Doctor Issues');
 		expect(result.stdout).toContain('## Ignored Concerns');
+		expect(result.stdout).toContain('-> in `Sources/Sample.swift:6`');
+		expect(result.stdout).toContain('-> in `Sources/Sample.swift:13`');
+		expect(result.stdout).toContain('`\n\n- `ignoresSafeArea`');
 		expect(result.stderr).toBe('');
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });

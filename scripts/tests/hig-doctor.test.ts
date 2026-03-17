@@ -91,6 +91,7 @@ test('missing config file leaves visible concerns in markdown output', async () 
 		expect(result.stdout).toContain('# HIG Doctor Issues');
 		expect(result.stdout).toContain('Sources/Sample.swift:6');
 		expect(result.stdout).toContain('Sources/Sample.swift:13');
+		expect(result.stdout).toContain('`.ignoresSafeArea()`\n\n- `Sources/Sample.swift:13`');
 		expect(result.stderr).toContain('2 HIG concern(s) found.');
 		expect(result.stderr).toContain('Relevant HIG skill: hig-foundations');
 	} finally {

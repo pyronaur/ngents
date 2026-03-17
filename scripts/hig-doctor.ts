@@ -233,12 +233,11 @@ function renderConcernsMarkdown(categories: CategorySummary[]): string {
 		for (const match of category.matches) {
 			lines.push(`- \`${match.file}:${String(match.line)}\` \`${match.pattern}\``);
 			lines.push(`  > \`${formatLineContent(match.lineContent)}\``);
+			lines.push('');
 		}
-
-		lines.push('');
 	}
 
-	return lines.join('\n').trim();
+	return lines.join('\n').trimEnd();
 }
 
 function renderIgnoredConcernsMarkdown(ignoredConcerns: IgnoredConcern[]): string {

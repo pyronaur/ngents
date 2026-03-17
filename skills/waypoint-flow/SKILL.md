@@ -1,23 +1,37 @@
 ---
 name: waypoint-flow
-description: Install and apply waypoint flow, an opt-in repo commit cadence. Use when asked for `$waypoint-flow setup`, when a repo wants waypoint flow, or when the repo `AGENTS.md` says to read `$waypoint-flow` once per session before making changes. After it is loaded, follow the repo’s `Waypoint Gate` and create waypoint commits for your own verified changes.
+description: Install and apply waypoint flow, an opt-in repo commit cadence. Use when asked for `$waypoint-flow setup`, when a repo wants waypoint flow, or when the repo `AGENTS.md` says to read `$waypoint-flow` before making changes. After it is loaded, follow the repo’s `Waypoint Gate` and create waypoint commits for your own verified changes.
 ---
 
 # Waypoint Flow
 
 ## Overview
 
-Waypoint flow means you commit automatically after the configured `Waypoint Gate` passes.
+Waypoint flow is a work style for building in stable vertical slices and committing automatically after the configured `Waypoint Gate` passes for a verified slice.
 
 ## `$waypoint-flow setup`
 
-When invoked as `$waypoint-flow setup`, read [references/setup.md](references/setup.md) and follow it exactly.
+When invoked as `$waypoint-flow setup`, read [references/setup.md](references/setup.md) and use it as the setup guide.
+
+## Waypoint Policy
+
+- Treat this file as the default authority for waypoint-flow work style and commit cadence.
+- Repo `AGENTS.md` may add repo-specific waypoint policy, gate choices, and exceptions, but should not silently replace this work style.
+- Work in stable vertical slices.
+- A stable vertical slice is a change that is materially implemented, has no known dangling partial wiring, and is safe to verify and commit even if the larger task is not finished.
+- As soon as a slice is stable, run the full `Waypoint Gate`. Do not wait to batch more work first.
+- If the `Waypoint Gate` passes, commit your own verified changes for that slice immediately.
+- Prefer smaller verified slices over broad multi-file passes that delay linting or testing feedback.
+- Ignore failing lint or test results that come only from files or surfaces you did not affect.
+- Do not auto-commit markdown-first work. When the user is iterating directly on markdown, prompts, or planning documents, leave those changes uncommitted unless the user explicitly asks for a commit.
+- Markdown updates that directly document or support a verified code slice may be committed with that slice.
 
 ## Runtime Rule
 
-- Read the exact command or exact ordered command list under `Waypoint Gate:` in `AGENTS.md`.
-- Keep working normally until that exact `Waypoint Gate` passes.
-- Once that `Waypoint Gate` passes, commit only your own intended changes immediately.
+- Read the exact command or exact ordered command list under the repo's `Waypoint Gate` heading in `AGENTS.md`.
+- Use the repo's `Waypoint Flow Policy` together with this file to understand when a slice is ready to verify.
+- Keep working normally until a stable slice is ready and that exact `Waypoint Gate` passes.
+- Once that `Waypoint Gate` passes, commit only your own intended verified changes immediately.
 - Do not wait for manual approval.
 
 ## Waypoint Commit

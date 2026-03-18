@@ -5,6 +5,7 @@
 
 ## Agent Protocol
 - Context: Prioritize `docs` for fast access to repo/shared combined docs, notes, skills.
+- MCP: If a skill or command references an MCP you do not have wired up, use `mcporter` first; it is the universal on-demand MCP path and avoids persistent config/context pollution.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).

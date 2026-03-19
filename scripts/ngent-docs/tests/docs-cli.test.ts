@@ -1433,8 +1433,27 @@ test("docs park rejects invalid docs roots before mutating qmd", async () => {
 });
 
 test("unknown commands return a usage failure", async () => {
-const result = await runDocsCli(["wat"]);
+	const result = await runDocsCli(["wat"]);
 
 	expect(result.exitCode).toBe(2);
 	expect(result.stderr.toLowerCase()).toContain("unknown command");
+	expect(result.stderr).toContain("Usage: docs [options] [command]");
+});
+
+test("missing required arguments print one error line plus command usage", async () => {
+	const result = await runDocsCli(["park"]);
+
+	expect(result.exitCode).toBe(2);
+	expect(result.stderr).toContain("error: missing required argument 'name'");
+	expect(result.stderr).toContain("Usage: docs park <name> [path]");
+	expect(result.stderr.match(/missing required argument 'name'/g)?.length ?? 0).toBe(1);
+});
+
+test("missing option values print one error line plus command usage", async () => {
+	const result = await runDocsCli(["query", "--limit"]);
+
+	expect(result.exitCode).toBe(2);
+	expect(result.stderr.toLowerCase()).toContain("option '--limit <n>' argument missing");
+	expect(result.stderr).toContain(`Usage: ${CANONICAL_QUERY_USAGE}`);
+	expect(result.stderr.match(/option '--limit <n>' argument missing/g)?.length ?? 0).toBe(1);
 });

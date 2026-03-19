@@ -35,9 +35,18 @@ Every rule is a generalization. When you observe something specific — a mistak
 
 The test: if the specific instance that prompted the rule were renamed, replaced, or removed, would the rule still be correct and useful? If not, abstract further until it passes.
 
+## Semantic Boundaries
+
+Identify the consumer for each layer before writing.
+Filename and path are discovery triggers; headings, summaries, and body content are payload for readers.
+Do not preserve user phrasing when it mixes layers.
+Re-derive the rule from the consumer's job and write only the positive contract that belongs in that layer.
+Avoid contrastive wording such as "not X" when the layer should simply state what it is for.
+Avoid self-description when the filename, path, or surrounding system already carries that information.
+
 ## Structure
 
-- H1: `# AGENTS.md` as document title; additional H1 only for major thematic dividers
+- H1: required document title naming the project, system, or workspace this AGENTS file governs
 - H2: primary sections
 - H3/H4: subsections and named blocks
 - Never use bold as a heading substitute

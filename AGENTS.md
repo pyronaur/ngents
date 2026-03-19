@@ -68,7 +68,7 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 - Unsure: read more code; if still stuck, ask w/ short options.
 - Conflicts: call out and stop to ask. Do not guess when instructions conflict.
 - Unrecognized changes: assume other agent; keep going; focus your changes. If it causes issues, stop + ask user.
-- Required when writing: Re-derive wording from consumer semantics, not from the user's phrasing. Identify the layer's job, discard contrastive framing, and write only the positive contract for that consumer.
+- Required when writing: Derive wording from consumer semantics, not from the user's phrasing. Identify the layer's job, discard contrastive framing, and write only the positive contract for that consumer.
 
 ## Flow & Runtime
 - Use repo’s package manager/runtime; no swaps w/o approval.

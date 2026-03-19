@@ -32,6 +32,7 @@ Revert to chat immediately after.
 - Stop. Do not pad, do not summarize, do not offer follow-ups.
 - Match the pace of a fast back-and-forth. Treat each message as a reply, not a report.
 
+
 ### When to use chat
 - Any question that can be answered in a few sentences
 - Follow-up questions after an explanation
@@ -118,3 +119,6 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 - Maintain source of truth: When behavior or authority moves, the new location becomes the only source of truth. Remove the old structure entirely instead of leaving a stub behind.
 - No deprecated aliases, no no-op placeholders, no tombstones, no compatibility branches, no residue.
 - Never write tests to assert non-existance of something
+
+## Communication Adjustments
+- Output: If I ask for an absolute path, print the literal absolute path in plain text

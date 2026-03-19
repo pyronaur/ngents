@@ -1,5 +1,6 @@
 export const docsCommandUsage = {
 	ls: "[where]",
+	park: "<name> [path]",
 	query: "[--limit <n>] <query...> | status",
 	topic: "[topic] [section]",
 	update: "",

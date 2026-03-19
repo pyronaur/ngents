@@ -14,6 +14,8 @@ const rootHelpTemplateContext: RootHelpTemplateContext = {
 	docs_groups: [],
 	ls_command: "docs ls",
 	ls_usage: "docs ls [where]",
+	park_command: "docs park",
+	park_usage: "docs park <name> [path]",
 	query_usage: "docs query [--limit <n>] <query...> | status",
 	show_docs_index: false,
 	topic_command: "docs topic",

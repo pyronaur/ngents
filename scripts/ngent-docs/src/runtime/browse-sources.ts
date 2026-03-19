@@ -4,6 +4,7 @@ import path from "node:path";
 import { runtimeError } from "../core/errors.ts";
 import browseContracts, { type DocsSources } from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
+import { isQmdRequiredError, listQmdCollections } from "./qmd.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -17,14 +18,6 @@ async function isDirectory(directoryPath: string): Promise<boolean> {
 
 function uniquePaths(paths: string[]): string[] {
 	return Array.from(new Set(paths)).sort((left, right) => left.localeCompare(right));
-}
-
-function globalDocsRootFromHome(homeDir: string | undefined): string[] {
-	if (!homeDir) {
-		return [];
-	}
-
-	return [normalizePath(path.join(homeDir, ".ngents", "docs"))];
 }
 
 function isWithinDocsRoots(targetPath: string, docsRoots: string[]): boolean {
@@ -46,10 +39,21 @@ export async function discoverDocsSources(currentDir: string): Promise<DocsSourc
 	const normalizedCurrentDir = normalizePath(currentDir);
 	const repoRoot = await browseDiscovery.discoverRepoRoot(normalizedCurrentDir);
 	const localDocsRoots = await browseDiscovery.discoverDocsRoots(repoRoot ?? normalizedCurrentDir);
-	const globalDocsRoots = [];
-	for (const docsRoot of globalDocsRootFromHome(process.env.HOME)) {
-		if (await isDirectory(docsRoot)) {
+
+	const globalDocsRoots: string[] = [];
+	try {
+		const collections = await listQmdCollections();
+		for (const collection of collections) {
+			const docsRoot = normalizePath(collection.path);
+			if (!(await isDirectory(docsRoot))) {
+				continue;
+			}
+
 			globalDocsRoots.push(docsRoot);
+		}
+	} catch (error) {
+		if (!isQmdRequiredError(error)) {
+			throw error;
 		}
 	}
 

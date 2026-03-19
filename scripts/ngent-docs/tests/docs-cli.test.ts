@@ -413,6 +413,26 @@ async function seedGlobalDocsHome(homeDir: string): Promise<void> {
 	);
 }
 
+async function seedQmdState(homeDir: string, entries: Array<{ name: string; path: string }>): Promise<void> {
+	const stateContents = entries.map(entry => `${entry.name}\t${entry.path}`).join("\n");
+	await writeText(
+		path.join(homeDir, ".ngents", "local", "qmd-config", "docs-qmd-state.tsv"),
+		stateContents.length > 0 ? `${stateContents}\n` : "",
+	);
+}
+
+async function seedGlobalDocsIndex(
+	homeDir: string,
+	binDir: string,
+	collectionName = "global",
+): Promise<void> {
+	await seedFakeQmd(binDir);
+	await seedQmdState(homeDir, [{
+		name: collectionName,
+		path: path.join(homeDir, ".ngents", "docs"),
+	}]);
+}
+
 async function seedFakeQmd(binDir: string): Promise<void> {
 	await writeExecutable(
 		binDir,
@@ -420,8 +440,58 @@ async function seedFakeQmd(binDir: string): Promise<void> {
 		[
 			"#!/bin/sh",
 			'log_file="${DOCS_TEST_QMD_LOG:-}"',
+			'state_file="${DOCS_TEST_QMD_STATE:-${XDG_CONFIG_HOME:-$HOME/.config}/docs-qmd-state.tsv}"',
+			'state_dir=$(dirname "$state_file")',
+			'mkdir -p "$state_dir"',
+			'touch "$state_file"',
 			'if [ -n "$log_file" ]; then',
 			'  printf "%s\n" "$*" >> "$log_file"',
+			"fi",
+			'lookup_path() {',
+			'  awk -F "\\t" -v collection_name="$1" \'$1 == collection_name { print $2; found = 1 } END { if (!found) exit 1 }\' "$state_file"',
+			"}",
+			'first_collection_name() {',
+			'  awk -F "\\t" \'NF > 0 { print $1; exit }\' "$state_file"',
+			"}",
+			'if [ "$3" = "collection" ] && [ "$4" = "list" ]; then',
+			'  count=$(grep -c "." "$state_file" 2>/dev/null || true)',
+			'  if [ "$count" = "0" ]; then',
+			"    printf \"No collections found. Run 'qmd collection add .' to create one.\\n\"",
+			"    exit 0",
+			"  fi",
+			'  printf "Collections (%s):\\n\\n" "$count"',
+			"  while IFS=\"$(printf '\\t')\" read -r collection_name collection_path; do",
+			'    [ -z "$collection_name" ] && continue',
+			'    printf "%s (qmd://%s/)\\n" "$collection_name" "$collection_name"',
+			'    printf "  Pattern:  **/*.md\\n"',
+			'    printf "  Files:    1\\n"',
+			'    printf "  Updated:  0s ago\\n\\n"',
+			'  done < "$state_file"',
+			"  exit 0",
+			"fi",
+			'if [ "$3" = "collection" ] && [ "$4" = "show" ]; then',
+			'  collection_name="$5"',
+			'  collection_path=$(lookup_path "$collection_name") || { printf "collection not found\\n" >&2; exit 1; }',
+			'  printf "Collection: %s\\n" "$collection_name"',
+			'  printf "  Path:     %s\\n" "$collection_path"',
+			'  printf "  Pattern:  **/*.md\\n"',
+			'  printf "  Include:  yes (default)\\n"',
+			"  exit 0",
+			"fi",
+			'if [ "$3" = "collection" ] && [ "$4" = "add" ]; then',
+			'  collection_path="$5"',
+			'  collection_name="$7"',
+			'  if lookup_path "$collection_name" >/dev/null 2>&1; then',
+			'    printf "collection already exists\\n" >&2',
+			"    exit 1",
+			"  fi",
+			'  printf "%s\\t%s\\n" "$collection_name" "$collection_path" >> "$state_file"',
+			"  printf \"Creating collection '%s'...\\n\" \"$collection_name\"",
+			'  printf "Collection: %s (**/*.md)\\n\\n" "$collection_path"',
+			'  printf "Indexed: 1 new, 0 updated, 0 unchanged, 0 removed\\n\\n"',
+			"  printf \"Run 'qmd embed' to update embeddings (1 unique hashes need vectors)\\n\"",
+			"  printf \"✓ Collection '%s' created successfully\\n\" \"$collection_name\"",
+			"  exit 0",
 			"fi",
 			'if [ "$3" = "status" ]; then',
 			"  cat <<'EOF'",
@@ -448,9 +518,13 @@ async function seedFakeQmd(binDir: string): Promise<void> {
 			"  exit 0",
 			"fi",
 			'if [ "$3" = "query" ]; then',
-			"  cat <<'EOF'",
-			'[{"file":"qmd://global-docs/ngents/docs.md","title":"Documentation Commands","score":0.91,"context":"Need one place that explains which ngents script commands exist and how to run them.","snippet":"@@ -12,2 @@\\n# docs query\\nSearch docs quickly."}]',
-			"EOF",
+			'  if [ -n "${DOCS_TEST_QMD_QUERY_RESULTS:-}" ]; then',
+			'    printf "%s\\n" "$DOCS_TEST_QMD_QUERY_RESULTS"',
+			"    exit 0",
+			"  fi",
+			'  default_collection=$(first_collection_name)',
+			'  [ -z "$default_collection" ] && default_collection="ngents"',
+			"  printf '%s\\n' \"[{\\\"file\\\":\\\"qmd://$default_collection/ngents/docs.md\\\",\\\"title\\\":\\\"Documentation Commands\\\",\\\"score\\\":0.91,\\\"context\\\":\\\"Need one place that explains which ngents script commands exist and how to run them.\\\",\\\"snippet\\\":\\\"@@ -12,2 @@\\\\n# docs query\\\\nSearch docs quickly.\\\"}]\"",
 			"  exit 0",
 			"fi",
 			'printf "unexpected qmd args: %s\\n" "$*" >&2',
@@ -471,18 +545,22 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 	await withTempDir("docs-root-help-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli([], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# docs");
 		expect(result.stdout).toContain(CANONICAL_QUERY_USAGE);
 		expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
+		expect(result.stdout).toContain("docs park <name> [path]");
 		expect(result.stdout).toContain("docs topic [topic] [section]");
 		expect(result.stdout).toContain("docs ls [where]");
 		expect(result.stdout).toContain("qmd");
@@ -508,20 +586,23 @@ test("docs --help uses the same markdown help style without the docs index", asy
 	await withTempDir("docs-help-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const bare = await runDocsCli([], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 		const help = await runDocsCli(["--help"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 		const helpCommand = await runDocsCli(["help"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(help.exitCode).toBe(0);
@@ -529,6 +610,7 @@ test("docs --help uses the same markdown help style without the docs index", asy
 		expect(help.stdout).toContain("# docs");
 		expect(help.stdout).toContain(CANONICAL_QUERY_USAGE);
 		expect(help.stdout).not.toContain(STALE_QUERY_USAGE);
+		expect(help.stdout).toContain("docs park <name> [path]");
 		expect(help.stdout).toContain("docs topic [topic] [section]");
 		expect(help.stdout).not.toContain("web-fetching.md - web browser tools");
 		expect(help.stdout).not.toContain("## Project Docs");
@@ -551,18 +633,22 @@ test("docs reference doc uses the canonical query signature", async () => {
 
 	expect(contents).toContain(CANONICAL_QUERY_USAGE);
 	expect(contents).not.toContain(STALE_QUERY_USAGE);
+	expect(contents).toContain("docs park <name> [path]");
 });
 
 test("docs ls merges local and global docs by default", async () => {
 	await withTempDir("docs-ls-merged-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -581,12 +667,15 @@ test("docs ls . shows only local docs", async () => {
 	await withTempDir("docs-ls-local-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls", "."], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -599,12 +688,15 @@ test("docs ls global shows only global docs", async () => {
 	await withTempDir("docs-ls-global-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls", "global"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -617,12 +709,15 @@ test("docs ls ./docs/subdir focuses a local docs subtree", async () => {
 	await withTempDir("docs-ls-subdir-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls", "./docs/architecture"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -638,12 +733,15 @@ test("docs ls docs/subdir merges matching local and global doc subtrees", async 
 	await withTempDir("docs-ls-subdir-merged-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls", "docs/architecture"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -661,12 +759,15 @@ test("docs ls docs/subdir succeeds when only the global subtree exists", async (
 	await withTempDir("docs-ls-subdir-global-only-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls", "docs/process"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -680,12 +781,15 @@ test("docs ls docs/subdir fails only when the subtree is missing everywhere", as
 	await withTempDir("docs-ls-subdir-missing-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["ls", "docs/missing"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(1);
@@ -697,12 +801,15 @@ test("docs topic shows the merged topic index", async () => {
 	await withTempDir("docs-topic-index-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["topic"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -721,12 +828,15 @@ test("docs topic merges local and global topic contributions", async () => {
 	await withTempDir("docs-topic-merged-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["topic", "qmd"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -742,14 +852,17 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 	await withTempDir("docs-topic-dynamic-skills-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedSkillBackedSection(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 		const normalizedRepoDir = await realpath(repoDir);
 
 		const result = await runDocsCli(["topic", "ios"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		const expected = [
@@ -814,12 +927,15 @@ test("docs topic section focuses a merged section view", async () => {
 	await withTempDir("docs-topic-section-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 
 		const result = await runDocsCli(["topic", "qmd", "references"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -835,13 +951,16 @@ test("docs topic section renders a single root skill directly", async () => {
 	await withTempDir("docs-topic-skill-section-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
 		const normalizedRepoDir = await realpath(repoDir);
 
 		const result = await runDocsCli(["topic", "ios", "ios-debugger-agent"], {
 			cwd: repoDir,
-			env: docsEnv(homeDir),
+			env: docsEnv(homeDir, binDir),
 		});
 
 		const referencesDir = path.join(
@@ -986,7 +1105,7 @@ test("docs query status preserves the status output shape", async () => {
 		const binDir = path.join(tempDir, "bin");
 		await mkdir(binDir, { recursive: true });
 		await seedGlobalDocsHome(homeDir);
-		await seedFakeQmd(binDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "ngents");
 
 		const result = await runDocsCli(["query", "status"], {
 			env: docsEnv(homeDir, binDir),
@@ -995,7 +1114,26 @@ test("docs query status preserves the status output shape", async () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# docs query status");
 		expect(result.stdout).toContain("- Index: ngents-docs");
+		expect(result.stdout).toContain("- Collections: ngents");
 		expect(result.stdout).toContain("QMD Status");
+	});
+});
+
+test("docs query status shows no collections when nothing is parked", async () => {
+	await withTempDir("docs-query-status-empty-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+
+		const result = await runDocsCli(["query", "status"], {
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("- Collections: -");
+		expect(result.stdout).not.toContain("- Collections: ngents");
 	});
 });
 
@@ -1047,7 +1185,12 @@ test("docs update stops before embed when qmd update fails", async () => {
 
 		expect(result.exitCode).toBe(1);
 		expect(result.stderr).toContain("fake update failure");
-		expect(await readFile(logFile, "utf8")).toBe("--index ngents-docs update\n");
+		expect(await readFile(logFile, "utf8")).toBe(
+			[
+				"--index ngents-docs update",
+				"",
+			].join("\n"),
+		);
 	});
 });
 
@@ -1085,12 +1228,16 @@ test("docs query preserves formatted search output and limit handling", async ()
 	await withTempDir("docs-query-search-", async (tempDir) => {
 		const homeDir = path.join(tempDir, "home");
 		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
 		await mkdir(binDir, { recursive: true });
 		await seedGlobalDocsHome(homeDir);
-		await seedFakeQmd(binDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "ngents");
 
 		const result = await runDocsCli(["query", "--limit", "3", "shell", "environment", "policy"], {
-			env: docsEnv(homeDir, binDir),
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -1099,6 +1246,189 @@ test("docs query preserves formatted search output and limit handling", async ()
 		expect(result.stdout).toContain(
 			path.join(homeDir, ".ngents", "docs", "ngents", "docs.md") + ":12-13",
 		);
+		expect(await readFile(logFile, "utf8")).not.toContain(" -c ");
+	});
+});
+
+test("docs park adds a named collection, refreshes the index, and exposes parked docs in browse", async () => {
+	await withTempDir("docs-park-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const projectDir = path.join(tempDir, "project");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
+		await writeText(
+			path.join(projectDir, "docs", "topics", "infra", ".docs.md"),
+			[
+				"---",
+				"title: Infrastructure",
+				"summary: Infrastructure docs.",
+				"---",
+				"",
+				"# Infrastructure",
+				"",
+				"Infra body.",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(projectDir, "docs", "runbook.md"),
+			[
+				"---",
+				"title: Runbook",
+				"summary: Parked runbook docs.",
+				"---",
+				"",
+				"# Runbook",
+				"",
+				"Runbook body.",
+				"",
+			].join("\n"),
+		);
+
+		const parkResult = await runDocsCli(["park", "nconf", projectDir], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(parkResult.exitCode).toBe(0);
+		expect(parkResult.stdout).toContain(`Parked "nconf" at ${path.join(projectDir, "docs")}`);
+		const logContents = await readFile(logFile, "utf8");
+		expect(logContents).toContain(
+			`--index ngents-docs collection add ${path.join(projectDir, "docs")} --name nconf`,
+		);
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).toContain("--index ngents-docs embed");
+
+		const lsResult = await runDocsCli(["ls", "global"], {
+			env: docsEnv(homeDir, binDir),
+		});
+		expect(lsResult.exitCode).toBe(0);
+		expect(lsResult.stdout).toContain(path.join(projectDir, "docs"));
+
+		const topicResult = await runDocsCli(["topic", "infra"], {
+			env: docsEnv(homeDir, binDir),
+		});
+		expect(topicResult.exitCode).toBe(0);
+		expect(topicResult.stdout).toContain("# Infrastructure");
+		expect(topicResult.stdout).toContain(path.join(projectDir, "docs", "topics", "infra"));
+	});
+});
+
+test("docs park allows ngents as a normal collection name", async () => {
+	await withTempDir("docs-park-ngents-name-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const projectDir = path.join(tempDir, "project");
+		const binDir = path.join(tempDir, "bin");
+		const stateFile = path.join(tempDir, "qmd-state.tsv");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+		await writeText(path.join(projectDir, "docs", "guide.md"), "# Guide\n");
+
+		const result = await runDocsCli(["park", "ngents", projectDir], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_STATE: stateFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(`Parked "ngents" at ${path.join(projectDir, "docs")}`);
+		expect(await readFile(stateFile, "utf8")).toContain(
+			`ngents\t${path.join(projectDir, "docs")}\n`,
+		);
+	});
+});
+
+test("docs ls global ignores unparked global docs roots", async () => {
+	await withTempDir("docs-ls-global-explicit-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+
+		const result = await runDocsCli(["ls", "global"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Docs root not found: global");
+		expect(result.stdout).not.toContain(path.join(homeDir, ".ngents", "docs"));
+	});
+});
+
+test("docs park rejects duplicate names and duplicate docs roots", async () => {
+	await withTempDir("docs-park-collisions-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const projectDir = path.join(tempDir, "project");
+		const otherProjectDir = path.join(tempDir, "other-project");
+		const binDir = path.join(tempDir, "bin");
+		const stateFile = path.join(tempDir, "qmd-state.tsv");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+		await writeText(path.join(projectDir, "docs", "guide.md"), "# Guide\n");
+		await writeText(path.join(otherProjectDir, "docs", "guide.md"), "# Other Guide\n");
+
+		const first = await runDocsCli(["park", "nconf", projectDir], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_STATE: stateFile,
+			},
+		});
+		expect(first.exitCode).toBe(0);
+
+		const duplicateName = await runDocsCli(["park", "nconf", otherProjectDir], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_STATE: stateFile,
+			},
+		});
+		expect(duplicateName.exitCode).toBe(1);
+		expect(duplicateName.stderr).toContain("Docs collection already parked: nconf");
+
+		const duplicatePath = await runDocsCli(["park", "other", projectDir], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_STATE: stateFile,
+			},
+		});
+		expect(duplicatePath.exitCode).toBe(1);
+		expect(duplicatePath.stderr).toContain('Docs root already parked as "nconf"');
+	});
+});
+
+test("docs park rejects invalid docs roots before mutating qmd", async () => {
+	await withTempDir("docs-park-invalid-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const projectDir = path.join(tempDir, "project");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+		await mkdir(projectDir, { recursive: true });
+
+		const result = await runDocsCli(["park", "broken", projectDir], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain(`Not a docs root: ${projectDir}`);
+		const logContents = await readFile(logFile, "utf8").catch(() => "");
+		expect(logContents).toBe("");
 	});
 });
 

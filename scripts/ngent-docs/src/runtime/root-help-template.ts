@@ -17,6 +17,8 @@ export type RootHelpTemplateContext = {
 	ls_command: string;
 	docs_groups: RootHelpDocsGroup[];
 	ls_usage: string;
+	park_command: string;
+	park_usage: string;
 	query_usage: string;
 	show_docs_index: boolean;
 	topic_command: string;

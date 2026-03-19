@@ -4,14 +4,7 @@ import pc from "picocolors";
 
 import { runtimeError } from "../core/errors.ts";
 import { docsCommandUsage } from "../core/usage.ts";
-import {
-	CACHE_ROOT,
-	COLLECTION_NAME,
-	CONFIG_ROOT,
-	DOCS_ROOT,
-	INDEX_NAME,
-	runQmd,
-} from "./qmd.ts";
+import { CACHE_ROOT, CONFIG_ROOT, INDEX_NAME, listQmdCollections, runQmd } from "./qmd.ts";
 
 type SearchResult = {
 	docid?: string;
@@ -37,21 +30,36 @@ const DEFAULT_MIN_SCORE = "0.35";
 const DEFAULT_TIP =
 	"Tip: Write anchored queries, not conversational ones: <product/library> <mechanism> <exact term if known>";
 const docFrontmatterCache = new Map<string, DocFrontmatter>();
+
 function fail(message: string): never {
 	throw runtimeError(message);
 }
 
-function stripVirtualPrefix(filePath: string): string {
-	const prefix = `qmd://${COLLECTION_NAME}/`;
-	if (!filePath.startsWith(prefix)) {
+function parseVirtualPath(
+	filePath: string,
+): { collectionName: string; relativePath: string } | null {
+	const match = /^qmd:\/\/([^/]+)\/(.+)$/.exec(filePath);
+	const collectionName = match?.[1]?.trim();
+	const relativePath = match?.[2]?.trim();
+	if (!collectionName || !relativePath) {
+		return null;
+	}
+
+	return { collectionName, relativePath };
+}
+
+function toAbsoluteDocPath(filePath: string, collectionRoots: Map<string, string>): string {
+	const parsed = parseVirtualPath(filePath);
+	if (!parsed) {
 		return filePath;
 	}
 
-	return filePath.slice(prefix.length);
-}
+	const docsRoot = collectionRoots.get(parsed.collectionName);
+	if (!docsRoot) {
+		return filePath;
+	}
 
-function toAbsoluteDocPath(filePath: string): string {
-	return path.join(DOCS_ROOT, stripVirtualPrefix(filePath));
+	return path.join(docsRoot, parsed.relativePath);
 }
 
 function parseSnippetAnchor(line: string): SnippetAnchor | null {
@@ -78,8 +86,12 @@ function parseSnippetAnchor(line: string): SnippetAnchor | null {
 	};
 }
 
-function formatPathWithAnchor(filePath: string, anchor: SnippetAnchor | null): string {
-	const absolutePath = toAbsoluteDocPath(filePath);
+function formatPathWithAnchor(
+	filePath: string,
+	anchor: SnippetAnchor | null,
+	collectionRoots: Map<string, string>,
+): string {
+	const absolutePath = toAbsoluteDocPath(filePath, collectionRoots);
 	if (!anchor) {
 		return absolutePath;
 	}
@@ -282,8 +294,12 @@ function readDocFrontmatter(absolutePath: string): DocFrontmatter {
 	return parsed;
 }
 
-function pickOverview(filePath: string, context: string | undefined): string | null {
-	const absolutePath = toAbsoluteDocPath(filePath);
+function pickOverview(
+	filePath: string,
+	context: string | undefined,
+	collectionRoots: Map<string, string>,
+): string | null {
+	const absolutePath = toAbsoluteDocPath(filePath, collectionRoots);
 	const frontmatter = readDocFrontmatter(absolutePath);
 	const overview = cleanOverview(frontmatter.overview ?? undefined);
 	if (overview) {
@@ -329,18 +345,23 @@ function isSearchResultArray(value: unknown): value is SearchResult[] {
 	return value.every(item => item !== null && typeof item === "object");
 }
 
-function printResult(result: SearchResult, index: number): void {
+function printResult(
+	result: SearchResult,
+	index: number,
+	collectionRoots: Map<string, string>,
+): void {
 	const filePath = typeof result.file === "string" ? result.file : null;
 	if (!filePath) {
 		return;
 	}
 
-	const relativePath = stripVirtualPrefix(filePath);
+	const parsedPath = parseVirtualPath(filePath);
+	const relativePath = parsedPath?.relativePath ?? filePath;
 	const title = typeof result.title === "string" && result.title.trim().length > 0
 		? result.title.trim()
 		: path.basename(relativePath);
 	const snippet = cleanSnippet(result.snippet);
-	const overview = pickOverview(filePath, result.context);
+	const overview = pickOverview(filePath, result.context, collectionRoots);
 	const quotedSnippet = formatQuotedSnippet(snippet.body);
 
 	if (index > 0) {
@@ -352,13 +373,13 @@ function printResult(result: SearchResult, index: number): void {
 		console.log(overview);
 		console.log("");
 	}
-	console.log(formatPathWithAnchor(filePath, snippet.anchor));
+	console.log(formatPathWithAnchor(filePath, snippet.anchor, collectionRoots));
 	if (quotedSnippet) {
 		console.log(quotedSnippet);
 	}
 }
 
-function printResults(results: SearchResult[]): void {
+function printResults(results: SearchResult[], collectionRoots: Map<string, string>): void {
 	console.log(pc.gray(DEFAULT_TIP));
 	console.log("");
 
@@ -368,7 +389,7 @@ function printResults(results: SearchResult[]): void {
 	}
 
 	for (const [index, result] of results.entries()) {
-		printResult(result, index);
+		printResult(result, index, collectionRoots);
 	}
 }
 
@@ -377,16 +398,27 @@ async function runStatus(commandLabel: string): Promise<void> {
 	if (result.exitCode !== 0) {
 		fail(result.stderr.trim() || result.stdout.trim() || "qmd status failed");
 	}
+	const collections = await listQmdCollections();
+	const collectionNames = collections.map(collection => collection.name).join(", ") || "-";
 
 	console.log(`# ${commandLabel} status`);
 	console.log("");
 	console.log(`- Index: ${INDEX_NAME}`);
-	console.log(`- Collection: ${COLLECTION_NAME}`);
-	console.log(`- Docs root: ${DOCS_ROOT}`);
+	console.log(`- Collections: ${collectionNames}`);
 	console.log(`- Cache root: ${CACHE_ROOT}`);
 	console.log(`- Config root: ${CONFIG_ROOT}`);
 	console.log("");
 	process.stdout.write(result.stdout);
+}
+
+async function loadCollectionRoots(): Promise<Map<string, string>> {
+	const collections = await listQmdCollections();
+	const collectionRoots = new Map<string, string>();
+	for (const collection of collections) {
+		collectionRoots.set(collection.name, collection.path);
+	}
+
+	return collectionRoots;
 }
 
 async function runQuery(query: string, limitArg: string | undefined): Promise<void> {
@@ -394,11 +426,10 @@ async function runQuery(query: string, limitArg: string | undefined): Promise<vo
 	const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
 		? requestedLimit
 		: DEFAULT_LIMIT;
+	const collectionRoots = await loadCollectionRoots();
 	const result = await runQmd([
 		"query",
 		query,
-		"-c",
-		COLLECTION_NAME,
 		"-n",
 		String(limit),
 		"--min-score",
@@ -425,7 +456,7 @@ async function runQuery(query: string, limitArg: string | undefined): Promise<vo
 
 	const filtered = parsed.filter(result => typeof result.file === "string");
 
-	printResults(filtered);
+	printResults(filtered, collectionRoots);
 }
 
 type QueryOptions = {

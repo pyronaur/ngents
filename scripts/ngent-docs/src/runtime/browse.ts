@@ -41,7 +41,7 @@ async function docsEntriesForWhere(currentDir: string, where: string | null) {
 	}
 
 	if (where === "global") {
-		ensureDocsRoots(sources.globalDocsRoots, "~/.ngents/docs");
+		ensureDocsRoots(sources.globalDocsRoots, "global");
 		const index = await browseDiscovery.buildIndexData(sources.globalDocsRoots);
 		return {
 			docs: index.docs,

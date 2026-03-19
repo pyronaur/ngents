@@ -12,8 +12,15 @@ docs organizes project local and global documentation optimized for information 
 ## Query
 {{ query_usage }}
 
-Use this to search through global docs and topics with semantic search fast.
+Use this to search through parked global docs collections with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
+
+## Parking
+{{ park_usage }}
+
+Use this to attach a docs root to the global docs index.
+`{{ park_command }} foo` - park `./docs` when present, otherwise `.`
+`{{ park_command }} foo ~/work/bar` - park an explicit project or docs dir
 
 ## Topics
 {{ topic_usage }}

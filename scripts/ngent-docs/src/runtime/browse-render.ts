@@ -140,6 +140,8 @@ function rootHelpTemplateContext(
 		docs_groups: docsGroups,
 		ls_command: rootHelpCommandLines.ls,
 		ls_usage: rootHelpUsageLines.ls,
+		park_command: rootHelpCommandLines.park,
+		park_usage: rootHelpUsageLines.park,
 		query_usage: rootHelpUsageLines.query,
 		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
 		topic_command: rootHelpCommandLines.topic,

@@ -10,7 +10,7 @@ const queryOptionsSchema = z.object({
 
 export const queryCommand = defineCommand({
 	path: ["query"],
-	description: "Search the global ~/.ngents/docs library with QMD.",
+	description: "Search the global docs index with QMD.",
 	usage: docsCommandUsage.query,
 	configure: (command) => {
 		command

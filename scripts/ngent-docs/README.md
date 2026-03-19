@@ -33,7 +33,7 @@ make verify
 - `bin/docs.ts` process entrypoint
 - `src/core/command-dispatch.ts` Commander bootstrap and top-level CLI dispatch
 - `src/core/command-definition.ts` command definition and registration contract
-- `src/commands/` command modules for `ls`, `topic`, and `query`
+- `src/commands/` command modules for `ls`, `park`, `topic`, `query`, and `update`
 - `src/runtime/browse*.ts` docs/topic discovery, parsing, and rendering
 - `src/runtime/help.ts` root help entrypoint
 - `src/runtime/root-help-template.ts` Liquid root-help renderer

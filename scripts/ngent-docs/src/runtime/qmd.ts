@@ -10,11 +10,69 @@ type QmdRunResult = {
 	stderr: string;
 };
 
-export const INDEX_NAME = "ngents-docs";
-export const COLLECTION_NAME = "global-docs";
-export const DOCS_ROOT = path.join(os.homedir(), ".ngents", "docs");
-export const CACHE_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-cache");
-export const CONFIG_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-config");
+export type QmdCollection = {
+	name: string;
+	path: string;
+	pattern: string | null;
+	includeByDefault: boolean;
+};
+
+function fail(message: string): never {
+	throw runtimeError(message);
+}
+
+function parseCollectionListNames(stdout: string): string[] {
+	if (stdout.includes("No collections found.")) {
+		return [];
+	}
+
+	return Array.from(stdout.matchAll(/^(.+?) \(qmd:\/\/[^/]+\/\)$/gm))
+		.map((match) => match[1]?.trim() ?? "")
+		.filter(name => name.length > 0);
+}
+
+function parseCollectionShow(stdout: string, name: string): QmdCollection {
+	const pathMatch = stdout.match(/^\s*Path:\s+(.+)$/m);
+	const patternMatch = stdout.match(/^\s*Pattern:\s+(.+)$/m);
+	const includeMatch = stdout.match(/^\s*Include:\s+(.+)$/m);
+	const collectionNameMatch = stdout.match(/^Collection:\s+(.+)$/m);
+
+	const collectionName = collectionNameMatch?.[1]?.trim() ?? name;
+	const collectionPath = pathMatch?.[1]?.trim();
+	if (!collectionPath) {
+		fail(`Failed to parse qmd collection path for "${name}".`);
+	}
+
+	return {
+		name: collectionName,
+		path: collectionPath,
+		pattern: patternMatch?.[1]?.trim() ?? null,
+		includeByDefault: includeMatch?.[1]?.trim().startsWith("yes") ?? false,
+	};
+}
+
+export async function listQmdCollections(): Promise<QmdCollection[]> {
+	const listResult = await runQmd(["collection", "list"]);
+	if (listResult.exitCode !== 0) {
+		fail(listResult.stderr.trim() || listResult.stdout.trim() || "qmd collection list failed");
+	}
+
+	const names = parseCollectionListNames(listResult.stdout);
+	const collections: QmdCollection[] = [];
+	for (const name of names) {
+		const showResult = await runQmd(["collection", "show", name]);
+		if (showResult.exitCode !== 0) {
+			fail(
+				showResult.stderr.trim() || showResult.stdout.trim()
+					|| `qmd collection show failed for "${name}"`,
+			);
+		}
+
+		collections.push(parseCollectionShow(showResult.stdout, name));
+	}
+
+	return collections.sort((left, right) => left.name.localeCompare(right.name));
+}
 
 export function qmdEnv(): NodeJS.ProcessEnv {
 	return {
@@ -69,3 +127,20 @@ export async function runQmd(
 		});
 	});
 }
+
+export async function addQmdCollection(name: string, collectionPath: string): Promise<void> {
+	const result = await runQmd(["collection", "add", collectionPath, "--name", name], {
+		streamOutput: true,
+	});
+	if (result.exitCode !== 0) {
+		fail(result.stderr.trim() || result.stdout.trim() || `qmd collection add failed for "${name}"`);
+	}
+}
+
+export function isQmdRequiredError(error: unknown): boolean {
+	return error instanceof Error && error.message === "qmd is required";
+}
+
+export const INDEX_NAME = "ngents-docs";
+export const CACHE_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-cache");
+export const CONFIG_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-config");

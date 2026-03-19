@@ -67,6 +67,7 @@ docs
 docs --help
 docs help
 docs ls [where]
+docs park <name> [path]
 docs topic [topic] [section]
 docs query [--limit <n>] <query...> | status
 docs update
@@ -89,10 +90,22 @@ docs update
 - It merges local and global docs by default.
 - It accepts `.`, `global`, `./docs/...`, and `docs/...` selectors.
 - `.` means project docs only.
-- `global` means `~/.ngents/docs` only.
+- `global` means parked global docs roots.
 - `./docs/...` means one project-local docs subtree.
 - `docs/...` means matching local and global docs subtrees.
 - It prints expanded doc descriptions.
+
+### `park`
+
+`park` attaches one docs root into the global docs index.
+
+- It accepts `docs park <name> [path]`.
+- `path` defaults to `.`.
+- If `<path>/docs` exists, that nested `docs/` directory is parked.
+- Otherwise the supplied path itself is treated as the docs root.
+- It fails when the name is already taken.
+- It fails when the docs root is already parked under another name.
+- It runs `qmd collection add`, then refreshes the dedicated docs index with `update` and `embed`.
 
 ### `topic`
 
@@ -109,7 +122,8 @@ docs update
 
 `query` is the fallback discovery surface when browse-first inspection is not enough.
 
-- It searches the global `~/.ngents/docs` library, including topics.
+- It searches all collections in the dedicated `ngents-docs` QMD index.
+- Collections are added with `docs park`.
 - It does not search the current project's docs directory.
 - It supports `--limit <n>` to cap results.
 - `docs query status` shows the wrapper config and underlying QMD status.
@@ -126,7 +140,7 @@ Result output includes:
 
 `update` refreshes the same global QMD index that `docs query` reads.
 
-It runs `qmd update` first, then `qmd embed`.
+It runs `qmd update`, then `qmd embed`.
 
 Use it when the global docs library changed and `query` needs a refreshed index.
 
@@ -173,6 +187,9 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 docs
 docs ls
 docs ls .
+docs park nconf
+docs park ngents ~/.ngents
+docs park nconf ~/.nconf
 docs topic qmd
 docs topic qmd references
 docs query shell environment policy

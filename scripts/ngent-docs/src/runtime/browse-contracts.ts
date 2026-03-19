@@ -6,7 +6,6 @@ const EXCLUDED_DIRS = new Set(["archive", "research", "node_modules"]);
 const META_FILE = ".docs.md";
 const TOPICS_DIR = "topics";
 const POSIX_SEP = "/";
-const GLOBAL_DOCS_LABEL = "~/.ngents/docs";
 
 export type FrontMatterObject = Map<string, FrontMatterValue>;
 
@@ -235,7 +234,6 @@ function formatContains(section: SectionEntry): string | null {
 
 export default {
 	EXCLUDED_DIRS,
-	GLOBAL_DOCS_LABEL,
 	META_FILE,
 	POSIX_SEP,
 	TOPICS_DIR,

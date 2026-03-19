@@ -15,8 +15,15 @@ docs organizes project local and global documentation optimized for information 
 ## Query
 docs query [--limit <n>] <query...> | status
 
-Use this to search through global docs and topics with semantic search fast.
+Use this to search through parked global docs collections with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
+
+## Parking
+docs park <name> [path]
+
+Use this to attach a docs root to the global docs index.
+\`docs park foo\` - park \`./docs\` when present, otherwise \`.\`
+\`docs park foo ~/work/bar\` - park an explicit project or docs dir
 
 ## Topics
 docs topic [topic] [section]
@@ -75,8 +82,15 @@ docs organizes project local and global documentation optimized for information 
 ## Query
 docs query [--limit <n>] <query...> | status
 
-Use this to search through global docs and topics with semantic search fast.
+Use this to search through parked global docs collections with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
+
+## Parking
+docs park <name> [path]
+
+Use this to attach a docs root to the global docs index.
+\`docs park foo\` - park \`./docs\` when present, otherwise \`.\`
+\`docs park foo ~/work/bar\` - park an explicit project or docs dir
 
 ## Topics
 docs topic [topic] [section]

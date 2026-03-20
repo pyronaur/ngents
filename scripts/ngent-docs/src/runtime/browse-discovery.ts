@@ -2,10 +2,12 @@ import { access, lstat, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import browseContracts, {
+	type BrowseInventory,
 	type GuideMetadata,
 	type IndexData,
 	type MarkdownEntry,
 	type MergedTopic,
+	type RegisteredDocsRow,
 	type SectionEntry,
 	type SkillEntry,
 	type TopicContribution,
@@ -30,7 +32,6 @@ async function lstatSafe(filePath: string): Promise<Awaited<ReturnType<typeof ls
 		return null;
 	}
 }
-
 async function isDirectory(filePath: string): Promise<boolean> {
 	const entry = await lstatSafe(filePath);
 	if (!entry) {
@@ -48,7 +49,6 @@ async function isDirectory(filePath: string): Promise<boolean> {
 		return false;
 	}
 }
-
 async function fileExists(filePath: string): Promise<boolean> {
 	try {
 		await access(filePath);
@@ -57,7 +57,6 @@ async function fileExists(filePath: string): Promise<boolean> {
 		return false;
 	}
 }
-
 async function hasGitMarker(candidateDir: string): Promise<boolean> {
 	const gitPath = path.join(candidateDir, ".git");
 	if (await isDirectory(gitPath)) {
@@ -65,7 +64,6 @@ async function hasGitMarker(candidateDir: string): Promise<boolean> {
 	}
 	return fileExists(gitPath);
 }
-
 async function discoverRepoRoot(startDir: string): Promise<string | null> {
 	let current = normalizePath(startDir);
 	for (;;) {
@@ -81,7 +79,6 @@ async function discoverRepoRoot(startDir: string): Promise<string | null> {
 		current = parent;
 	}
 }
-
 async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 	const roots = new Set<string>();
 
@@ -112,7 +109,6 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 
 	return Array.from(roots).sort((a, b) => a.localeCompare(b));
 }
-
 async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> {
 	const guidePath = path.join(directoryPath, META_FILE);
 	if (!(await fileExists(guidePath))) {
@@ -132,7 +128,25 @@ async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> 
 		error: frontMatter.error,
 	};
 }
-
+function mergeGuideDescriptions(
+	target: { short: string | null; summary: string | null },
+	guide: GuideMetadata,
+): void {
+	if (!target.short && guide.short) {
+		target.short = guide.short;
+	}
+	if (!target.summary && guide.summary) {
+		target.summary = guide.summary;
+	}
+}
+function createTopicIndexRow(topicName: string, guide: GuideMetadata): TopicIndexRow {
+	return {
+		name: topicName,
+		title: guide.title ?? topicName,
+		short: guide.short,
+		summary: guide.summary,
+	};
+}
 async function listMarkdownEntries(directoryPath: string): Promise<MarkdownEntry[]> {
 	const entries = await readDirEntriesOrEmpty(directoryPath);
 	if (entries.length === 0) {
@@ -236,7 +250,9 @@ async function readMarkdownEntryFromFile(
 async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
 	return listVisibleDirectories(path.join(docsRoot, TOPICS_DIR));
 }
-
+async function listTopLevelDirectories(docsRoot: string): Promise<string[]> {
+	return (await listVisibleDirectories(docsRoot)).filter(name => name !== TOPICS_DIR);
+}
 async function listSectionKeys(topicDir: string): Promise<string[]> {
 	return listVisibleDirectories(topicDir);
 }
@@ -392,21 +408,11 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 			const guide = await readGuideMetadata(path.join(docsRoot, TOPICS_DIR, topicName));
 			const existing = topicMap.get(topicName);
 			if (!existing) {
-				topicMap.set(topicName, {
-					name: topicName,
-					title: guide.title ?? topicName,
-					short: guide.short,
-					summary: guide.summary,
-				});
+				topicMap.set(topicName, createTopicIndexRow(topicName, guide));
 				continue;
 			}
 
-			if (!existing.short && guide.short) {
-				existing.short = guide.short;
-			}
-			if (!existing.summary && guide.summary) {
-				existing.summary = guide.summary;
-			}
+			mergeGuideDescriptions(existing, guide);
 			if (guide.title) {
 				existing.title = guide.title;
 			}
@@ -418,6 +424,37 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 	return {
 		topics: Array.from(topicMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
 		docs: docs.sort((a, b) => a.absolutePath.localeCompare(b.absolutePath)),
+	};
+}
+
+async function buildBrowseInventory(docsRoots: string[]): Promise<BrowseInventory> {
+	const index = await buildIndexData(docsRoots);
+	const registeredDocsMap = new Map<string, RegisteredDocsRow>();
+
+	for (const docsRoot of docsRoots) {
+		for (const directoryName of await listTopLevelDirectories(docsRoot)) {
+			const directoryPath = normalizePath(path.join(docsRoot, directoryName));
+			const existing = registeredDocsMap.get(directoryName);
+			if (!existing) {
+				registeredDocsMap.set(directoryName, {
+					name: directoryName,
+					absolutePaths: [directoryPath],
+				});
+				continue;
+			}
+
+			if (!existing.absolutePaths.includes(directoryPath)) {
+				existing.absolutePaths.push(directoryPath);
+				existing.absolutePaths.sort((left, right) => left.localeCompare(right));
+			}
+		}
+	}
+
+	return {
+		topics: index.topics,
+		registeredDocs: Array.from(registeredDocsMap.values()).sort((a, b) =>
+			a.name.localeCompare(b.name)
+		),
 	};
 }
 
@@ -454,6 +491,7 @@ async function readMergedTopic(
 }
 
 export default {
+	buildBrowseInventory,
 	buildIndexData,
 	discoverDocsRoots,
 	discoverRepoRoot,

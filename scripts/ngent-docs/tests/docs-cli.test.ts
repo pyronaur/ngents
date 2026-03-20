@@ -799,7 +799,11 @@ test("docs ls docs/subdir fails only when the subtree is missing everywhere", as
 		});
 
 		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain("Docs directory not found: docs/missing");
+		expect(result.stderr).toContain("Sorry, `docs/missing` not found");
+		expect(result.stderr).toContain("I couldn't locate a registered docs directory called that");
+		expect(result.stderr).toContain("Here's what I do have:");
+		expect(result.stderr).toContain("Topics");
+		expect(result.stderr).toContain("Registered Docs");
 	});
 });
 
@@ -899,8 +903,173 @@ test("docs ls keeps parked-name matching exact instead of prefix-based", async (
 		});
 
 		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain("Docs directory not found: n");
-		expect(result.stderr).toContain("docs ls Machine");
+		expect(result.stderr).toContain("Sorry, `n` not found");
+		expect(result.stderr).toContain("Here's what I do have:");
+		expect(result.stderr).toContain("Registered Docs");
+		expect(result.stderr).toContain(`browser: ${path.join(homeDir, ".ngents", "docs", "browser")}`);
+	});
+});
+
+test("docs ls selector misses show merged topics and registered docs roots", async () => {
+	await withTempDir("docs-ls-selector-miss-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["ls", "poop"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const expectedArchitecturePath = [
+			await realpath(path.join(repoDir, "docs", "architecture")),
+			path.join(homeDir, ".ngents", "docs", "architecture"),
+		].join(", ");
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Sorry, `poop` not found");
+		expect(result.stderr).toContain("Here's what I do have:");
+		expect(result.stderr).toContain("Topics");
+		expect(result.stderr).toContain("ios");
+		expect(result.stderr).toContain("Apple-platform docs");
+		expect(result.stderr).toContain("qmd");
+		expect(result.stderr).toContain("Registered Docs");
+		expect(result.stderr).toContain("You can see the full index with compact descriptions using `docs ls`");
+		expect(result.stderr).toContain(`architecture: ${expectedArchitecturePath}`);
+		expect(result.stderr).toContain(`browser: ${path.join(homeDir, ".ngents", "docs", "browser")}`);
+		expect(result.stderr).not.toContain("Commands:");
+	});
+});
+
+test("docs ls suggests the topic command when the selector matches a topic", async () => {
+	await withTempDir("docs-ls-topic-hint-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["ls", "ios"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Sorry, `ios` not found");
+		expect(result.stderr).toContain("`docs ls` only opens registered docs directories");
+		expect(result.stderr).toContain("`ios` is a topic you can inspect with `docs topic ios`");
+		expect(result.stderr).toContain("Registered Docs");
+	});
+});
+
+test("docs ls opens exact registered docs names as merged subtrees", async () => {
+	await withTempDir("docs-ls-registered-doc-name-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["ls", "architecture"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
+		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
+		expect(result.stdout).toContain("local-only.md");
+		expect(result.stdout).toContain("global-only.md");
+	});
+});
+
+test("single-token root selectors open topics and registered docs", async () => {
+	await withTempDir("docs-root-selector-fallback-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const bareName = await runDocsCli(["machine"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const bareTopic = await runDocsCli(["ios"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const bareRegisteredDocs = await runDocsCli(["architecture"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const bareWorkspace = await runDocsCli([path.join(repoDir)], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const bareDocsPath = await runDocsCli([path.join(repoDir, "docs")], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(bareName.exitCode).toBe(0);
+		expect(bareName.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+		expect(bareName.stdout).toContain("cdp.md");
+
+		expect(bareTopic.exitCode).toBe(0);
+		expect(bareTopic.stdout).toContain("# iOS Library");
+		expect(bareTopic.stdout).toContain(path.join(repoDir, "docs", "topics", "ios"));
+
+		expect(bareRegisteredDocs.exitCode).toBe(0);
+		expect(bareRegisteredDocs.stdout).toContain(path.join(repoDir, "docs", "architecture"));
+		expect(bareRegisteredDocs.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
+
+		expect(bareWorkspace.exitCode).toBe(0);
+		expect(bareWorkspace.stdout).toContain(path.join(repoDir, "docs"));
+		expect(bareWorkspace.stdout).toContain("web-fetching.md");
+
+		expect(bareDocsPath.exitCode).toBe(0);
+		expect(bareDocsPath.stdout).toContain(path.join(repoDir, "docs"));
+		expect(bareDocsPath.stdout).toContain("web-fetching.md");
+	});
+});
+
+test("single-token unknown root selectors show commands plus browse inventory", async () => {
+	await withTempDir("docs-root-selector-miss-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["poop"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const expectedArchitecturePath = [
+			await realpath(path.join(repoDir, "docs", "architecture")),
+			path.join(homeDir, ".ngents", "docs", "architecture"),
+		].join(", ");
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Sorry, `poop` not found");
+		expect(result.stderr).toContain("It's not a command: ls, park, topic, query, update");
+		expect(result.stderr).toContain("I couldn't locate a topic or registered docs source called that either");
+		expect(result.stderr).toContain("Here's what I do have:");
+		expect(result.stderr).toContain("Topics");
+		expect(result.stderr).toContain("Registered Docs");
+		expect(result.stderr).toContain(`architecture: ${expectedArchitecturePath}`);
 	});
 });
 
@@ -1539,8 +1708,8 @@ test("docs park rejects invalid docs roots before mutating qmd", async () => {
 	});
 });
 
-test("unknown commands return a usage failure", async () => {
-	const result = await runDocsCli(["wat"]);
+test("multi-token unknown commands return a usage failure", async () => {
+	const result = await runDocsCli(["wat", "now"]);
 
 	expect(result.exitCode).toBe(2);
 	expect(result.stderr.toLowerCase()).toContain("unknown command");

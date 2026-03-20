@@ -40,9 +40,14 @@ qmd    QMD          local search docs
 
 ## Docs
 docs ls [where]
+docs ios - Bare selector fallback for a topic
+docs architecture - Bare selector fallback for a registered docs root
+docs machine - Bare selector fallback for a parked docs root
+docs ~/work/foo - Bare selector fallback for a workspace docs root
 docs ls . - Project docs, expanded descriptions
 docs ls ./docs/subdir - Project docs in dir
 docs ls docs/subdir - Matching local and global docs dirs
+docs ls architecture - Matching local and global docs dirs by registered name
 docs ls ~/work/foo - Resolve a workspace to its docs dir
 docs ls ~/work/foo/docs - Explicit docs dir
 docs ls machine - Parked global docs by name

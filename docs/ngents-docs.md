@@ -66,6 +66,7 @@ This keeps reusable knowledge organized by domain instead of flattening everythi
 docs
 docs --help
 docs help
+docs <where>
 docs ls [where]
 docs park <name> [path]
 docs topic [topic] [section]
@@ -80,6 +81,7 @@ docs update
 - `docs help` prints the same Markdown help style without the docs index.
 - `docs help <command>` prints Commander command usage.
 - `docs <command> --help` prints usage for that command.
+- `docs <where>` opens a topic, a registered docs root, or a browse selector when `<where>` is a single non-command token.
 
 ## Browse behavior
 
@@ -89,6 +91,7 @@ docs update
 
 - It merges local and global docs by default.
 - It accepts `.`, `global`, `./docs/...`, `docs/...`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
+- It also accepts an exact top-level registered docs name such as `architecture`.
 - `.` means project docs only.
 - `global` means parked global docs roots.
 - `./docs/...` means one project-local docs subtree.
@@ -96,6 +99,19 @@ docs update
 - Absolute paths and `~/...` paths can point at a docs directory, a docs subtree, or a workspace directory that contains `docs/`.
 - Parked names match case-insensitively.
 - It prints expanded doc descriptions.
+- When a selector is not found, it prints a compact topic list and a registered-docs root list with absolute paths.
+- When a selector matches a topic name, it suggests the corresponding `docs topic <name>` command instead of pretending the topic is a docs directory.
+
+### Bare root selector fallback
+
+`docs <where>` resolves a single non-command token in a more helpful order.
+
+- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, explicit docs paths, and workspace paths that contain `docs/`.
+- Root command names still win, so `docs topic` and `docs query` keep their command behavior.
+- Parked collection names win before topics.
+- Topics win before registered docs names.
+- Registered docs names reuse the same merged subtree behavior as `docs ls docs/<name>`.
+- When the token is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
 
 ### `park`
 
@@ -187,8 +203,13 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 
 ```bash
 docs
+docs ios
+docs architecture
+docs machine
+docs ~/work/foo
 docs ls
 docs ls .
+docs ls architecture
 docs ls ~/work/foo
 docs ls ~/work/foo/docs
 docs ls machine

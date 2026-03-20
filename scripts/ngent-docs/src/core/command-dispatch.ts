@@ -1,10 +1,17 @@
 import { Command, CommanderError } from "commander";
 
 import { commandDefinitions } from "../commands/index.ts";
+import { runtimeError, usageError } from "../core/errors.ts";
+import { isBrowseSelectorNotFoundError } from "../runtime/browse-sources.ts";
+import {
+	renderRootSelectorNotFound,
+	runDocsBrowseSelector,
+	runDocsParkedCollectionSelector,
+} from "../runtime/browse.ts";
 import { runDocsRootHelp } from "../runtime/help.ts";
-import type { CommandDefinition } from "./contracts.ts";
+import { isTopicNotFoundError, runDocsTopicSelector } from "../runtime/topic.ts";
 import { registerCommand } from "./command-definition.ts";
-import { usageError } from "./errors.ts";
+import type { CommandDefinition } from "./contracts.ts";
 
 const DOCS_ROOT_USAGE = "docs [options] [command]";
 
@@ -81,6 +88,52 @@ function findUsageDefinition(argv: string[]): CommandDefinition | undefined {
 	return bestMatch;
 }
 
+function rootCommandNames(): string[] {
+	return commandDefinitions
+		.filter(definition => definition.path.length === 1)
+		.map(definition => definition.path[0] ?? "")
+		.filter(name => name.length > 0);
+}
+
+function isRootCommand(token: string): boolean {
+	return rootCommandNames().includes(token);
+}
+
+async function maybeRunRootSelectorFallback(argv: string[], projectDir: string): Promise<boolean> {
+	if (argv.length !== 1) {
+		return false;
+	}
+
+	const selector = argv[0]?.trim();
+	if (!selector || isRootCommand(selector)) {
+		return false;
+	}
+
+	if (await runDocsParkedCollectionSelector(projectDir, selector)) {
+		return true;
+	}
+
+	try {
+		await runDocsTopicSelector(projectDir, selector);
+		return true;
+	} catch (error) {
+		if (!isTopicNotFoundError(error)) {
+			throw error;
+		}
+	}
+
+	try {
+		await runDocsBrowseSelector(projectDir, selector);
+		return true;
+	} catch (error) {
+		if (!isBrowseSelectorNotFoundError(error)) {
+			throw error;
+		}
+
+		throw runtimeError(await renderRootSelectorNotFound(projectDir, selector, rootCommandNames()));
+	}
+}
+
 function handleParseError(error: unknown, argv: string[]): void {
 	if (!isCommanderError(error)) {
 		throw error;
@@ -112,6 +165,10 @@ export async function runDocsCli(argv: string[], projectDir: string): Promise<vo
 		await runDocsRootHelp({
 			includeDocsIndex: helpRequest.includeDocsIndex,
 		});
+		return;
+	}
+
+	if (await maybeRunRootSelectorFallback(argv, projectDir)) {
 		return;
 	}
 

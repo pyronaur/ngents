@@ -52,10 +52,6 @@ function expandHomeSelector(selector: string): string {
 	return selector;
 }
 
-function isFilesystemSelector(selector: string): boolean {
-	return selector === "~" || selector.startsWith("~/") || path.isAbsolute(selector);
-}
-
 function findContainingDocsRoot(directoryPath: string): string | null {
 	let current = normalizePath(directoryPath);
 	for (;;) {
@@ -84,6 +80,26 @@ function docsRelativeSelector(selector: string): string {
 		path.posix.normalize(normalizedSelector),
 	);
 	return relativeSelector.length > 0 ? relativeSelector : ".";
+}
+
+function isBareSelectorName(selector: string): boolean {
+	return selector.length > 0 && !selector.includes("/") && !selector.includes("\\");
+}
+
+export class BrowseSelectorNotFoundError extends Error {
+	public readonly selector: string;
+
+	constructor(selector: string) {
+		super(`Browse selector not found: ${selector}`);
+		this.name = "BrowseSelectorNotFoundError";
+		this.selector = selector;
+	}
+}
+
+export function isBrowseSelectorNotFoundError(
+	error: unknown,
+): error is BrowseSelectorNotFoundError {
+	return error instanceof BrowseSelectorNotFoundError;
 }
 
 export async function discoverDocsSources(currentDir: string): Promise<DocsSources> {
@@ -166,8 +182,23 @@ export function resolveGlobalDocsDirectoryByName(
 	return collection?.docsRoot ?? null;
 }
 
-export function isDocsFilesystemSelector(selector: string): boolean {
-	return isFilesystemSelector(selector);
+export async function resolveRegisteredDocsDirectoriesByName(
+	sources: DocsSources,
+	selector: string,
+): Promise<string[] | null> {
+	const normalizedSelector = selector.trim();
+	if (!isBareSelectorName(normalizedSelector)) {
+		return null;
+	}
+
+	try {
+		return await resolveMergedDocsDirectories(sources, `docs/${normalizedSelector}`);
+	} catch (error) {
+		if (!isBrowseSelectorNotFoundError(error)) {
+			throw error;
+		}
+		return null;
+	}
 }
 
 export async function resolveLocalDocsDirectory(
@@ -175,17 +206,13 @@ export async function resolveLocalDocsDirectory(
 	selector: string,
 ): Promise<string> {
 	if (sources.localDocsRoots.length === 0) {
-		throw runtimeError(
-			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
-		);
+		throw new BrowseSelectorNotFoundError(selector);
 	}
 
 	const baseDir = sources.repoRoot ?? sources.currentDir;
 	const directoryPath = normalizePath(path.resolve(baseDir, selector));
 	if (!(await isDirectory(directoryPath))) {
-		throw runtimeError(
-			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
-		);
+		throw new BrowseSelectorNotFoundError(selector);
 	}
 	if (!isWithinDocsRoots(directoryPath, sources.localDocsRoots)) {
 		throw runtimeError(
@@ -219,10 +246,12 @@ export async function resolveMergedDocsDirectories(
 	}
 
 	if (matchingDirectories.length === 0) {
-		throw runtimeError(
-			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
-		);
+		throw new BrowseSelectorNotFoundError(selector);
 	}
 
 	return uniquePaths(matchingDirectories);
+}
+
+export function isDocsFilesystemSelector(selector: string): boolean {
+	return selector === "~" || selector.startsWith("~/") || path.isAbsolute(selector);
 }

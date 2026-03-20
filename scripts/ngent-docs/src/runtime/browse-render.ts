@@ -3,8 +3,10 @@ import path from "node:path";
 import pc from "picocolors";
 
 import browseContracts, {
+	type BrowseInventory,
 	type MarkdownEntry,
 	type MergedTopic,
+	type RegisteredDocsRow,
 	type SectionEntry,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
@@ -71,6 +73,92 @@ function renderTopicsTable(topics: TopicIndexRow[]): string {
 		for (const topic of topics) {
 			pushLine(renderTopicTableRow(topic, widths));
 		}
+	});
+}
+
+function renderInventoryTopicLines(topics: TopicIndexRow[]): string[] {
+	return topics.map(topic => {
+		const description = compactDescription(topic.short, topic.summary);
+		if (!description) {
+			return `- ${topic.name}`;
+		}
+		return `- ${topic.name} - ${description}`;
+	});
+}
+
+function renderRegisteredDocsLines(registeredDocs: RegisteredDocsRow[]): string[] {
+	return registeredDocs.map(directory =>
+		`- ${directory.name}: ${directory.absolutePaths.join(", ")}`
+	);
+}
+
+function pushBrowseInventory(
+	pushLine: (text?: string, indent?: number) => void,
+	inventory: BrowseInventory,
+): void {
+	const hasTopics = inventory.topics.length > 0;
+	const hasRegisteredDocs = inventory.registeredDocs.length > 0;
+	if (!hasTopics && !hasRegisteredDocs) {
+		pushLine("[no topics or registered docs found]");
+		return;
+	}
+
+	if (hasTopics) {
+		pushLine(heading(2, "Topics"));
+		pushLine("Use `docs topic <name>` to inspect a topic directly.");
+		for (const line of renderInventoryTopicLines(inventory.topics)) {
+			pushLine(line);
+		}
+	}
+
+	if (hasTopics && hasRegisteredDocs) {
+		pushLine();
+	}
+
+	if (hasRegisteredDocs) {
+		pushLine(heading(2, "Registered Docs"));
+		pushLine("You can see the full index with compact descriptions using `docs ls`");
+		pushLine("These are registered doc directories:");
+		for (const line of renderRegisteredDocsLines(inventory.registeredDocs)) {
+			pushLine(line);
+		}
+	}
+}
+
+function renderSelectorNotFound(
+	selector: string,
+	inventory: BrowseInventory,
+	options: { topicHint?: string } = {},
+): string {
+	return renderBlock(pushLine => {
+		pushLine(`Sorry, \`${selector}\` not found`);
+		if (options.topicHint) {
+			pushLine("- `docs ls` only opens registered docs directories");
+			pushLine(
+				`- \`${options.topicHint}\` is a topic you can inspect with \`docs topic ${options.topicHint}\``,
+			);
+		}
+		if (!options.topicHint) {
+			pushLine("- I couldn't locate a registered docs directory called that");
+		}
+		pushLine();
+		pushLine("Here's what I do have:");
+		pushBrowseInventory(pushLine, inventory);
+	});
+}
+
+function renderRootSelectorNotFound(
+	selector: string,
+	commands: string[],
+	inventory: BrowseInventory,
+): string {
+	return renderBlock(pushLine => {
+		pushLine(`Sorry, \`${selector}\` not found`);
+		pushLine(`- It's not a command: ${commands.join(", ")}`);
+		pushLine("- I couldn't locate a topic or registered docs source called that either");
+		pushLine();
+		pushLine("Here's what I do have:");
+		pushBrowseInventory(pushLine, inventory);
 	});
 }
 
@@ -359,6 +447,8 @@ export default {
 	printDocsBrowser,
 	printFocusedSection,
 	printRootHelp,
+	renderRootSelectorNotFound,
+	renderSelectorNotFound,
 	printTopicBrowser,
 	printTopicView,
 };

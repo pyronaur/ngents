@@ -80,6 +80,16 @@ export type TopicIndexRow = {
 	summary: string | null;
 };
 
+export type RegisteredDocsRow = {
+	name: string;
+	absolutePaths: string[];
+};
+
+export type BrowseInventory = {
+	topics: TopicIndexRow[];
+	registeredDocs: RegisteredDocsRow[];
+};
+
 export type DocsIndexData = {
 	docs: MarkdownEntry[];
 };

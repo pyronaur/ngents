@@ -3,6 +3,6 @@
  * @autohelp
  * @usage cdp status
  */
-import { runStatusCommand } from '../lib/cdp';
+import { runStatusCommand } from './lib/cdp';
 
 await runStatusCommand();

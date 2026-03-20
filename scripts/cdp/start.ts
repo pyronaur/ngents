@@ -3,6 +3,6 @@
  * @autohelp
  * @usage cdp start
  */
-import { runStartCommand } from '../lib/cdp';
+import { runStartCommand } from './lib/cdp';
 
 await runStartCommand();

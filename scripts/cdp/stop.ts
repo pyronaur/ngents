@@ -3,6 +3,6 @@
  * @autohelp
  * @usage cdp stop
  */
-import { runStopCommand } from '../lib/cdp';
+import { runStopCommand } from './lib/cdp';
 
 await runStopCommand();

@@ -269,6 +269,35 @@ async function launchChrome(loaded: LoadedConfig): Promise<void> {
 	}
 }
 
+async function ensureHealthyBrowser(loaded: LoadedConfig, current: Awaited<ReturnType<typeof inspect>>): Promise<Awaited<ReturnType<typeof inspect>>> {
+	if (current.state === 'running') {
+		return current;
+	}
+
+	if (current.state === 'listener-conflict') {
+		return current;
+	}
+
+	await launchChrome(loaded);
+	return waitForState(loaded, 'running', START_TIMEOUT_MS);
+}
+
+async function connectAgentBrowser(port: number): Promise<string> {
+	const result = Bun.spawn(['agent-browser', 'connect', String(port)], {
+		stdout: 'pipe',
+		stderr: 'pipe',
+		env: process.env,
+	});
+	const exitCode = await result.exited;
+	const stdout = (await new Response(result.stdout).text()).trim();
+	const stderr = (await new Response(result.stderr).text()).trim();
+	if (exitCode !== 0) {
+		throw new Error(stderr || stdout || `agent-browser connect ${port} failed.`);
+	}
+
+	return stdout || `agent-browser connected to CDP port ${port}.`;
+}
+
 async function stopListeners(currentListeners: Listener[]): Promise<void> {
 	for (const listener of currentListeners) {
 		const result = await $`kill ${listener.pid}`.nothrow().quiet();
@@ -289,18 +318,25 @@ export async function runStatusCommand(): Promise<void> {
 
 	printConfig(loaded);
 	const current = await inspect(loaded);
-	if (current.state === 'running') {
-		printState('Local CDP Chrome session is healthy.', current.state, current.health, current.listeners);
+	if (current.state === 'listener-conflict') {
+		printState('A listener exists on the configured port, but it is not serving valid CDP metadata.', current.state, current.health, current.listeners);
+		process.exit(EXIT_CONFLICT);
+	}
+
+	const healthy = await ensureHealthyBrowser(loaded, current);
+	if (healthy.state !== 'running') {
+		printState(`Timed out waiting for CDP listener on ${loaded.config.cdpEndpoint}.`, healthy.state, healthy.health, healthy.listeners);
+		process.exit(EXIT_CONFLICT);
+	}
+
+	printState('Local CDP Chrome session is healthy.', healthy.state, healthy.health, healthy.listeners);
+	try {
+		console.log(await connectAgentBrowser(loaded.port));
 		process.exit(0);
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exit(EXIT_CONFLICT);
 	}
-
-	if (current.state === 'stopped') {
-		printState('Local CDP Chrome session is not running.', current.state, current.health, current.listeners);
-		process.exit(EXIT_STOPPED);
-	}
-
-	printState('A listener exists on the configured port, but it is not serving valid CDP metadata.', current.state, current.health, current.listeners);
-	process.exit(EXIT_CONFLICT);
 }
 
 export async function runStartCommand(): Promise<void> {
@@ -313,25 +349,30 @@ export async function runStartCommand(): Promise<void> {
 
 	printConfig(loaded);
 	const current = await inspect(loaded);
-	if (current.state === 'running') {
-		printState('Local CDP Chrome session is already running.', current.state, current.health, current.listeners);
-		process.exit(0);
-	}
 
 	if (current.state === 'listener-conflict') {
 		printState('Refusing to start Chrome because the configured port is already occupied.', current.state, current.health, current.listeners);
 		process.exit(EXIT_CONFLICT);
 	}
 
-	await launchChrome(loaded);
-	const started = await waitForState(loaded, 'running', START_TIMEOUT_MS);
-	if (started.state !== 'running') {
-		printState(`Timed out waiting for CDP listener on ${loaded.config.cdpEndpoint}.`, started.state, started.health, started.listeners);
+	const healthy = await ensureHealthyBrowser(loaded, current);
+	if (healthy.state !== 'running') {
+		printState(`Timed out waiting for CDP listener on ${loaded.config.cdpEndpoint}.`, healthy.state, healthy.health, healthy.listeners);
 		process.exit(EXIT_CONFLICT);
 	}
 
-	printState('Started local CDP Chrome session.', started.state, started.health, started.listeners);
-	process.exit(0);
+	if (current.state === 'running') {
+		printState('Local CDP Chrome session is already running.', healthy.state, healthy.health, healthy.listeners);
+	} else {
+		printState('Started local CDP Chrome session.', healthy.state, healthy.health, healthy.listeners);
+	}
+	try {
+		console.log(await connectAgentBrowser(loaded.port));
+		process.exit(0);
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exit(EXIT_CONFLICT);
+	}
 }
 
 export async function runStopCommand(): Promise<void> {

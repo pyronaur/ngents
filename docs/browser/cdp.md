@@ -1,47 +1,28 @@
----
-summary: "Authoritative machine-wide guide for the local CDP Chrome session used with Playwright."
+summary: "Shared browser contract: `cdp` owns Chrome and `agent-browser` connects to it."
 read_when:
-  - Need to start, stop, or inspect the local Chrome CDP session.
-  - Need the single source of authority for the shared local Playwright browser profile.
-  - Need the config file path or schema for the local CDP browser.
+  - Need the shared browser contract on this machine.
+  - Need to start, stop, inspect, or attach to the shared browser.
 ---
 
-# Local CDP Browser
+# Shared Browser Contract
 
-This document is the tracked source of authority for the machine-wide local CDP Chrome session.
+This machine uses one shared Chrome session.
+`cdp` owns that browser.
+`~/.ngents/local/cdp.json` tells `cdp` how to launch and find it.
+Plain `agent-browser` connects to the live shared browser through the configured CDP port.
+`cdp start` and `cdp status` refresh that `agent-browser` connection automatically.
 
-## Commands
+## Ownership
 
-Use the `cdp` namespace:
+- The shared browser session is the browser source of truth.
+- `cdp` owns browser lifecycle.
+- `~/.ngents/local/cdp.json` configures `cdp`.
+- Plain `agent-browser` is the default browser-control CLI against the shared browser.
+- `agent-browser` attaches to the browser that `cdp` owns; it does not define a separate browser runtime.
 
-```bash
-cdp status
-cdp start
-cdp stop
-```
+## `cdp` Owns Browser Launch
 
-These commands read machine-local settings from `~/.ngents/local/cdp.json`.
-
-## One-Time Setup
-
-Link the skill-local scripts into Bunmagic v2:
-
-```bash
-bmt link ~/.ngents/skills/browser-local/scripts --ns cdp
-bmt reload --force
-```
-
-Verification:
-
-```bash
-bmt which cdp start
-bmt which cdp status
-bmt which cdp stop
-```
-
-## Config
-
-Machine-local config lives in:
+`cdp` reads:
 
 ```bash
 ~/.ngents/local/cdp.json
@@ -58,39 +39,50 @@ Schema:
 }
 ```
 
-Rules:
+This file chooses:
 
-- `chromeApp`: macOS app name passed to `open -na`.
-- `profilePath`: Chrome `--user-data-dir`.
-- `cdpEndpoint`: local HTTP CDP endpoint with explicit port.
-- `extraArgs`: optional extra Chrome flags.
+- which Chrome app to run
+- which Chrome user-data-dir the shared browser uses
+- which CDP endpoint that browser exposes
+- which extra Chrome launch flags are passed
 
-Use `NGENTS_CDP_CONFIG=/path/to/cdp.json` to override the config path for testing.
+`NGENTS_CDP_CONFIG=/path/to/cdp.json` only changes which config file `cdp` reads.
+It does not configure `agent-browser`.
 
-## Expected Behavior
+## `agent-browser` Owns Browser Control
 
-- `cdp status`
-  - exit `0` when the configured endpoint is healthy
-  - exit `1` when nothing is listening on the configured port
-  - exit `2` when the port is occupied but the endpoint is not valid CDP
-  - exit `3` for config errors
-- `cdp start`
-  - starts Chrome with the configured profile and remote-debugging port
-  - exits `0` if the session is already healthy
-  - refuses to start if another process already owns the configured port
-- `cdp stop`
-  - stops the configured listener if it matches the expected profile/port process
-  - exits `0` when already stopped
-  - refuses to kill an unrelated listener on the configured port
+Use plain `agent-browser` after `cdp start` or `cdp status`.
 
-## Playwright Usage
+Examples:
 
-Repo-specific browser docs may add repo-specific safety rules.
-They must not redefine the machine-level profile path, CDP port, or Chrome launch contract.
+```bash
+agent-browser tab
+agent-browser get url
+agent-browser snapshot -i
+agent-browser get text body
+```
 
-Preferred attach order:
+`cdp start` and `cdp status` run `agent-browser connect <port>` against the configured shared-browser port, so plain `agent-browser` commands target the live shared browser without extra flags.
+
+## Operate The Shared Browser With `cdp`
+
+Use:
+
+```bash
+cdp status
+cdp start
+cdp stop
+```
+
+- `cdp status` shows the configured browser, user-data-dir, endpoint, and session health.
+- `cdp status` repairs the stack by starting Chrome if needed and refreshing the `agent-browser` connection.
+- `cdp start` starts the shared browser if needed and refreshes the `agent-browser` connection.
+- `cdp stop` stops the shared browser session.
+
+## Use It In This Order
 
 1. Run `cdp status`.
-2. Run `cdp start` if needed.
-3. Use the repo-local Playwright config if the repo provides one.
-4. Fall back to the configured CDP endpoint when no repo-local browser contract exists.
+2. Run `cdp start` if the browser is stopped.
+3. Use plain `agent-browser` for browser control against the shared browser.
+
+Repo docs may add repo-specific workflow, but they must not redefine the shared browser user-data-dir or endpoint.

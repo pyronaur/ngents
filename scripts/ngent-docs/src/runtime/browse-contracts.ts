@@ -190,12 +190,15 @@ function compactDescription(short: string | null, summary: string | null): strin
 	return truncateCompactText(normalizedSummary, 64);
 }
 
-function heading(level: 1 | 2 | 3, text: string): string {
+function heading(level: 1 | 2 | 3 | 4, text: string): string {
 	const content = `${"#".repeat(level)} ${text}`;
 	if (level === 1) {
 		return pc.cyan(pc.bold(content));
 	}
-	return pc.white(pc.bold(content));
+	if (level === 2) {
+		return pc.cyan(content);
+	}
+	return pc.bold(content);
 }
 
 function errorText(error: string): string {

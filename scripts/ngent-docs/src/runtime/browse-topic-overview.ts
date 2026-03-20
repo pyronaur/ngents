@@ -30,9 +30,12 @@ function printSeparator(): void {
 	printLine();
 }
 
-function printTopicDoc(entry: MarkdownEntry): void {
+function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4): void {
 	printLine(
-		heading(3, entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath))),
+		heading(
+			headingLevel,
+			entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath)),
+		),
 	);
 	printLine(entry.absolutePath);
 
@@ -54,12 +57,15 @@ function printTopicDoc(entry: MarkdownEntry): void {
 	}
 }
 
-function printTopicDocs(entries: MarkdownEntry[]): void {
-	printLine(heading(2, "Docs"));
+function printTopicDocs(entries: MarkdownEntry[], options: {
+	sectionHeadingLevel: 2 | 3;
+	entryHeadingLevel: 3 | 4;
+}): void {
+	printLine(heading(options.sectionHeadingLevel, "Docs"));
 	printLine();
 
 	for (const [index, entry] of entries.entries()) {
-		printTopicDoc(entry);
+		printTopicDoc(entry, options.entryHeadingLevel);
 		if (index < entries.length - 1) {
 			printSeparator();
 		}
@@ -111,14 +117,21 @@ function printTopicRootSkill(section: SectionEntry, skill: SkillEntry): void {
 	printReferenceCount(skill.referencePaths.length);
 }
 
-function printTopicSkillSection(section: SectionEntry): void {
+function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4): void {
 	const rootSkill = rootSkillForSection(section);
 	if (rootSkill) {
-		printTopicRootSkill(section, rootSkill);
+		if (headingLevel === 3) {
+			printTopicRootSkill(section, rootSkill);
+			return;
+		}
+
+		printLine(heading(4, section.key));
+		printLine(rootSkill.absolutePath);
+		printReferenceCount(rootSkill.referencePaths.length);
 		return;
 	}
 
-	printLine(heading(3, `${section.key} - ${skillCountLabel(section.skills.length)}`));
+	printLine(heading(headingLevel, `${section.key} - ${skillCountLabel(section.skills.length)}`));
 	printLine(sectionPath(section));
 	printLine();
 
@@ -130,23 +143,23 @@ function printTopicSkillSection(section: SectionEntry): void {
 	}
 }
 
-function printTopicSkills(sections: SectionEntry[]): void {
-	printLine(heading(2, "Skills"));
+function printTopicSkills(sections: SectionEntry[], sectionHeadingLevel: 2 | 3): void {
+	printLine(heading(sectionHeadingLevel, "Skills"));
 	printLine();
 	printLine(`Expand skill information in this topic with: \`docs topic <topic> <section|glob>\``);
 	printLine(`For example: \`docs topic foo bar/lux*\``);
 	printLine();
 
 	for (const [index, section] of sections.entries()) {
-		printTopicSkillSection(section);
+		printTopicSkillSection(section, sectionHeadingLevel === 2 ? 3 : 4);
 		if (index < sections.length - 1) {
 			printLine();
 		}
 	}
 }
 
-function printTopicSection(section: SectionEntry): void {
-	printLine(heading(3, section.title));
+function printTopicSection(section: SectionEntry, headingLevel: 3 | 4): void {
+	printLine(heading(headingLevel, section.title));
 	printLine(section.absolutePath);
 
 	const summary = normalizeInlineText(section.summary) ?? compactDescription(section.short, null);
@@ -171,12 +184,15 @@ function printTopicSection(section: SectionEntry): void {
 	}
 }
 
-function printTopicSections(sections: SectionEntry[]): void {
-	printLine(heading(2, "Sections"));
+function printTopicSections(sections: SectionEntry[], options: {
+	sectionHeadingLevel: 2 | 3;
+	entryHeadingLevel: 3 | 4;
+}): void {
+	printLine(heading(options.sectionHeadingLevel, "Sections"));
 	printLine();
 
 	for (const [index, section] of sections.entries()) {
-		printTopicSection(section);
+		printTopicSection(section, options.entryHeadingLevel);
 		if (index < sections.length - 1) {
 			printLine();
 		}
@@ -198,7 +214,13 @@ function printContributionHeader(contribution: TopicContribution): void {
 	}
 }
 
-function printContributionBlocks(contribution: TopicContribution): void {
+function printContributionBlocksWithOptions(
+	contribution: TopicContribution,
+	options: {
+		sectionHeadingLevel: 2 | 3;
+		entryHeadingLevel: 3 | 4;
+	},
+): void {
 	const skillSections = contribution.sectionEntries.filter(section => section.skills.length > 0);
 	const regularSections = contribution.sectionEntries.filter(section =>
 		section.skills.length === 0
@@ -206,13 +228,13 @@ function printContributionBlocks(contribution: TopicContribution): void {
 	const blocks: Array<() => void> = [];
 
 	if (contribution.markdownEntries.length > 0) {
-		blocks.push(() => printTopicDocs(contribution.markdownEntries));
+		blocks.push(() => printTopicDocs(contribution.markdownEntries, options));
 	}
 	if (skillSections.length > 0) {
-		blocks.push(() => printTopicSkills(skillSections));
+		blocks.push(() => printTopicSkills(skillSections, options.sectionHeadingLevel));
 	}
 	if (regularSections.length > 0) {
-		blocks.push(() => printTopicSections(regularSections));
+		blocks.push(() => printTopicSections(regularSections, options));
 	}
 
 	for (const [index, block] of blocks.entries()) {
@@ -224,19 +246,37 @@ function printContributionBlocks(contribution: TopicContribution): void {
 	}
 }
 
-function printTopicContribution(contribution: TopicContribution): void {
+function printTopicContribution(
+	contribution: TopicContribution,
+	options: {
+		sectionHeadingLevel: 2 | 3;
+		entryHeadingLevel: 3 | 4;
+	},
+): void {
 	printContributionHeader(contribution);
-	printContributionBlocks(contribution);
+	printContributionBlocksWithOptions(contribution, options);
 }
 
-export function printTopicOverview(topic: MergedTopic): void {
-	printLine(heading(1, topic.title));
+export function printTopicOverview(topic: MergedTopic, options: {
+	titleLevel?: 1 | 2;
+	titlePrefix?: string;
+	sectionHeadingLevel?: 2 | 3;
+	entryHeadingLevel?: 3 | 4;
+} = {}): void {
+	const titleLevel = options.titleLevel ?? 1;
+	const titlePrefix = options.titlePrefix ?? "";
+	const sectionHeadingLevel = options.sectionHeadingLevel ?? 2;
+	const entryHeadingLevel = options.entryHeadingLevel ?? 3;
+	printLine(heading(titleLevel, `${titlePrefix}${topic.title}`));
 
 	for (const [index, contribution] of topic.contributions.entries()) {
 		if (index > 0) {
 			printLine();
 		}
-		printTopicContribution(contribution);
+		printTopicContribution(contribution, {
+			sectionHeadingLevel,
+			entryHeadingLevel,
+		});
 		if (index < topic.contributions.length - 1) {
 			printLine();
 		}

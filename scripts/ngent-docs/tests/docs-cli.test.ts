@@ -658,7 +658,8 @@ test("docs ls merges local and global docs by default", async () => {
 		});
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("Usage: docs ls [where]");
+		expect(result.stdout).toContain("# Docs");
+		expect(result.stdout).not.toContain("Usage: docs ls [where]");
 		expect(result.stdout).toContain(path.join(repoDir, "docs"));
 		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
 		expect(result.stdout).toContain("web-fetching.md");
@@ -983,10 +984,82 @@ test("docs ls opens exact registered docs names as merged subtrees", async () =>
 		});
 
 		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("# Docs: architecture");
 		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
 		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
 		expect(result.stdout).toContain("local-only.md");
 		expect(result.stdout).toContain("global-only.md");
+	});
+});
+
+test("docs browser shows both the topic and registered docs when names overlap", async () => {
+	await withTempDir("docs-root-selector-overlap-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+		await writeText(
+			path.join(repoDir, "docs", "topics", "browser", "extensive.md"),
+			[
+				"# extensive",
+				"",
+				"Test topic notes.",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "browser", "local-browser.md"),
+			[
+				"---",
+				"title: Local Browser Notes",
+				"summary: Local browser docs.",
+				"---",
+				"",
+				"# Local Browser Notes",
+				"",
+				"Local browser details.",
+				"",
+			].join("\n"),
+		);
+
+		const bareResult = await runDocsCli(["browser"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const docsOnlyResult = await runDocsCli(["ls", "browser"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const topicOnlyResult = await runDocsCli(["topic", "browser"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(bareResult.exitCode).toBe(0);
+		expect(bareResult.stdout).toContain("# Docs: browser");
+		expect(bareResult.stdout).toContain("## Topic: browser");
+		expect(bareResult.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
+		expect(bareResult.stdout).toContain("## Docs: browser");
+		expect(bareResult.stdout).toContain(path.join(repoDir, "docs", "browser"));
+		expect(bareResult.stdout).toContain(path.join(homeDir, ".ngents", "docs", "browser"));
+		expect(bareResult.stdout).toContain("local-browser.md");
+		expect(bareResult.stdout).toContain("extensive.md");
+		expect(bareResult.stdout).toContain("cdp.md");
+
+		expect(docsOnlyResult.exitCode).toBe(0);
+		expect(docsOnlyResult.stdout).toContain("# Docs: browser");
+		expect(docsOnlyResult.stdout).toContain("Topic available: docs topic browser");
+		expect(docsOnlyResult.stdout).toContain(path.join(repoDir, "docs", "browser"));
+		expect(docsOnlyResult.stdout).toContain(path.join(homeDir, ".ngents", "docs", "browser"));
+		expect(docsOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "topics", "browser"));
+
+		expect(topicOnlyResult.exitCode).toBe(0);
+		expect(topicOnlyResult.stdout).toContain("# Topic: browser");
+		expect(topicOnlyResult.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
+		expect(topicOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "browser"));
 	});
 });
 
@@ -1022,14 +1095,16 @@ test("single-token root selectors open topics and registered docs", async () => 
 		});
 
 		expect(bareName.exitCode).toBe(0);
+		expect(bareName.stdout).toContain("# Docs: machine");
 		expect(bareName.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
 		expect(bareName.stdout).toContain("cdp.md");
 
 		expect(bareTopic.exitCode).toBe(0);
-		expect(bareTopic.stdout).toContain("# iOS Library");
+		expect(bareTopic.stdout).toContain("# Topic: iOS Library");
 		expect(bareTopic.stdout).toContain(path.join(repoDir, "docs", "topics", "ios"));
 
 		expect(bareRegisteredDocs.exitCode).toBe(0);
+		expect(bareRegisteredDocs.stdout).toContain("# Docs: architecture");
 		expect(bareRegisteredDocs.stdout).toContain(path.join(repoDir, "docs", "architecture"));
 		expect(bareRegisteredDocs.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
 
@@ -1116,7 +1191,7 @@ test("docs topic merges local and global topic contributions", async () => {
 		});
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("# QMD");
+		expect(result.stdout).toContain("# Topic: QMD");
 		expect(result.stdout).toContain(path.join(repoDir, "docs", "topics", "qmd"));
 		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "topics", "qmd"));
 		expect(result.stdout).toContain("Use the local QMD docs for repo-specific workflows.");
@@ -1142,7 +1217,7 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 		});
 
 		const expected = [
-			"# iOS Library",
+			"# Topic: iOS Library",
 			path.join(normalizedRepoDir, "docs", "topics", "ios"),
 			"",
 			"Use `docs topic ios <section>` to focus one section.",
@@ -1590,7 +1665,7 @@ test("docs park adds a named collection, refreshes the index, and exposes parked
 			env: docsEnv(homeDir, binDir),
 		});
 		expect(topicResult.exitCode).toBe(0);
-		expect(topicResult.stdout).toContain("# Infrastructure");
+		expect(topicResult.stdout).toContain("# Topic: Infrastructure");
 		expect(topicResult.stdout).toContain(path.join(projectDir, "docs", "topics", "infra"));
 	});
 });

@@ -82,6 +82,8 @@ docs update
 - `docs help <command>` prints Commander command usage.
 - `docs <command> --help` prints usage for that command.
 - `docs <where>` opens a topic, a registered docs root, or a browse selector when `<where>` is a single non-command token.
+- Successful docs browse views render with `Docs` titles.
+- Successful topic views render with `Topic:` titles.
 
 ## Browse behavior
 
@@ -109,7 +111,7 @@ docs update
 - It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, explicit docs paths, and workspace paths that contain `docs/`.
 - Root command names still win, so `docs topic` and `docs query` keep their command behavior.
 - Parked collection names win before topics.
-- Topics win before registered docs names.
+- When an exact topic name and an exact registered docs name overlap, it renders the topic first and the matching docs subtree after it.
 - Registered docs names reuse the same merged subtree behavior as `docs ls docs/<name>`.
 - When the token is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
 

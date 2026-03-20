@@ -16,6 +16,7 @@ import {
 	printFocusedSkillsBlock,
 } from "./browse-focused-skills.ts";
 import { printTopicOverview } from "./browse-topic-overview.ts";
+import { availableSectionKeys } from "./browse-topic-sections.ts";
 import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
 import rootHelpTemplate, {
 	type RootHelpDocsGroup,
@@ -281,17 +282,28 @@ function printExpandedDocDescription(entry: MarkdownEntry): void {
 	}
 }
 
-function printExpandedDocsIndex(docs: MarkdownEntry[]): void {
-	printLine("Usage: docs ls [where]");
-	printLine();
-	printLine(heading(2, "Docs"));
+function printExpandedDocsIndex(
+	docs: MarkdownEntry[],
+	options: {
+		title: string;
+		titleLevel: 1 | 2;
+		groupHeadingLevel: 2 | 3;
+		topicHint?: string;
+	},
+): void {
+	printLine(heading(options.titleLevel, options.title));
+	if (options.topicHint) {
+		printLine(`Topic available: docs topic ${options.topicHint}`);
+	}
 	if (docs.length === 0) {
+		printLine();
 		printLine("- [no docs found]");
 		return;
 	}
 
+	printLine();
 	for (const [groupIndex, [directoryPath, entries]] of groupedDocs(docs).entries()) {
-		printLine(pc.white(pc.bold(directoryPath)));
+		printLine(heading(options.groupHeadingLevel, directoryPath));
 		for (
 			const [entryIndex, entry] of entries
 				.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
@@ -354,7 +366,9 @@ function printMarkdownDetails(entry: MarkdownEntry, level: 3 | 2): void {
 }
 
 function printTopicView(topic: MergedTopic): void {
-	printTopicOverview(topic);
+	printTopicOverview(topic, {
+		titlePrefix: "Topic: ",
+	});
 }
 
 function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): string {
@@ -427,23 +441,48 @@ function printFocusedSection(sectionView: { key: string; sections: SectionEntry[
 	}
 }
 
-function availableSectionKeys(topic: MergedTopic): string[] {
-	const keys = new Set<string>();
-	for (const contribution of topic.contributions) {
-		for (const section of contribution.sectionEntries) {
-			keys.add(section.key);
-		}
-	}
-
-	return Array.from(keys).sort((left, right) => left.localeCompare(right));
+function printDocsBrowser(
+	docs: MarkdownEntry[],
+	options: {
+		title?: string;
+		titleLevel?: 1 | 2;
+		groupHeadingLevel?: 2 | 3;
+		topicHint?: string;
+	} = {},
+): void {
+	printExpandedDocsIndex(docs, {
+		title: options.title ?? "Docs",
+		titleLevel: options.titleLevel ?? 1,
+		groupHeadingLevel: options.groupHeadingLevel ?? 2,
+		topicHint: options.topicHint,
+	});
 }
 
-function printDocsBrowser(docs: MarkdownEntry[]): void {
-	printExpandedDocsIndex(docs);
+function printCombinedSelectorView(
+	selector: string,
+	topic: MergedTopic,
+	docs: MarkdownEntry[],
+): void {
+	printLine(heading(1, `Docs: ${selector}`));
+	printLine();
+	printTopicOverview(topic, {
+		titleLevel: 2,
+		titlePrefix: "Topic: ",
+		sectionHeadingLevel: 3,
+		entryHeadingLevel: 4,
+	});
+	printLine();
+	printLine();
+	printExpandedDocsIndex(docs, {
+		title: `Docs: ${selector}`,
+		titleLevel: 2,
+		groupHeadingLevel: 3,
+	});
 }
 
 export default {
 	availableSectionKeys,
+	printCombinedSelectorView,
 	printDocsBrowser,
 	printFocusedSection,
 	printRootHelp,

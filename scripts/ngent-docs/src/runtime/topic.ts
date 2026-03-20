@@ -6,6 +6,7 @@ import browseContracts, {
 import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
 import { discoverDocsSources } from "./browse-sources.ts";
+import { availableSectionKeys } from "./browse-topic-sections.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -63,7 +64,7 @@ function sectionsOrFail(
 
 	fail(
 		`Unknown section "${requestedSection}" for topic "${requestedTopic}". Available: ${
-			browseRender.availableSectionKeys(topic).join(", ")
+			availableSectionKeys(topic).join(", ")
 		}`,
 	);
 }
@@ -80,6 +81,17 @@ class TopicNotFoundError extends Error {
 
 export function isTopicNotFoundError(error: unknown): error is TopicNotFoundError {
 	return error instanceof TopicNotFoundError;
+}
+
+export async function readDocsTopicSelector(
+	currentDir: string,
+	requestedTopic: string,
+): Promise<MergedTopic | null> {
+	const sources = await discoverDocsSources(currentDir);
+	if (sources.mergedDocsRoots.length === 0) {
+		return null;
+	}
+	return readTopicOrNull(sources.mergedDocsRoots, requestedTopic);
 }
 
 export async function runDocsTopicSelector(

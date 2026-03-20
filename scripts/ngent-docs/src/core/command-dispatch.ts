@@ -2,14 +2,16 @@ import { Command, CommanderError } from "commander";
 
 import { commandDefinitions } from "../commands/index.ts";
 import { runtimeError, usageError } from "../core/errors.ts";
+import browseRender from "../runtime/browse-render.ts";
 import { isBrowseSelectorNotFoundError } from "../runtime/browse-sources.ts";
 import {
+	readRegisteredDocsSelector,
 	renderRootSelectorNotFound,
 	runDocsBrowseSelector,
 	runDocsParkedCollectionSelector,
 } from "../runtime/browse.ts";
 import { runDocsRootHelp } from "../runtime/help.ts";
-import { isTopicNotFoundError, runDocsTopicSelector } from "../runtime/topic.ts";
+import { readDocsTopicSelector } from "../runtime/topic.ts";
 import { registerCommand } from "./command-definition.ts";
 import type { CommandDefinition } from "./contracts.ts";
 
@@ -113,13 +115,23 @@ async function maybeRunRootSelectorFallback(argv: string[], projectDir: string):
 		return true;
 	}
 
-	try {
-		await runDocsTopicSelector(projectDir, selector);
+	const topic = await readDocsTopicSelector(projectDir, selector);
+	const registeredDocs = await readRegisteredDocsSelector(projectDir, selector);
+	if (topic && registeredDocs) {
+		browseRender.printCombinedSelectorView(selector, topic, registeredDocs);
 		return true;
-	} catch (error) {
-		if (!isTopicNotFoundError(error)) {
-			throw error;
-		}
+	}
+
+	if (topic) {
+		browseRender.printTopicView(topic);
+		return true;
+	}
+
+	if (registeredDocs) {
+		browseRender.printDocsBrowser(registeredDocs, {
+			title: `Docs: ${selector}`,
+		});
+		return true;
 	}
 
 	try {

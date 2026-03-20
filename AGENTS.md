@@ -120,3 +120,7 @@ Also switch when the user wants concept, feature, system, architecture, or codeb
 
 ## Communication Adjustments
 - Output: If I ask for an absolute path, print the literal absolute path in plain text
+
+## Editing Constraints Override
+- Prefer normal shell commands for pure filesystem operations such as `mv`, `cp`.
+- Choose the simplest safe tool that matches the kind of change: content edits use `apply_patch`; file moves, copies, and directory creation use normal filesystem commands.

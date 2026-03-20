@@ -53,23 +53,23 @@ docs ls ~/work/foo/docs - Explicit docs dir
 docs ls machine - Parked global docs by name
 docs ls global - Global docs, expanded descriptions
 
-/fixture/home/.ngents/docs/architecture
+### /fixture/home/.ngents/docs/architecture
   global-only.md - global architecture notes
 
-/fixture/home/.ngents/docs/browser
+### /fixture/home/.ngents/docs/browser
   cdp.md - Chrome CDP instructions
 
-/fixture/home/.ngents/docs/ngents
+### /fixture/home/.ngents/docs/ngents
   docs.md - command index
 
-/fixture/home/.ngents/docs/process
+### /fixture/home/.ngents/docs/process
   qa.md - qa process notes
 
-/fixture/repo/docs
+### /fixture/repo/docs
   long-summary.md - This summary is intentionally longer than sixty-four characte...
   web-fetching.md - web browser tools
 
-/fixture/repo/docs/architecture
+### /fixture/repo/docs/architecture
   local-only.md - local architecture notes
   main.md - read this first
 "

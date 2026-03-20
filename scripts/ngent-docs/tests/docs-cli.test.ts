@@ -555,6 +555,7 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 			cwd: repoDir,
 			env: docsEnv(homeDir, binDir),
 		});
+		const normalizedStdout = result.stdout.replaceAll("/private/var", "/var");
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# docs");
@@ -574,6 +575,8 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain(
 			"long-summary.md - This summary is intentionally longer than sixty-four characte...",
 		);
+		expect(normalizedStdout).toContain(`### ${path.join(repoDir, "docs")}`);
+		expect(normalizedStdout).toContain(`### ${path.join(homeDir, ".ngents", "docs", "browser")}`);
 		expect(result.stdout).toContain("cdp.md - Chrome CDP instructions");
 		expect(result.stdout).not.toContain(
 			"This is the long architecture summary that should stay out of compact listings.",
@@ -1042,6 +1045,8 @@ test("docs browser shows both the topic and registered docs when names overlap",
 		expect(bareResult.stdout).toContain("# Docs: browser");
 		expect(bareResult.stdout).toContain("## Topic: browser");
 		expect(bareResult.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
+		expect(bareResult.stdout).toContain("### Docs");
+		expect(bareResult.stdout).not.toContain("#### extensive");
 		expect(bareResult.stdout).toContain("## Docs: browser");
 		expect(bareResult.stdout).toContain(path.join(repoDir, "docs", "browser"));
 		expect(bareResult.stdout).toContain(path.join(homeDir, ".ngents", "docs", "browser"));
@@ -1059,6 +1064,9 @@ test("docs browser shows both the topic and registered docs when names overlap",
 		expect(topicOnlyResult.exitCode).toBe(0);
 		expect(topicOnlyResult.stdout).toContain("# Topic: browser");
 		expect(topicOnlyResult.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
+		expect(topicOnlyResult.stdout).toContain("## Docs");
+		expect(topicOnlyResult.stdout).not.toContain("---");
+		expect(topicOnlyResult.stdout).not.toContain("### extensive");
 		expect(topicOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "browser"));
 	});
 });
@@ -1228,12 +1236,8 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 			"- Use `hig-doctor` when you need curated Apple HIG skills and references.",
 			"- Use the Skill sections when you need an on-demand iOS, Swift, SwiftUI, SwiftData, or Apple-tooling skill without loading it into the always-available skill context.",
 			"- Prefer `hig-doctor` before raw Apple docs when both could answer the question.",
-			"",
-			"---",
-			"",
 			"## Docs",
 			"",
-			"### Sosumi CLI",
 			path.join(normalizedRepoDir, "docs", "topics", "ios", "SOSUMI.md"),
 			"",
 			"Sosumi CLI and MCP reference for fetching Apple Developer docs as Markdown.",

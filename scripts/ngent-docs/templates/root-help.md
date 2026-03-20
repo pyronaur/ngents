@@ -57,7 +57,7 @@ docs ~/work/foo - Bare selector fallback for a workspace docs root
 {{ ls_command }} global - Global docs, expanded descriptions
 
 {% for docs_group in docs_groups %}
-{{ docs_group.directory_path }}
+### {{ docs_group.directory_path }}
 {% for entry_line in docs_group.entry_lines -%}
 {{ entry_line }}
 {% endfor %}

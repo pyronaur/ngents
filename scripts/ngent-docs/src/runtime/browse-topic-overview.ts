@@ -30,15 +30,7 @@ function printSeparator(): void {
 	printLine();
 }
 
-function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4): void {
-	printLine(
-		heading(
-			headingLevel,
-			entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath)),
-		),
-	);
-	printLine(entry.absolutePath);
-
+function printTopicDocMetadata(entry: MarkdownEntry): void {
 	const summary = normalizeInlineText(entry.summary) ?? compactDescription(entry.short, null);
 	const readWhen = entry.readWhen.length > 0 ? `Read when: ${entry.readWhen.join("; ")}` : null;
 	if (!summary && !readWhen && !entry.error) {
@@ -57,12 +49,32 @@ function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4): void {
 	}
 }
 
+function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4): void {
+	printLine(
+		heading(
+			headingLevel,
+			entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath)),
+		),
+	);
+	printLine(entry.absolutePath);
+	printTopicDocMetadata(entry);
+}
+
 function printTopicDocs(entries: MarkdownEntry[], options: {
 	sectionHeadingLevel: 2 | 3;
 	entryHeadingLevel: 3 | 4;
 }): void {
 	printLine(heading(options.sectionHeadingLevel, "Docs"));
 	printLine();
+
+	if (entries.length === 1) {
+		const [entry] = entries;
+		if (entry) {
+			printLine(entry.absolutePath);
+			printTopicDocMetadata(entry);
+		}
+		return;
+	}
 
 	for (const [index, entry] of entries.entries()) {
 		printTopicDoc(entry, options.entryHeadingLevel);
@@ -238,11 +250,10 @@ function printContributionBlocksWithOptions(
 	}
 
 	for (const [index, block] of blocks.entries()) {
-		printSeparator();
-		block();
-		if (index < blocks.length - 1) {
-			continue;
+		if (index > 0) {
+			printSeparator();
 		}
+		block();
 	}
 }
 

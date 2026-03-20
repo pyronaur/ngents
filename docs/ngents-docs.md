@@ -79,6 +79,7 @@ docs update
 - `docs` prints compact Markdown help with the command walkthrough, merged topic index, and merged docs index.
 - `docs --help` prints the same Markdown help style without the docs index.
 - `docs help` prints the same Markdown help style without the docs index.
+- In the compact docs index, each docs root is grouped under its own level-3 path heading.
 - `docs help <command>` prints Commander command usage.
 - `docs <command> --help` prints usage for that command.
 - `docs <where>` opens a topic, a registered docs root, or a browse selector when `<where>` is a single non-command token.

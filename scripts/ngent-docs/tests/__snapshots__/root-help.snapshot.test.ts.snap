@@ -42,7 +42,7 @@ qmd    QMD          local search docs
 docs ls [where]
 docs ios - Bare selector fallback for a topic
 docs architecture - Bare selector fallback for a registered docs root
-docs machine - Bare selector fallback for a parked docs root
+docs machine - Bare selector fallback for a parked docs root, showing topics and docs
 docs ~/work/foo - Bare selector fallback for a workspace docs root
 docs ls . - Project docs, expanded descriptions
 docs ls ./docs/subdir - Project docs in dir

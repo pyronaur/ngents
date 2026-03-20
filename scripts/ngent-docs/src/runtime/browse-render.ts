@@ -15,6 +15,12 @@ import {
 	printCompactFocusedSkillSection,
 	printFocusedSkillsBlock,
 } from "./browse-focused-skills.ts";
+import {
+	printScopedTopicBrowser,
+	printTopicBrowser,
+	renderTopicTableHeader,
+	rootHelpTopicLines,
+} from "./browse-topic-browser.ts";
 import { printTopicOverview } from "./browse-topic-overview.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
 import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
@@ -46,35 +52,6 @@ function renderBlock(
 		lines.push(`${" ".repeat(indent)}${text}`);
 	});
 	return lines.join("\n");
-}
-
-function printTopicDescription(
-	row: Pick<TopicIndexRow, "short" | "summary">,
-): string {
-	return compactDescription(row.short, row.summary) ?? pc.gray("-");
-}
-
-function topicColumnWidths(topics: TopicIndexRow[]): { titleWidth: number; topicWidth: number } {
-	return {
-		topicWidth: Math.max("TOPIC".length, ...topics.map(topic => topic.name.length)),
-		titleWidth: Math.max("TITLE".length, ...topics.map(topic => topic.title.length)),
-	};
-}
-
-function renderTopicsTable(topics: TopicIndexRow[]): string {
-	return renderBlock(pushLine => {
-		if (topics.length === 0) {
-			pushLine("- [no topics found]");
-			return;
-		}
-
-		const widths = topicColumnWidths(topics);
-		pushLine(renderTopicTableHeader(topics));
-
-		for (const topic of topics) {
-			pushLine(renderTopicTableRow(topic, widths));
-		}
-	});
 }
 
 function renderInventoryTopicLines(topics: TopicIndexRow[]): string[] {
@@ -163,20 +140,6 @@ function renderRootSelectorNotFound(
 	});
 }
 
-function renderTopicTableHeader(topics: TopicIndexRow[]): string {
-	const { titleWidth, topicWidth } = topicColumnWidths(topics);
-	return pc.bold(`${"TOPIC".padEnd(topicWidth)}  ${"TITLE".padEnd(titleWidth)}  DESCRIPTION`);
-}
-
-function renderTopicTableRow(
-	topic: Pick<TopicIndexRow, "name" | "title" | "short" | "summary">,
-	widths: { titleWidth: number; topicWidth: number },
-): string {
-	return `${topic.name.padEnd(widths.topicWidth)}  ${topic.title.padEnd(widths.titleWidth)}  ${
-		printTopicDescription(topic)
-	}`;
-}
-
 function groupedDocs(docs: MarkdownEntry[]): Array<[string, MarkdownEntry[]]> {
 	const grouped = new Map<string, MarkdownEntry[]>();
 	for (const entry of docs) {
@@ -191,11 +154,6 @@ function groupedDocs(docs: MarkdownEntry[]): Array<[string, MarkdownEntry[]]> {
 	}
 
 	return Array.from(grouped.entries()).sort((left, right) => left[0].localeCompare(right[0]));
-}
-
-function rootHelpTopicLines(topics: TopicIndexRow[]): string[] {
-	const widths = topicColumnWidths(topics);
-	return topics.map(topic => renderTopicTableRow(topic, widths));
 }
 
 function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
@@ -337,18 +295,6 @@ function printRootHelp(
 	}
 }
 
-function printTopicBrowser(topics: TopicIndexRow[]): void {
-	printLine("Usage: docs topic [topic] [section]");
-	printLine();
-	printLine(heading(2, "Topics"));
-	printLine("docs topic foo - view foo about/index first");
-	printLine("docs topic foo bar - learn about bar section");
-	printLine();
-	for (const line of renderTopicsTable(topics).split("\n")) {
-		printLine(line);
-	}
-}
-
 function printMarkdownDetails(entry: MarkdownEntry, level: 3 | 2): void {
 	printLine(heading(level, entry.title ?? entry.relativePath));
 	printLine(`${pc.dim("path:")} ${pc.dim(entry.absolutePath)}`);
@@ -480,12 +426,42 @@ function printCombinedSelectorView(
 	});
 }
 
+function printCollectionSelectorView(
+	selector: string,
+	topics: TopicIndexRow[],
+	docs: MarkdownEntry[],
+): void {
+	printLine(heading(1, `Docs: ${selector}`));
+
+	if (topics.length > 0) {
+		printLine();
+		printScopedTopicBrowser(topics, {
+			title: `Topics: ${selector}`,
+			titleLevel: 2,
+		});
+	}
+
+	if (docs.length > 0 || topics.length === 0) {
+		if (topics.length > 0) {
+			printLine();
+			printLine();
+		}
+		printExpandedDocsIndex(docs, {
+			title: `Docs: ${selector}`,
+			titleLevel: 2,
+			groupHeadingLevel: 3,
+		});
+	}
+}
+
 export default {
 	availableSectionKeys,
+	printCollectionSelectorView,
 	printCombinedSelectorView,
 	printDocsBrowser,
 	printFocusedSection,
 	printRootHelp,
+	printScopedTopicBrowser,
 	renderRootSelectorNotFound,
 	renderSelectorNotFound,
 	printTopicBrowser,

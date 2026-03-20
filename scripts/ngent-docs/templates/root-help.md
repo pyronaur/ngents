@@ -45,7 +45,7 @@ Use `{{ topic_command }} <name>` to expand available docs for topic.
 {{ ls_usage }}
 docs ios - Bare selector fallback for a topic
 docs architecture - Bare selector fallback for a registered docs root
-docs machine - Bare selector fallback for a parked docs root
+docs machine - Bare selector fallback for a parked docs root, showing topics and docs
 docs ~/work/foo - Bare selector fallback for a workspace docs root
 {{ ls_command }} . - Project docs, expanded descriptions
 {{ ls_command }} ./docs/subdir - Project docs in dir

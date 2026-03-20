@@ -1,5 +1,8 @@
 import { runtimeError } from "../core/errors.ts";
-import browseContracts from "./browse-contracts.ts";
+import browseContracts, {
+	type MarkdownEntry,
+	type TopicIndexRow,
+} from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
 import {
@@ -18,6 +21,12 @@ type DocsBrowseView = {
 	docs: Awaited<ReturnType<typeof browseDiscovery.readDocsEntriesUnder>>;
 	title: string;
 	topicHint?: string;
+};
+
+type ParkedCollectionSelectorView = {
+	docsRoot: string;
+	docs: MarkdownEntry[];
+	topics: TopicIndexRow[];
 };
 
 function fail(message: string): never {
@@ -153,16 +162,12 @@ export async function runDocsParkedCollectionSelector(
 	currentDir: string,
 	selector: string,
 ): Promise<boolean> {
-	const sources = await discoverDocsSources(currentDir);
-	const globalDirectoryPath = resolveGlobalDocsDirectoryByName(sources, selector);
-	if (!globalDirectoryPath) {
+	const collection = await readParkedCollectionSelector(currentDir, selector);
+	if (!collection) {
 		return false;
 	}
 
-	const { docs } = await docsEntriesUnder(globalDirectoryPath);
-	browseRender.printDocsBrowser(docs, {
-		title: docsTitle(selector),
-	});
+	browseRender.printCollectionSelectorView(selector, collection.topics, collection.docs);
 	return true;
 }
 
@@ -204,6 +209,24 @@ export async function renderRootSelectorNotFound(
 ): Promise<string> {
 	const inventory = await browseInventoryForCurrentDir(currentDir);
 	return browseRender.renderRootSelectorNotFound(selector, commands, inventory);
+}
+
+export async function readParkedCollectionSelector(
+	currentDir: string,
+	selector: string,
+): Promise<ParkedCollectionSelectorView | null> {
+	const sources = await discoverDocsSources(currentDir);
+	const docsRoot = resolveGlobalDocsDirectoryByName(sources, selector);
+	if (!docsRoot) {
+		return null;
+	}
+
+	const index = await browseDiscovery.buildIndexData([docsRoot]);
+	return {
+		docsRoot,
+		docs: index.docs,
+		topics: index.topics,
+	};
 }
 
 export async function runDocsLs(positionals: string[]): Promise<void> {

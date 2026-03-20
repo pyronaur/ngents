@@ -7,6 +7,7 @@ import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
 import { discoverDocsSources } from "./browse-sources.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
+import { readParkedCollectionSelector } from "./browse.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -79,6 +80,28 @@ class TopicNotFoundError extends Error {
 	}
 }
 
+async function printTopicOrParkedCollection(
+	currentDir: string,
+	docsRoots: string[],
+	requestedTopic: string,
+): Promise<boolean> {
+	const topic = await readTopicOrNull(docsRoots, requestedTopic);
+	if (topic) {
+		browseRender.printTopicView(topic);
+		return true;
+	}
+
+	const parkedCollection = await readParkedCollectionSelector(currentDir, requestedTopic);
+	if (!parkedCollection) {
+		return false;
+	}
+
+	browseRender.printScopedTopicBrowser(parkedCollection.topics, {
+		title: `Topics: ${requestedTopic}`,
+	});
+	return true;
+}
+
 export function isTopicNotFoundError(error: unknown): error is TopicNotFoundError {
 	return error instanceof TopicNotFoundError;
 }
@@ -124,12 +147,22 @@ export async function runDocsTopic(positionals: string[]): Promise<void> {
 		return;
 	}
 
-	const topic = await readTopicOrFail(sources.mergedDocsRoots, requestedTopic);
-	if (!requestedSection) {
-		browseRender.printTopicView(topic);
+	if (
+		!requestedSection && await printTopicOrParkedCollection(
+			currentDir,
+			sources.mergedDocsRoots,
+			requestedTopic,
+		)
+	) {
 		return;
 	}
 
+	if (!requestedSection) {
+		await readTopicOrFail(sources.mergedDocsRoots, requestedTopic);
+		return;
+	}
+
+	const topic = await readTopicOrFail(sources.mergedDocsRoots, requestedTopic);
 	const sections = sectionsOrFail(topic, requestedTopic, requestedSection);
 	browseRender.printFocusedSection({ key: requestedSection, sections });
 }

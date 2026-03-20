@@ -122,6 +122,7 @@ Global docs collection metadata is cached for 1 hour.
 - It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, explicit docs paths, and workspace paths that contain `docs/`.
 - Root command names still win, so `docs topic` and `docs query` keep their command behavior.
 - Parked collection names win before topics.
+- Bare parked collection selectors show that collection's topics and docs together.
 - When an exact topic name and an exact registered docs name overlap, it renders the topic first and the matching docs subtree after it.
 - Registered docs names reuse the same merged subtree behavior as `docs ls docs/<name>`.
 - When the token is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
@@ -144,10 +145,20 @@ Global docs collection metadata is cached for 1 hour.
 
 - It merges same-name local and global topic contributions.
 - It accepts an optional section selector.
+- When the selector matches a parked collection name and not a topic name, it lists only the topics from that parked collection.
 - It is the main browse surface for grouped reusable knowledge.
 - It may expose regular topic docs and skill-backed sections together.
 - It labels skill-bearing sections as `Skills` in topic output.
 - It can derive skill summaries directly from `SKILL.md` when a section has no `.docs.md`.
+
+### Selector scope examples
+
+- `docs machine` shows the parked `machine` collection topics and docs together.
+- `docs ls machine` shows only the parked `machine` collection docs.
+- `docs topic machine` shows only the parked `machine` collection topics.
+- `docs browser` shows the `browser` topic and matching `docs/browser` docs together.
+- `docs ls browser` shows only matching `docs/browser` docs.
+- `docs topic browser` shows only the `browser` topic.
 
 ### `query`
 

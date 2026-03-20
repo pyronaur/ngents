@@ -1167,6 +1167,8 @@ test("single-token root selectors open topics and registered docs", async () => 
 
 		expect(bareName.exitCode).toBe(0);
 		expect(bareName.stdout).toContain("# Docs: machine");
+		expect(bareName.stdout).toContain("## Topics: machine");
+		expect(bareName.stdout).toContain("qmd");
 		expect(bareName.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
 		expect(bareName.stdout).toContain("cdp.md");
 
@@ -1186,6 +1188,29 @@ test("single-token root selectors open topics and registered docs", async () => 
 		expect(bareDocsPath.exitCode).toBe(0);
 		expect(bareDocsPath.stdout).toContain(path.join(repoDir, "docs"));
 		expect(bareDocsPath.stdout).toContain("web-fetching.md");
+	});
+});
+
+test("docs topic opens parked collection topic indexes without docs", async () => {
+	await withTempDir("docs-topic-parked-collection-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["topic", "machine"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("# Topics: machine");
+		expect(result.stdout).toContain("qmd");
+		expect(result.stdout).not.toContain(path.join(homeDir, ".ngents", "docs", "browser"));
+		expect(result.stdout).not.toContain("cdp.md");
 	});
 });
 

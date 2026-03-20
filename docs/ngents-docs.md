@@ -74,6 +74,16 @@ docs query [--limit <n>] <query...> | status
 docs update
 ```
 
+## QMD collection metadata cache
+
+Global docs collection metadata is cached for 1 hour.
+
+- The cache stores the parked QMD collection metadata used to discover global docs roots.
+- Fresh cache entries are reused immediately.
+- Expired cache entries are reused immediately and refreshed in the background.
+- `docs update` clears this metadata cache.
+- `docs query` still runs a fresh QMD search; the cache only covers collection metadata lookup.
+
 ## Help behavior
 
 - `docs` prints compact Markdown help with the command walkthrough, merged topic index, and merged docs index.

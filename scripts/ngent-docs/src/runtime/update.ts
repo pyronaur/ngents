@@ -1,5 +1,5 @@
 import { runtimeError } from "../core/errors.ts";
-import { runQmd } from "./qmd.ts";
+import { invalidateQmdCollectionsCache, runQmd } from "./qmd.ts";
 
 function fail(message: string): never {
 	throw runtimeError(message);
@@ -15,4 +15,6 @@ export async function runDocsUpdate(): Promise<void> {
 	if (embedResult.exitCode !== 0) {
 		fail(embedResult.stderr.trim() || embedResult.stdout.trim() || "qmd embed failed");
 	}
+
+	await invalidateQmdCollectionsCache();
 }

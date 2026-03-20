@@ -7,6 +7,7 @@ import { runDocsCli } from "./helpers/cli.ts";
 
 const CANONICAL_QUERY_USAGE = "docs query [--limit <n>] <query...> | status";
 const STALE_QUERY_USAGE = "docs query [options] [terms...]";
+const QMD_COLLECTIONS_CACHE_VERSION = 1;
 
 async function makeTempDir(prefix: string): Promise<string> {
 	return mkdtemp(path.join(os.tmpdir(), prefix));
@@ -15,6 +16,37 @@ async function makeTempDir(prefix: string): Promise<string> {
 async function writeText(filePath: string, contents: string): Promise<void> {
 	await mkdir(path.dirname(filePath), { recursive: true });
 	await writeFile(filePath, contents);
+}
+
+async function readText(filePath: string): Promise<string> {
+	return readFile(filePath, "utf8");
+}
+
+async function readTextOrEmpty(filePath: string): Promise<string> {
+	try {
+		return await readText(filePath);
+	} catch {
+		return "";
+	}
+}
+
+async function waitFor(
+	description: string,
+	check: () => Promise<boolean>,
+	timeoutMs = 2_000,
+): Promise<void> {
+	const deadline = Date.now() + timeoutMs;
+	for (;;) {
+		if (await check()) {
+			return;
+		}
+
+		if (Date.now() >= deadline) {
+			throw new Error(`Timed out waiting for ${description}`);
+		}
+
+		await new Promise(resolve => setTimeout(resolve, 25));
+	}
 }
 
 async function writeExecutable(dir: string, name: string, body: string): Promise<void> {
@@ -418,6 +450,37 @@ async function seedQmdState(homeDir: string, entries: Array<{ name: string; path
 	await writeText(
 		path.join(homeDir, ".ngents", "local", "qmd-config", "docs-qmd-state.tsv"),
 		stateContents.length > 0 ? `${stateContents}\n` : "",
+	);
+}
+
+function qmdCollectionsCachePath(homeDir: string): string {
+	return path.join(homeDir, ".ngents", "local", "qmd-cache", "docs-qmd-collections-cache.json");
+}
+
+async function seedQmdCollectionsCache(
+	homeDir: string,
+	options: {
+		fetchedAt: string;
+		collections: Array<{
+			name: string;
+			path: string;
+			pattern?: string | null;
+			includeByDefault?: boolean;
+		}>;
+	},
+): Promise<void> {
+	await writeText(
+		qmdCollectionsCachePath(homeDir),
+		JSON.stringify({
+			version: QMD_COLLECTIONS_CACHE_VERSION,
+			fetchedAt: options.fetchedAt,
+			collections: options.collections.map(collection => ({
+				name: collection.name,
+				path: collection.path,
+				pattern: collection.pattern ?? "**/*.md",
+				includeByDefault: collection.includeByDefault ?? true,
+			})),
+		}),
 	);
 }
 
@@ -1602,6 +1665,193 @@ test("docs query preserves formatted search output and limit handling", async ()
 			path.join(homeDir, ".ngents", "docs", "ngents", "docs.md") + ":12-13",
 		);
 		expect(await readFile(logFile, "utf8")).not.toContain(" -c ");
+	});
+});
+
+test("docs ls global reuses a fresh collection metadata cache without qmd lookups", async () => {
+	await withTempDir("docs-cache-fresh-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		const docsRoot = path.join(homeDir, ".ngents", "docs");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
+		await seedQmdCollectionsCache(homeDir, {
+			fetchedAt: new Date().toISOString(),
+			collections: [{ name: "global", path: docsRoot }],
+		});
+
+		const result = await runDocsCli(["ls", "global"], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(docsRoot);
+		expect(result.stdout).toContain(" - cdp.md");
+		expect(result.stdout).toContain("Need to start, stop, or inspect the local Chrome CDP session.");
+		expect(await readTextOrEmpty(logFile)).toBe("");
+	});
+});
+
+test("docs ls global serves stale collection metadata and refreshes it in the background", async () => {
+	await withTempDir("docs-cache-swr-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		const freshDocsRoot = path.join(homeDir, ".ngents", "docs");
+		const staleDocsRoot = path.join(tempDir, "stale-docs");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
+		await writeText(
+			path.join(staleDocsRoot, "stale-only.md"),
+			[
+				"---",
+				"title: Stale Only",
+				"summary: Cached stale docs root.",
+				"---",
+				"",
+				"# Stale Only",
+				"",
+				"Stale body.",
+				"",
+			].join("\n"),
+		);
+		await seedQmdCollectionsCache(homeDir, {
+			fetchedAt: new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString(),
+			collections: [{ name: "global", path: staleDocsRoot }],
+		});
+
+		const staleResult = await runDocsCli(["ls", "global"], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(staleResult.exitCode).toBe(0);
+		expect(staleResult.stdout).toContain(staleDocsRoot);
+		expect(staleResult.stdout).toContain(" - stale-only.md");
+		expect(staleResult.stdout).toContain("Cached stale docs root.");
+		expect(staleResult.stdout).not.toContain(freshDocsRoot);
+
+		await waitFor("background collection refresh log entries", async () => {
+			const logContents = await readTextOrEmpty(logFile);
+			return logContents.includes("--index ngents-docs collection list")
+				&& logContents.includes("--index ngents-docs collection show global");
+		});
+		await waitFor("refreshed collection cache", async () => {
+			const cacheContents = await readText(qmdCollectionsCachePath(homeDir));
+			return cacheContents.includes(freshDocsRoot) && !cacheContents.includes(staleDocsRoot);
+		});
+
+		await rm(logFile, { force: true });
+		const freshResult = await runDocsCli(["ls", "global"], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(freshResult.exitCode).toBe(0);
+		expect(freshResult.stdout).toContain(freshDocsRoot);
+		expect(freshResult.stdout).toContain(" - cdp.md");
+		expect(freshResult.stdout).toContain("Need to start, stop, or inspect the local Chrome CDP session.");
+		expect(freshResult.stdout).not.toContain(staleDocsRoot);
+		expect(await readTextOrEmpty(logFile)).toBe("");
+	});
+});
+
+test("docs ls global rebuilds a corrupt collection metadata cache synchronously", async () => {
+	await withTempDir("docs-cache-corrupt-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
+		await writeText(qmdCollectionsCachePath(homeDir), "{not json");
+
+		const result = await runDocsCli(["ls", "global"], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+		const logContents = await readText(logFile);
+		expect(logContents).toContain("--index ngents-docs collection list");
+		expect(logContents).toContain("--index ngents-docs collection show global");
+		const cacheContents = await readText(qmdCollectionsCachePath(homeDir));
+		expect(cacheContents).toContain(path.join(homeDir, ".ngents", "docs"));
+	});
+});
+
+test("docs query uses cached collection metadata and still runs a fresh qmd query", async () => {
+	await withTempDir("docs-cache-query-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		const docsRoot = path.join(homeDir, ".ngents", "docs");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "ngents");
+		await seedQmdCollectionsCache(homeDir, {
+			fetchedAt: new Date().toISOString(),
+			collections: [{ name: "ngents", path: docsRoot }],
+		});
+
+		const result = await runDocsCli(["query", "shell", "environment", "policy"], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(path.join(docsRoot, "ngents", "docs.md"));
+		const logContents = await readText(logFile);
+		expect(logContents).toContain("--index ngents-docs query shell environment policy -n 5 --min-score 0.35 --json");
+		expect(logContents).not.toContain("collection list");
+		expect(logContents).not.toContain("collection show");
+	});
+});
+
+test("docs update invalidates the collection metadata cache after a successful refresh", async () => {
+	await withTempDir("docs-cache-update-invalidate-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "qmd.log");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedFakeQmd(binDir);
+		await seedQmdCollectionsCache(homeDir, {
+			fetchedAt: new Date().toISOString(),
+			collections: [{ name: "global", path: path.join(homeDir, ".ngents", "docs") }],
+		});
+
+		const result = await runDocsCli(["update"], {
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(await readTextOrEmpty(qmdCollectionsCachePath(homeDir))).toBe("");
+		expect(await readText(logFile)).toBe(
+			[
+				"--index ngents-docs update",
+				"--index ngents-docs embed",
+				"",
+			].join("\n"),
+		);
 	});
 });
 

@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { runtimeError } from "../core/errors.ts";
 import browseContracts from "./browse-contracts.ts";
-import { addQmdCollection, listQmdCollections } from "./qmd.ts";
+import { addQmdCollection, invalidateQmdCollectionsCache, listQmdCollectionsFresh } from "./qmd.ts";
 import { runDocsUpdate } from "./update.ts";
 
 const { EXCLUDED_DIRS, hasHiddenOrExcludedSegment, META_FILE, normalizePath, TOPICS_DIR } =
@@ -120,7 +120,7 @@ export async function runDocsPark(positionals: string[]): Promise<void> {
 		fail(`Not a docs root: ${docsRoot}`);
 	}
 
-	const collections = await listQmdCollections();
+	const collections = await listQmdCollectionsFresh();
 	const nameMatch = collections.find(collection => collection.name === collectionName);
 	if (nameMatch) {
 		fail(`Docs collection already parked: ${collectionName}`);
@@ -133,6 +133,7 @@ export async function runDocsPark(positionals: string[]): Promise<void> {
 	}
 
 	await addQmdCollection(collectionName, docsRoot);
+	await invalidateQmdCollectionsCache();
 	await runDocsUpdate();
 	console.log(`Parked "${collectionName}" at ${docsRoot}`);
 }

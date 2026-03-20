@@ -113,8 +113,10 @@ Browser automation CLI against the shared browser stack.
 Filtered HIG audit wrapper with repo-local YAML ignores.
 
 - Use `ng hig-doctor [directory]` instead of calling `hig-doctor` directly from app repos.
-- Configure exact allowed concerns in `.higignore.yaml` at the current working directory.
+- Configure wrapper-level excludes and exact allowed concerns in `.higignore.yaml` at the current working directory.
+- Use `excludedPaths` for non-shipping or fixture/support code that should be skipped before pattern detection.
 - Ignore entries must set `file`, `pattern`, `line`, and `reason`.
+- Exclude entries are config-relative glob strings such as `**/Testing/**`.
 - The command writes markdown to `stdout` only for remaining issues and a separate `Ignored Concerns` section for filtered matches.
 - When issues remain, `stderr` prints the concern count and the `docs topic ios hig-doctor` hint for the relevant HIG skill.
 

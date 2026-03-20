@@ -61,6 +61,7 @@ type IgnoreEntry = {
 };
 
 type IgnoreConfig = {
+	excludedPaths: string[];
 	ignoredConcerns: IgnoreEntry[];
 };
 
@@ -79,7 +80,9 @@ function usage(): string {
 	return [
 		'Usage: ng hig-doctor [directory]',
 		'',
-		`Reads ${IGNORE_FILE_NAME} from the current working directory and filters exact concern matches by file, pattern, and line.`,
+		`Reads ${IGNORE_FILE_NAME} from the current working directory.`,
+		'- `excludedPaths` skips matching files before HIG pattern detection runs.',
+		'- `ignoredConcerns` filters exact concern matches by file, pattern, and line.',
 	].join('\n');
 }
 
@@ -115,7 +118,7 @@ async function loadIgnoreConfig(configDir: string): Promise<IgnoreConfig> {
 	try {
 		await access(configPath);
 	} catch {
-		return { ignoredConcerns: [] };
+		return { excludedPaths: [], ignoredConcerns: [] };
 	}
 
 	let parsed: unknown;
@@ -131,9 +134,23 @@ async function loadIgnoreConfig(configDir: string): Promise<IgnoreConfig> {
 		throw new Error(`${IGNORE_FILE_NAME} must contain a top-level mapping`);
 	}
 
-	const ignoredConcernsValue = (parsed as Record<string, unknown>).ignoredConcerns;
+	const object = parsed as Record<string, unknown>;
+	const excludedPathsValue = object.excludedPaths;
+	const ignoredConcernsValue = object.ignoredConcerns;
+
+	let excludedPaths: string[] = [];
+	if (excludedPathsValue !== undefined) {
+		if (!Array.isArray(excludedPathsValue)) {
+			throw new Error('excludedPaths must be an array');
+		}
+
+		excludedPaths = excludedPathsValue.map((entry, index) =>
+			toPosixPath(readNonEmptyString(entry, `excludedPaths[${index}]`)),
+		);
+	}
+
 	if (ignoredConcernsValue === undefined) {
-		return { ignoredConcerns: [] };
+		return { excludedPaths, ignoredConcerns: [] };
 	}
 
 	if (!Array.isArray(ignoredConcernsValue)) {
@@ -154,7 +171,7 @@ async function loadIgnoreConfig(configDir: string): Promise<IgnoreConfig> {
 		};
 	});
 
-	return { ignoredConcerns };
+	return { excludedPaths, ignoredConcerns };
 }
 
 async function importModule<T>(modulePath: string): Promise<T> {
@@ -215,8 +232,33 @@ function formatLineContent(lineContent: string): string {
 	return lineContent.trim() || '(blank line)';
 }
 
-function toConfigRelativeFile(targetDirectory: string, configDirectory: string, matchFile: string): string {
-	return toPosixPath(path.relative(configDirectory, join(targetDirectory, matchFile)));
+function toConfigRelativePath(targetDirectory: string, configDirectory: string, targetRelativePath: string): string {
+	return toPosixPath(path.relative(configDirectory, join(targetDirectory, targetRelativePath)));
+}
+
+function compileExcludeMatchers(patterns: string[]): Bun.Glob[] {
+	return patterns.map((pattern, index) => {
+		try {
+			return new Bun.Glob(pattern);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			throw new Error(`excludedPaths[${index}] is not a valid glob: ${message}`);
+		}
+	});
+}
+
+function isExcludedPath(
+	targetDirectory: string,
+	configDirectory: string,
+	targetRelativePath: string,
+	matchers: Bun.Glob[],
+): boolean {
+	if (matchers.length === 0) {
+		return false;
+	}
+
+	const configRelativePath = toConfigRelativePath(targetDirectory, configDirectory, targetRelativePath);
+	return matchers.some(matcher => matcher.match(configRelativePath));
 }
 
 function renderConcernsMarkdown(categories: CategorySummary[]): string {
@@ -301,11 +343,14 @@ async function main(): Promise<void> {
 	]);
 
 	const scanResult = await modules.scanProject(targetDirectory);
-	const allFiles = [...scanResult.codeFiles, ...scanResult.styleFiles, ...scanResult.markupFiles];
+	const excludeMatchers = compileExcludeMatchers(ignoreConfig.excludedPaths);
+	const allFiles = [...scanResult.codeFiles, ...scanResult.styleFiles, ...scanResult.markupFiles].filter(
+		file => !isExcludedPath(targetDirectory, configDirectory, file.relativePath, excludeMatchers),
+	);
 	const allMatches = allFiles.flatMap(file =>
 		modules.detectPatterns(file.content, file.relativePath).map(match => ({
 			...match,
-			file: toConfigRelativeFile(targetDirectory, configDirectory, match.file),
+			file: toConfigRelativePath(targetDirectory, configDirectory, match.file),
 		})),
 	);
 

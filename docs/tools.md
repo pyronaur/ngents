@@ -95,15 +95,24 @@ Session-safe Playwright wrapper for web browsing and extraction.
 Machine-local Chrome CDP session commands.
 
 - Use `cdp status` before browser automation that depends on the shared local profile.
-- Use `cdp start` to launch the configured CDP Chrome session.
+- Use `cdp start` to launch the configured CDP Chrome session and refresh the `agent-browser` connection.
+- `cdp status` repairs the stack by starting Chrome if needed and refreshing the `agent-browser` connection.
 - Use `cdp stop` only when the shared local browser session should be shut down.
 - Read `docs/browser/cdp.md` for the tracked contract and config schema.
 
-## ngents hig-doctor
+## agent-browser
+
+Browser automation CLI against the shared browser stack.
+
+- Plain `agent-browser` uses the live shared Chrome after `cdp start` or `cdp status`.
+- `cdp` refreshes the connection with `agent-browser connect <port>`.
+- Use `agent-browser tab`, `agent-browser snapshot`, `agent-browser get text body`, and related commands for browser control.
+
+## ng hig-doctor
 
 Filtered HIG audit wrapper with repo-local YAML ignores.
 
-- Use `ngents hig-doctor [directory]` instead of calling `hig-doctor` directly from app repos.
+- Use `ng hig-doctor [directory]` instead of calling `hig-doctor` directly from app repos.
 - Configure exact allowed concerns in `.higignore.yaml` at the current working directory.
 - Ignore entries must set `file`, `pattern`, `line`, and `reason`.
 - The command writes markdown to `stdout` only for remaining issues and a separate `Ignored Concerns` section for filtered matches.

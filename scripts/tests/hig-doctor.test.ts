@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const scriptsDir = '/Users/n14/.ngents/scripts';
+const scriptsDir = '/Users/n14/.ngents/scripts/ng';
 const scriptPath = path.join(scriptsDir, 'hig-doctor.ts');
 const bunExecutable = process.execPath;
 

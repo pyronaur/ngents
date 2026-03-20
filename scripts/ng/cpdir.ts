@@ -1,7 +1,7 @@
 /**
  * Copy the current directory or a matched zoxide directory to the clipboard
  * @autohelp
- * @usage ngents cpdir [query...]
+ * @usage ng cpdir [query...]
  * @global cpdir
  */
 import { $ } from 'bun';

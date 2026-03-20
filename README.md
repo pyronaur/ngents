@@ -28,8 +28,11 @@ This is where I keep the common scripts that agents can self-improve over time. 
 - `scripts/ngent-docs/`  
   Standalone Node/NPM command package for `docs`, including compact root help, `docs ls` docs browsing, `docs topic` topic browsing, and `docs query` global QMD-backed search.
 
-- `scripts/bins.ts`  
-  Lists globally linked local-source packages and their exposed Bun/npm bin shims via `ngents bins`.
+- `scripts/ng/`  
+  User-facing `ng` command entrypoints such as `ng bins`, `ng cpdir`, and `ng hig-doctor`.
+
+- `scripts/cdp/`  
+  Shared-browser lifecycle entrypoints for `cdp start`, `cdp status`, and `cdp stop`.
 
 The point of this directory is to keep small, practical automation close to the instructions and docs it supports.
 

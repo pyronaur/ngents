@@ -2,7 +2,7 @@
 /**
  * Filtered HIG Doctor wrapper with YAML-based exact ignore support.
  * @autohelp
- * @usage ngents hig-doctor [directory]
+ * @usage ng hig-doctor [directory]
  */
 import { access, readFile, realpath } from 'node:fs/promises';
 import path, { dirname, extname, join, resolve } from 'node:path';
@@ -77,7 +77,7 @@ function toPosixPath(value: string): string {
 
 function usage(): string {
 	return [
-		'Usage: ngents hig-doctor [directory]',
+		'Usage: ng hig-doctor [directory]',
 		'',
 		`Reads ${IGNORE_FILE_NAME} from the current working directory and filters exact concern matches by file, pattern, and line.`,
 	].join('\n');

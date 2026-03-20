@@ -1,10 +1,10 @@
 /**
  * List globally linked Bun/npm package bins from local sources.
  * @autohelp
- * @usage ngents bins
+ * @usage ng bins
  */
 import { $ } from 'bun';
-import { existsSync } from 'node:fs';
+import { existsSync, type Dirent } from 'node:fs';
 import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -248,9 +248,9 @@ async function listPackageEntries(nodeModulesDir: string): Promise<PackageEntry[
 		return [];
 	}
 
-	let entries: Awaited<ReturnType<typeof readdir>>;
+	let entries: Dirent<string>[];
 	try {
-		entries = await readdir(nodeModulesDir, { withFileTypes: true });
+		entries = await readdir(nodeModulesDir, { withFileTypes: true, encoding: 'utf8' });
 	} catch {
 		return [];
 	}
@@ -278,9 +278,9 @@ async function listPackageEntries(nodeModulesDir: string): Promise<PackageEntry[
 			continue;
 		}
 
-		let scopedEntries: Awaited<ReturnType<typeof readdir>>;
+		let scopedEntries: Dirent<string>[];
 		try {
-			scopedEntries = await readdir(entryPath, { withFileTypes: true });
+			scopedEntries = await readdir(entryPath, { withFileTypes: true, encoding: 'utf8' });
 		} catch {
 			continue;
 		}
@@ -521,6 +521,9 @@ function printSection(title: string, section: ManagerSection): void {
 
 	for (let index = 0; index < section.reports.length; index += 1) {
 		const report = section.reports[index];
+		if (!report) {
+			continue;
+		}
 		console.log(report.packageName);
 		console.log(`  source: ${report.sourceRoot}`);
 

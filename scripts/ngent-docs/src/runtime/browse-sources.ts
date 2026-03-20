@@ -4,7 +4,7 @@ import path from "node:path";
 import { runtimeError } from "../core/errors.ts";
 import browseContracts, { type DocsSources } from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
-import { isQmdRequiredError, listQmdCollections } from "./qmd.ts";
+import { isQmdRequiredError, listQmdCollections, type QmdCollection } from "./qmd.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -26,6 +26,57 @@ function isWithinDocsRoots(targetPath: string, docsRoots: string[]): boolean {
 	);
 }
 
+function suggestionLine(examples: string[]): string {
+	return `Try: ${examples.join(" | ")}`;
+}
+
+function defaultSuggestions(sources: DocsSources): string[] {
+	const suggestions = ["docs ls .", "docs ls global", "docs ls docs/..."];
+	for (const collection of sources.globalDocsCollections.slice(0, 2)) {
+		suggestions.push(`docs ls ${collection.name}`);
+	}
+	return suggestions;
+}
+
+function expandHomeSelector(selector: string): string {
+	const homeDir = process.env.HOME;
+	if (!homeDir) {
+		return selector;
+	}
+	if (selector === "~") {
+		return homeDir;
+	}
+	if (selector.startsWith("~/")) {
+		return path.join(homeDir, selector.slice(2));
+	}
+	return selector;
+}
+
+function isFilesystemSelector(selector: string): boolean {
+	return selector === "~" || selector.startsWith("~/") || path.isAbsolute(selector);
+}
+
+function findContainingDocsRoot(directoryPath: string): string | null {
+	let current = normalizePath(directoryPath);
+	for (;;) {
+		if (path.posix.basename(current) === "docs") {
+			return current;
+		}
+		const parent = normalizePath(path.dirname(current));
+		if (parent === current) {
+			return null;
+		}
+		current = parent;
+	}
+}
+
+function normalizeCollection(collection: QmdCollection): { docsRoot: string; name: string } {
+	return {
+		name: collection.name,
+		docsRoot: normalizePath(collection.path),
+	};
+}
+
 function docsRelativeSelector(selector: string): string {
 	const normalizedSelector = selector.replaceAll("\\", path.posix.sep);
 	const relativeSelector = path.posix.relative(
@@ -40,15 +91,18 @@ export async function discoverDocsSources(currentDir: string): Promise<DocsSourc
 	const repoRoot = await browseDiscovery.discoverRepoRoot(normalizedCurrentDir);
 	const localDocsRoots = await browseDiscovery.discoverDocsRoots(repoRoot ?? normalizedCurrentDir);
 
+	const globalDocsCollections: Array<{ name: string; docsRoot: string }> = [];
 	const globalDocsRoots: string[] = [];
 	try {
 		const collections = await listQmdCollections();
 		for (const collection of collections) {
-			const docsRoot = normalizePath(collection.path);
+			const normalizedCollection = normalizeCollection(collection);
+			const { docsRoot } = normalizedCollection;
 			if (!(await isDirectory(docsRoot))) {
 				continue;
 			}
 
+			globalDocsCollections.push(normalizedCollection);
 			globalDocsRoots.push(docsRoot);
 		}
 	} catch (error) {
@@ -61,9 +115,59 @@ export async function discoverDocsSources(currentDir: string): Promise<DocsSourc
 		currentDir: normalizedCurrentDir,
 		repoRoot,
 		localDocsRoots,
+		globalDocsCollections: globalDocsCollections.sort((left, right) =>
+			left.name.localeCompare(right.name)
+		),
 		globalDocsRoots,
 		mergedDocsRoots: uniquePaths([...localDocsRoots, ...globalDocsRoots]),
 	};
+}
+
+export async function resolveFilesystemDocsDirectory(
+	sources: DocsSources,
+	selector: string,
+): Promise<string> {
+	const directoryPath = normalizePath(expandHomeSelector(selector));
+	if (!(await isDirectory(directoryPath))) {
+		throw runtimeError(
+			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
+		);
+	}
+
+	const docsRoot = findContainingDocsRoot(directoryPath);
+	if (docsRoot) {
+		return directoryPath;
+	}
+
+	const nestedDocsRoot = normalizePath(path.join(directoryPath, "docs"));
+	if (await isDirectory(nestedDocsRoot)) {
+		return nestedDocsRoot;
+	}
+
+	throw runtimeError(
+		`Not a docs directory: ${directoryPath}\n${
+			suggestionLine([`docs ls ${nestedDocsRoot}`, ...defaultSuggestions(sources)])
+		}`,
+	);
+}
+
+export function resolveGlobalDocsDirectoryByName(
+	sources: DocsSources,
+	selector: string,
+): string | null {
+	const normalizedSelector = selector.trim();
+	if (normalizedSelector.length === 0) {
+		return null;
+	}
+
+	const collection = sources.globalDocsCollections.find(collection =>
+		collection.name.localeCompare(normalizedSelector, undefined, { sensitivity: "accent" }) === 0
+	);
+	return collection?.docsRoot ?? null;
+}
+
+export function isDocsFilesystemSelector(selector: string): boolean {
+	return isFilesystemSelector(selector);
 }
 
 export async function resolveLocalDocsDirectory(
@@ -71,16 +175,24 @@ export async function resolveLocalDocsDirectory(
 	selector: string,
 ): Promise<string> {
 	if (sources.localDocsRoots.length === 0) {
-		throw runtimeError(`Local docs root not found: ${selector}`);
+		throw runtimeError(
+			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
+		);
 	}
 
 	const baseDir = sources.repoRoot ?? sources.currentDir;
 	const directoryPath = normalizePath(path.resolve(baseDir, selector));
 	if (!(await isDirectory(directoryPath))) {
-		throw runtimeError(`Docs directory not found: ${selector}`);
+		throw runtimeError(
+			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
+		);
 	}
 	if (!isWithinDocsRoots(directoryPath, sources.localDocsRoots)) {
-		throw runtimeError(`Docs directory is outside project docs roots: ${selector}`);
+		throw runtimeError(
+			`Docs directory is outside project docs roots: ${selector}\n${
+				suggestionLine(defaultSuggestions(sources))
+			}`,
+		);
 	}
 
 	return directoryPath;
@@ -107,7 +219,9 @@ export async function resolveMergedDocsDirectories(
 	}
 
 	if (matchingDirectories.length === 0) {
-		throw runtimeError(`Docs directory not found: ${selector}`);
+		throw runtimeError(
+			`Docs directory not found: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
+		);
 	}
 
 	return uniquePaths(matchingDirectories);

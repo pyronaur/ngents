@@ -88,11 +88,13 @@ docs update
 `ls` browses docs only.
 
 - It merges local and global docs by default.
-- It accepts `.`, `global`, `./docs/...`, and `docs/...` selectors.
+- It accepts `.`, `global`, `./docs/...`, `docs/...`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
 - `.` means project docs only.
 - `global` means parked global docs roots.
 - `./docs/...` means one project-local docs subtree.
 - `docs/...` means matching local and global docs subtrees.
+- Absolute paths and `~/...` paths can point at a docs directory, a docs subtree, or a workspace directory that contains `docs/`.
+- Parked names match case-insensitively.
 - It prints expanded doc descriptions.
 
 ### `park`
@@ -187,6 +189,9 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 docs
 docs ls
 docs ls .
+docs ls ~/work/foo
+docs ls ~/work/foo/docs
+docs ls machine
 docs park nconf
 docs park ngents ~/.ngents
 docs park nconf ~/.nconf

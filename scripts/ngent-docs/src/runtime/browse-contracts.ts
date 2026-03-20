@@ -92,6 +92,10 @@ export type DocsSources = {
 	currentDir: string;
 	repoRoot: string | null;
 	localDocsRoots: string[];
+	globalDocsCollections: Array<{
+		name: string;
+		docsRoot: string;
+	}>;
 	globalDocsRoots: string[];
 	mergedDocsRoots: string[];
 };

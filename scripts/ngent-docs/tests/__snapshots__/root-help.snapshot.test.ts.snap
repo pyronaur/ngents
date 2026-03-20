@@ -43,6 +43,9 @@ docs ls [where]
 docs ls . - Project docs, expanded descriptions
 docs ls ./docs/subdir - Project docs in dir
 docs ls docs/subdir - Matching local and global docs dirs
+docs ls ~/work/foo - Resolve a workspace to its docs dir
+docs ls ~/work/foo/docs - Explicit docs dir
+docs ls machine - Parked global docs by name
 docs ls global - Global docs, expanded descriptions
 
 /fixture/home/.ngents/docs/architecture

@@ -46,6 +46,9 @@ Use `{{ topic_command }} <name>` to expand available docs for topic.
 {{ ls_command }} . - Project docs, expanded descriptions
 {{ ls_command }} ./docs/subdir - Project docs in dir
 {{ ls_command }} docs/subdir - Matching local and global docs dirs
+{{ ls_command }} ~/work/foo - Resolve a workspace to its docs dir
+{{ ls_command }} ~/work/foo/docs - Explicit docs dir
+{{ ls_command }} machine - Parked global docs by name
 {{ ls_command }} global - Global docs, expanded descriptions
 
 {% for docs_group in docs_groups %}

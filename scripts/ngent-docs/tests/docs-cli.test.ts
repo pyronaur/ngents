@@ -563,6 +563,8 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain("docs park <name> [path]");
 		expect(result.stdout).toContain("docs topic [topic] [section]");
 		expect(result.stdout).toContain("docs ls [where]");
+		expect(result.stdout).toContain("docs ls ~/work/foo - Resolve a workspace to its docs dir");
+		expect(result.stdout).toContain("docs ls machine - Parked global docs by name");
 		expect(result.stdout).toContain("qmd");
 		expect(result.stdout).toContain("local search docs");
 		expect(result.stdout).toContain(
@@ -634,6 +636,10 @@ test("docs reference doc uses the canonical query signature", async () => {
 	expect(contents).toContain(CANONICAL_QUERY_USAGE);
 	expect(contents).not.toContain(STALE_QUERY_USAGE);
 	expect(contents).toContain("docs park <name> [path]");
+	expect(contents).toContain("workspace paths that contain `docs/`");
+	expect(contents).toContain("Parked names match case-insensitively.");
+	expect(contents).toContain("docs ls ~/work/foo");
+	expect(contents).toContain("docs ls machine");
 });
 
 test("docs ls merges local and global docs by default", async () => {
@@ -794,6 +800,107 @@ test("docs ls docs/subdir fails only when the subtree is missing everywhere", as
 
 		expect(result.exitCode).toBe(1);
 		expect(result.stderr).toContain("Docs directory not found: docs/missing");
+	});
+});
+
+test("docs ls accepts workspace paths, docs paths, and docs subtrees via ~ expansion", async () => {
+	await withTempDir("docs-ls-paths-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const workspaceDir = path.join(homeDir, "workspace");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(workspaceDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir);
+
+		const workspaceResult = await runDocsCli(["ls", "~/workspace"], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const docsResult = await runDocsCli(["ls", "~/workspace/docs"], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+		const subtreeResult = await runDocsCli(["ls", "~/workspace/docs/architecture"], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(workspaceResult.exitCode).toBe(0);
+		expect(workspaceResult.stdout).toContain(path.join(workspaceDir, "docs"));
+		expect(workspaceResult.stdout).toContain("web-fetching.md");
+
+		expect(docsResult.exitCode).toBe(0);
+		expect(docsResult.stdout).toContain(path.join(workspaceDir, "docs"));
+		expect(docsResult.stdout).toContain("web-fetching.md");
+
+		expect(subtreeResult.exitCode).toBe(0);
+		expect(subtreeResult.stdout).toContain(path.join(workspaceDir, "docs", "architecture"));
+		expect(subtreeResult.stdout).toContain("main.md");
+		expect(subtreeResult.stdout).not.toContain("web-fetching.md");
+	});
+});
+
+test("docs ls resolves parked global docs roots by case-insensitive name", async () => {
+	await withTempDir("docs-ls-parked-name-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["ls", "machine"], {
+			cwd: repoDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+		expect(result.stdout).toContain("cdp.md");
+		expect(result.stdout).not.toContain(path.join(repoDir, "docs"));
+	});
+});
+
+test("docs ls rejects non-docs paths with suggestions", async () => {
+	await withTempDir("docs-ls-invalid-path-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const miscDir = path.join(homeDir, "misc");
+		await mkdir(binDir, { recursive: true });
+		await mkdir(miscDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["ls", "~/misc"], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain(`Not a docs directory: ${miscDir}`);
+		expect(result.stderr).toContain(`docs ls ${path.join(miscDir, "docs")}`);
+		expect(result.stderr).toContain("docs ls Machine");
+	});
+});
+
+test("docs ls keeps parked-name matching exact instead of prefix-based", async () => {
+	await withTempDir("docs-ls-name-prefix-", async (tempDir) => {
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedGlobalDocsHome(homeDir);
+		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
+
+		const result = await runDocsCli(["ls", "n"], {
+			cwd: tempDir,
+			env: docsEnv(homeDir, binDir),
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Docs directory not found: n");
+		expect(result.stderr).toContain("docs ls Machine");
 	});
 });
 

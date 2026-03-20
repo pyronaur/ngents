@@ -4,6 +4,9 @@ import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
 import {
 	discoverDocsSources,
+	isDocsFilesystemSelector,
+	resolveFilesystemDocsDirectory,
+	resolveGlobalDocsDirectoryByName,
 	resolveLocalDocsDirectory,
 	resolveMergedDocsDirectories,
 } from "./browse-sources.ts";
@@ -54,6 +57,20 @@ async function docsEntriesForWhere(currentDir: string, where: string | null) {
 		const index = await browseDiscovery.buildIndexData(directories);
 		return {
 			docs: index.docs,
+		};
+	}
+
+	if (isDocsFilesystemSelector(where)) {
+		const directoryPath = await resolveFilesystemDocsDirectory(sources, where);
+		return {
+			docs: await browseDiscovery.readDocsEntriesUnder(directoryPath),
+		};
+	}
+
+	const globalDirectoryPath = resolveGlobalDocsDirectoryByName(sources, where);
+	if (globalDirectoryPath) {
+		return {
+			docs: await browseDiscovery.readDocsEntriesUnder(globalDirectoryPath),
 		};
 	}
 

@@ -32,7 +32,6 @@ Revert to chat immediately after.
 - Stop. Do not pad, do not summarize, do not offer follow-ups.
 - Match the pace of a fast back-and-forth. Treat each message as a reply, not a report.
 
-
 ### When to use chat
 - Any question that can be answered in a few sentences
 - Follow-up questions after an explanation
@@ -45,10 +44,9 @@ how does X work, what is X, why does X exist.
 Also switch when the user wants concept, feature, system, architecture, or codebase understanding, or when a correct answer would require more than three paragraphs to be useful.
 
 ## Mac
-- Projects root: `~/Projects`
+- Projects Index: `docs ls machine`
 - iOS projects: `~/Projects/iOS`
-- Shell/config repo: `~/.nconf/AGENTS.md`
-- Private docs and runbooks: `~/.nconf/docs`
+- Shell/config: `~/.nconf/AGENTS.md`
 
 ## Host Context Resolution
 - Use `~/.nconf/docs/hosts/README.md` when host-specific context is needed.

@@ -1,3 +1,4 @@
+---
 summary: "Shared browser contract: `cdp` owns Chrome and `agent-browser` connects to it."
 read_when:
   - Need the shared browser contract on this machine.

@@ -5,7 +5,7 @@ import path from 'node:path';
 const EXIT_CONFIG = 3;
 const EXIT_CONFLICT = 2;
 const EXIT_STOPPED = 1;
-const PERSONAL_PROFILE_DIRECTORY = 'Default';
+const PERSONAL_PROFILE_FALLBACK_DIRECTORY = 'Default';
 const POLL_MS = 250;
 const START_TIMEOUT_MS = 10_000;
 const STOP_TIMEOUT_MS = 5_000;
@@ -31,6 +31,10 @@ type Listener = {
 type BrowserProcess = {
 	pid: number;
 	args: string;
+};
+
+type PersonalChromeTarget = {
+	profileDirectory: string;
 };
 
 type State = 'running' | 'stopped' | 'listener-conflict';
@@ -97,6 +101,38 @@ function parsePort(endpoint: string): number {
 	}
 
 	return port;
+}
+
+function personalChromeStatePath(): string {
+	const home = Bun.env.HOME?.trim();
+	if (!home) {
+		return '';
+	}
+
+	return path.join(home, 'Library', 'Application Support', 'Google', 'Chrome', 'Local State');
+}
+
+async function personalChromeTarget(): Promise<PersonalChromeTarget> {
+	const statePath = personalChromeStatePath();
+	if (!statePath) {
+		return { profileDirectory: PERSONAL_PROFILE_FALLBACK_DIRECTORY };
+	}
+
+	try {
+		const parsed = await Bun.file(statePath).json() as {
+			profile?: {
+				last_used?: unknown;
+			};
+		};
+		const lastUsed = parsed.profile?.last_used;
+		if (typeof lastUsed === 'string' && lastUsed.trim()) {
+			return { profileDirectory: lastUsed.trim() };
+		}
+	} catch {
+		// Fall back to Chrome's Default profile when Local State is unavailable.
+	}
+
+	return { profileDirectory: PERSONAL_PROFILE_FALLBACK_DIRECTORY };
 }
 
 async function loadConfig(): Promise<LoadedConfig> {
@@ -325,17 +361,18 @@ function isManagedBrowserProcess(process: BrowserProcess, loaded: LoadedConfig):
 		|| process.args.includes(`--remote-debugging-port=${loaded.port}`);
 }
 
-async function ensurePersonalChrome(loaded: LoadedConfig): Promise<boolean> {
+async function ensurePersonalChrome(loaded: LoadedConfig): Promise<PersonalChromeTarget | null> {
 	const currentProcesses = await browserProcesses(loaded);
 	const personalRunning = currentProcesses.some(process => !isManagedBrowserProcess(process, loaded));
 	if (personalRunning) {
-		return false;
+		return null;
 	}
 
+	const target = await personalChromeTarget();
 	await openChromeApp(loaded.config.chromeApp, [
-		`--profile-directory=${PERSONAL_PROFILE_DIRECTORY}`,
+		`--profile-directory=${target.profileDirectory}`,
 	]);
-	return true;
+	return target;
 }
 
 async function ensureHealthyBrowser(loaded: LoadedConfig, current: Awaited<ReturnType<typeof inspect>>): Promise<Awaited<ReturnType<typeof inspect>>> {
@@ -392,9 +429,9 @@ export async function runStatusCommand(): Promise<void> {
 		process.exit(EXIT_CONFLICT);
 	}
 
-	const personalStarted = await ensurePersonalChrome(loaded);
-	if (personalStarted) {
-		console.log(`Started personal Chrome session (${PERSONAL_PROFILE_DIRECTORY}).`);
+	const personalTarget = await ensurePersonalChrome(loaded);
+	if (personalTarget) {
+		console.log(`Started personal Chrome session (${personalTarget.profileDirectory}).`);
 	}
 
 	const healthy = await ensureHealthyBrowser(loaded, current);
@@ -429,9 +466,9 @@ export async function runStartCommand(): Promise<void> {
 		process.exit(EXIT_CONFLICT);
 	}
 
-	const personalStarted = await ensurePersonalChrome(loaded);
-	if (personalStarted) {
-		console.log(`Started personal Chrome session (${PERSONAL_PROFILE_DIRECTORY}).`);
+	const personalTarget = await ensurePersonalChrome(loaded);
+	if (personalTarget) {
+		console.log(`Started personal Chrome session (${personalTarget.profileDirectory}).`);
 	}
 
 	const healthy = await ensureHealthyBrowser(loaded, current);

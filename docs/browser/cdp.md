@@ -12,7 +12,7 @@ This machine uses one shared Chrome session for automation and one personal Chro
 `~/.ngents/local/cdp.json` tells `cdp` how to launch and find it.
 Plain `agent-browser` connects to the live shared browser through the configured CDP port.
 `cdp start` and `cdp status` refresh that `agent-browser` connection automatically.
-`cdp start` and `cdp status` also ensure a personal Chrome app instance is open with Chrome's standard user-data root and the `Default` profile.
+`cdp start` and `cdp status` also ensure a personal Chrome app instance is open with Chrome's standard user-data root and Chrome's recorded last-used personal profile.
 
 ## Ownership
 

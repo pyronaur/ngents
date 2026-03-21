@@ -5,6 +5,7 @@ import path from 'node:path';
 const EXIT_CONFIG = 3;
 const EXIT_CONFLICT = 2;
 const EXIT_STOPPED = 1;
+const PERSONAL_PROFILE_DIRECTORY = 'Default';
 const POLL_MS = 250;
 const START_TIMEOUT_MS = 10_000;
 const STOP_TIMEOUT_MS = 5_000;
@@ -25,6 +26,11 @@ type LoadedConfig = {
 type Listener = {
 	pid: number;
 	args: string | null;
+};
+
+type BrowserProcess = {
+	pid: number;
+	args: string;
 };
 
 type State = 'running' | 'stopped' | 'listener-conflict';
@@ -248,25 +254,88 @@ async function waitForState(loaded: LoadedConfig, wanted: State, timeoutMs: numb
 	}
 }
 
-async function launchChrome(loaded: LoadedConfig): Promise<void> {
-	await mkdir(loaded.config.profilePath, { recursive: true });
-
+async function openChromeApp(chromeApp: string, args: string[]): Promise<void> {
 	const openArgs = [
 		'-g',
 		'-na',
-		loaded.config.chromeApp,
+		chromeApp,
 		'--args',
-		`--user-data-dir=${loaded.config.profilePath}`,
-		`--remote-debugging-port=${loaded.port}`,
-		...loaded.config.extraArgs,
+		...args,
 	];
 	const result = await Bun.spawn(['open', ...openArgs], {
 		stdout: 'ignore',
 		stderr: 'pipe',
 	}).exited;
 	if (result !== 0) {
-		throw new Error(`Failed to start ${loaded.config.chromeApp}.`);
+		throw new Error(`Failed to start ${chromeApp}.`);
 	}
+}
+
+async function launchChrome(loaded: LoadedConfig): Promise<void> {
+	await mkdir(loaded.config.profilePath, { recursive: true });
+	await openChromeApp(loaded.config.chromeApp, [
+		`--user-data-dir=${loaded.config.profilePath}`,
+		`--remote-debugging-port=${loaded.port}`,
+		...loaded.config.extraArgs,
+	]);
+}
+
+function chromeBinaryName(chromeApp: string): string {
+	const resolved = chromeApp.trim();
+	if (resolved.endsWith('.app')) {
+		return path.basename(resolved, '.app');
+	}
+
+	return path.basename(resolved);
+}
+
+function escapeRegex(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function browserProcessPattern(loaded: LoadedConfig): RegExp {
+	const binaryName = escapeRegex(chromeBinaryName(loaded.config.chromeApp));
+	return new RegExp(String.raw`^\S*\/Contents\/MacOS\/${binaryName}(?:\s|$)`);
+}
+
+async function browserProcesses(loaded: LoadedConfig): Promise<BrowserProcess[]> {
+	const result = await $`ps -axo pid=,args=`.nothrow().quiet();
+	if (result.exitCode !== 0) {
+		return [];
+	}
+
+	const pattern = browserProcessPattern(loaded);
+	return result.stdout
+		.toString()
+		.split('\n')
+		.map(line => line.match(/^\s*(\d+)\s+(.*)$/))
+		.filter((match): match is RegExpMatchArray => match !== null)
+		.map(match => ({
+			pid: Number(match[1]),
+			args: match[2]?.trim() ?? '',
+		}))
+		.filter(process => Number.isInteger(process.pid) && process.pid > 0)
+		.filter(process => process.args.length > 0)
+		.filter(process => pattern.test(process.args))
+		.filter(process => !process.args.includes('--headless'));
+}
+
+function isManagedBrowserProcess(process: BrowserProcess, loaded: LoadedConfig): boolean {
+	return process.args.includes(`--user-data-dir=${loaded.config.profilePath}`)
+		|| process.args.includes(`--remote-debugging-port=${loaded.port}`);
+}
+
+async function ensurePersonalChrome(loaded: LoadedConfig): Promise<boolean> {
+	const currentProcesses = await browserProcesses(loaded);
+	const personalRunning = currentProcesses.some(process => !isManagedBrowserProcess(process, loaded));
+	if (personalRunning) {
+		return false;
+	}
+
+	await openChromeApp(loaded.config.chromeApp, [
+		`--profile-directory=${PERSONAL_PROFILE_DIRECTORY}`,
+	]);
+	return true;
 }
 
 async function ensureHealthyBrowser(loaded: LoadedConfig, current: Awaited<ReturnType<typeof inspect>>): Promise<Awaited<ReturnType<typeof inspect>>> {
@@ -323,6 +392,11 @@ export async function runStatusCommand(): Promise<void> {
 		process.exit(EXIT_CONFLICT);
 	}
 
+	const personalStarted = await ensurePersonalChrome(loaded);
+	if (personalStarted) {
+		console.log(`Started personal Chrome session (${PERSONAL_PROFILE_DIRECTORY}).`);
+	}
+
 	const healthy = await ensureHealthyBrowser(loaded, current);
 	if (healthy.state !== 'running') {
 		printState(`Timed out waiting for CDP listener on ${loaded.config.cdpEndpoint}.`, healthy.state, healthy.health, healthy.listeners);
@@ -353,6 +427,11 @@ export async function runStartCommand(): Promise<void> {
 	if (current.state === 'listener-conflict') {
 		printState('Refusing to start Chrome because the configured port is already occupied.', current.state, current.health, current.listeners);
 		process.exit(EXIT_CONFLICT);
+	}
+
+	const personalStarted = await ensurePersonalChrome(loaded);
+	if (personalStarted) {
+		console.log(`Started personal Chrome session (${PERSONAL_PROFILE_DIRECTORY}).`);
 	}
 
 	const healthy = await ensureHealthyBrowser(loaded, current);

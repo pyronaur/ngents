@@ -1,5 +1,5 @@
 ---
-summary: "Shared browser contract: `cdp` owns Chrome and `agent-browser` connects to it."
+summary: "Shared browser contract: `cdp` owns the ngents Chrome and keeps personal Chrome available."
 read_when:
   - Need the shared browser contract on this machine.
   - Need to start, stop, inspect, or attach to the shared browser.
@@ -7,11 +7,12 @@ read_when:
 
 # Shared Browser Contract
 
-This machine uses one shared Chrome session.
-`cdp` owns that browser.
+This machine uses one shared Chrome session for automation and one personal Chrome session for normal browsing.
+`cdp` owns the shared automation browser.
 `~/.ngents/local/cdp.json` tells `cdp` how to launch and find it.
 Plain `agent-browser` connects to the live shared browser through the configured CDP port.
 `cdp start` and `cdp status` refresh that `agent-browser` connection automatically.
+`cdp start` and `cdp status` also ensure a personal Chrome app instance is open with Chrome's standard user-data root and the `Default` profile.
 
 ## Ownership
 
@@ -20,6 +21,7 @@ Plain `agent-browser` connects to the live shared browser through the configured
 - `~/.ngents/local/cdp.json` configures `cdp`.
 - Plain `agent-browser` is the default browser-control CLI against the shared browser.
 - `agent-browser` attaches to the browser that `cdp` owns; it does not define a separate browser runtime.
+- `cdp` keeps a separate personal Chrome app instance available, but that personal browser does not expose the shared CDP endpoint.
 
 ## `cdp` Owns Browser Launch
 
@@ -76,14 +78,14 @@ cdp stop
 ```
 
 - `cdp status` shows the configured browser, user-data-dir, endpoint, and session health.
-- `cdp status` repairs the stack by starting Chrome if needed and refreshing the `agent-browser` connection.
-- `cdp start` starts the shared browser if needed and refreshes the `agent-browser` connection.
+- `cdp status` repairs the stack by ensuring personal Chrome is open, starting the shared browser if needed, and refreshing the `agent-browser` connection.
+- `cdp start` ensures personal Chrome is open, starts the shared browser if needed, and refreshes the `agent-browser` connection.
 - `cdp stop` stops the shared browser session.
 
 ## Use It In This Order
 
 1. Run `cdp status`.
 2. Run `cdp start` if the browser is stopped.
-3. Use plain `agent-browser` for browser control against the shared browser.
+3. Use plain `agent-browser` for browser control against the shared browser while personal browsing stays in the separate personal Chrome app instance.
 
 Repo docs may add repo-specific workflow, but they must not redefine the shared browser user-data-dir or endpoint.

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -125,6 +126,36 @@ async function withTempDir<T>(prefix: string, run: (dir: string) => Promise<T>):
 		return await run(dir);
 	} finally {
 		await rm(dir, { recursive: true, force: true });
+	}
+}
+
+async function withHttpServer<T>(
+	handler: (request: IncomingMessage, response: ServerResponse) => void,
+	run: (baseUrl: string) => Promise<T>,
+): Promise<T> {
+	const server = createServer(handler);
+	await new Promise<void>((resolve, reject) => {
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", () => resolve());
+	});
+
+	const address = server.address();
+	if (!address || typeof address === "string") {
+		throw new Error("Failed to bind HTTP test server");
+	}
+
+	try {
+		return await run(`http://127.0.0.1:${address.port}`);
+	} finally {
+		await new Promise<void>((resolve, reject) => {
+			server.close(error => {
+				if (error) {
+					reject(error);
+					return;
+				}
+				resolve();
+			});
+		});
 	}
 }
 
@@ -710,8 +741,11 @@ async function writeFetchHandler(dir: string, name: string): Promise<string> {
 	return filePath;
 }
 
-async function createGitFetchSource(tempDir: string): Promise<string> {
-	const remoteDir = path.join(tempDir, "fetch-source.git");
+async function createGitFetchSource(
+	tempDir: string,
+	repositoryName = "fetch-source.git",
+): Promise<string> {
+	const remoteDir = path.join(tempDir, repositoryName);
 	const workDir = path.join(tempDir, "fetch-source-work");
 	await expectCommandSuccess("git", ["init", "--bare", remoteDir]);
 	await expectCommandSuccess("git", ["clone", remoteDir, workDir]);
@@ -888,6 +922,111 @@ test("docs-url-file-fetch requires the previous hash option through commander", 
 
 	expect(result.exitCode).toBe(1);
 	expect(result.stderr).toContain("required option '--previous-hash <hash>' not specified");
+});
+
+test("docs-url-file-fetch re-downloads when only Content-Length is available", async () => {
+	await withTempDir("docs-url-file-fetch-content-length-", async (tempDir) => {
+		let responseBody = "alpha";
+		let getRequests = 0;
+
+		await withHttpServer((request, response) => {
+			if (request.url !== "/doc.txt") {
+				response.statusCode = 404;
+				response.end("missing");
+				return;
+			}
+
+			response.statusCode = 200;
+			response.setHeader("Content-Length", String(Buffer.byteLength(responseBody)));
+			if (request.method === "HEAD") {
+				response.end();
+				return;
+			}
+
+			getRequests += 1;
+			response.end(responseBody);
+		}, async (baseUrl) => {
+			const targetPath = path.join(tempDir, "target");
+			const source = `${baseUrl}/doc.txt`;
+			const first = await runFetchHandlerCli("docs-url-file-fetch", [
+				`--source=${source}`,
+				`--target=${targetPath}`,
+				"--previous-hash=",
+			]);
+
+			expect(first.exitCode).toBe(0);
+			expect(await readText(path.join(targetPath, "doc.md"))).toBe("alpha");
+
+			responseBody = "bravo";
+			const firstHash = first.stdout.trim();
+			const second = await runFetchHandlerCli("docs-url-file-fetch", [
+				`--source=${source}`,
+				`--target=${targetPath}`,
+				`--previous-hash=${firstHash}`,
+			]);
+
+			expect(second.exitCode).toBe(0);
+			expect(await readText(path.join(targetPath, "doc.md"))).toBe("bravo");
+			expect(second.stdout.trim()).not.toBe(firstHash);
+			expect(getRequests).toBe(2);
+		});
+	});
+});
+
+test("docs-url-file-fetch uses validators from the final redirect response", async () => {
+	await withTempDir("docs-url-file-fetch-redirect-", async (tempDir) => {
+		let finalBody = "alpha";
+		let finalEtag = "\"final-a\"";
+
+		await withHttpServer((request, response) => {
+			if (request.url === "/redirect.txt") {
+				response.statusCode = 302;
+				response.setHeader("Location", "/final.txt");
+				response.setHeader("ETag", "\"redirect-etag\"");
+				response.end();
+				return;
+			}
+
+			if (request.url !== "/final.txt") {
+				response.statusCode = 404;
+				response.end("missing");
+				return;
+			}
+
+			response.statusCode = 200;
+			response.setHeader("ETag", finalEtag);
+			if (request.method === "HEAD") {
+				response.end();
+				return;
+			}
+
+			response.end(finalBody);
+		}, async (baseUrl) => {
+			const targetPath = path.join(tempDir, "target");
+			const source = `${baseUrl}/redirect.txt`;
+			const first = await runFetchHandlerCli("docs-url-file-fetch", [
+				`--source=${source}`,
+				`--target=${targetPath}`,
+				"--previous-hash=",
+			]);
+
+			expect(first.exitCode).toBe(0);
+			expect(await readText(path.join(targetPath, "redirect.md"))).toBe("alpha");
+
+			finalBody = "bravo";
+			finalEtag = "\"final-b\"";
+			const firstHash = first.stdout.trim();
+			const second = await runFetchHandlerCli("docs-url-file-fetch", [
+				`--source=${source}`,
+				`--target=${targetPath}`,
+				`--previous-hash=${firstHash}`,
+			]);
+
+			expect(second.exitCode).toBe(0);
+			expect(await readText(path.join(targetPath, "redirect.md"))).toBe("bravo");
+			expect(second.stdout.trim()).not.toBe(firstHash);
+		});
+	});
 });
 
 test("docs-git-fetch rejects traversal roots", async () => {
@@ -2191,6 +2330,121 @@ test("docs fetch auto-selects the built-in git and url-file handlers", async () 
 		expect(
 			await readText(path.join(repoDir, "docs", "topics", "ios", "file-import", "shell.md")),
 		).toContain("# Shell");
+	});
+});
+
+test("docs fetch auto-selects the built-in git handler for dotted local git file URLs", async () => {
+	await withTempDir("docs-fetch-dotted-local-git-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+
+		const gitSource = await createGitFetchSource(tempDir, "fetch.source.repo.v2");
+		const result = await runDocsCli(
+			[
+				"fetch",
+				gitSource,
+				path.join(repoDir, "docs", "topics", "ios", "git-import"),
+				"--root",
+				"skills",
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(homeDir),
+			},
+		);
+		const manifest = JSON.parse(
+			await readText(path.join(repoDir, "docs", ".docs-fetch.json")),
+		) as {
+			entries: Array<{
+				target: string;
+				handler: string;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(manifest.entries).toContainEqual(expect.objectContaining({
+			target: "topics/ios/git-import",
+			handler: "docs-git-fetch",
+		}));
+		expect(
+			await readText(path.join(repoDir, "docs", "topics", "ios", "git-import", "alpha", "SKILL.md")),
+		).toContain("# Alpha");
+	});
+});
+
+test("docs fetch auto-selects the built-in git handler for dotted hosted repo URLs", async () => {
+	await withTempDir("docs-fetch-dotted-hosted-git-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await writeExecutable(
+			binDir,
+			"git",
+			[
+				"#!/bin/sh",
+				'if [ "$1" = "ls-remote" ]; then',
+				"  printf '0123456789abcdef0123456789abcdef01234567\\tHEAD\\n'",
+				"  exit 0",
+				"fi",
+				'if [ "$1" = "clone" ]; then',
+				'  for last_arg in "$@"; do checkout_dir="$last_arg"; done',
+				'  mkdir -p "$checkout_dir/skills/alpha"',
+				'  printf "# Alpha\\n" > "$checkout_dir/skills/alpha/SKILL.md"',
+				'  printf "# Repo Root\\n" > "$checkout_dir/README.md"',
+				"  exit 0",
+				"fi",
+				'if [ "$1" = "-C" ] && [ "$3" = "sparse-checkout" ] && [ "$4" = "set" ]; then',
+				"  exit 0",
+				"fi",
+				'printf "unexpected git args: %s\\n" "$*" >&2',
+				"exit 1",
+				"",
+			].join("\n"),
+		);
+		await writeExecutable(
+			binDir,
+			"curl",
+			[
+				"#!/bin/sh",
+				'printf "curl should not run for hosted git auto-detection\\n" >&2',
+				"exit 1",
+				"",
+			].join("\n"),
+		);
+
+		const result = await runDocsCli(
+			[
+				"fetch",
+				"https://github.com/org/repo.v2",
+				path.join(repoDir, "docs", "topics", "ios", "git-import"),
+				"--root",
+				"skills",
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(homeDir, binDir),
+			},
+		);
+		const manifest = JSON.parse(
+			await readText(path.join(repoDir, "docs", ".docs-fetch.json")),
+		) as {
+			entries: Array<{
+				target: string;
+				handler: string;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(manifest.entries).toContainEqual(expect.objectContaining({
+			target: "topics/ios/git-import",
+			handler: "docs-git-fetch",
+		}));
+		expect(
+			await readText(path.join(repoDir, "docs", "topics", "ios", "git-import", "alpha", "SKILL.md")),
+		).toContain("# Alpha");
 	});
 });
 

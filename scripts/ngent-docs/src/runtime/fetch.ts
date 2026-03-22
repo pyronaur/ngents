@@ -15,6 +15,7 @@ import {
 	type FetchManifestEntry,
 } from "./fetch-contract.ts";
 import { expandHomePath } from "./fetch-handler-support.ts";
+import { selectDefaultFetchHandler } from "./fetch-source-detection.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -237,59 +238,6 @@ async function validateFetchEntryTarget(definition: RunFetchDefinition): Promise
 	};
 }
 
-function looksLikeFileUrl(source: URL): boolean {
-	return path.posix.basename(source.pathname).includes(".");
-}
-
-function looksLikeGitRepositoryUrl(source: string): boolean {
-	if (source.startsWith("git@")) {
-		return true;
-	}
-
-	let parsed: URL;
-	try {
-		parsed = new URL(source);
-	} catch {
-		return false;
-	}
-
-	if (parsed.protocol === "ssh:" || parsed.protocol === "git:") {
-		return true;
-	}
-	if (parsed.pathname.endsWith(".git")) {
-		return true;
-	}
-
-	const pathSegments = parsed.pathname.split("/").filter(Boolean);
-	if (pathSegments.length < 2) {
-		return false;
-	}
-	if (looksLikeFileUrl(parsed)) {
-		return false;
-	}
-
-	return ["github.com", "gitlab.com", "codeberg.org", "bitbucket.org"].includes(parsed.hostname);
-}
-
-function selectDefaultHandler(source: string): string {
-	if (looksLikeGitRepositoryUrl(source)) {
-		return BUILTIN_GIT_FETCH_HANDLER;
-	}
-
-	let parsed: URL;
-	try {
-		parsed = new URL(source);
-	} catch {
-		throw runtimeError(`Unable to auto-detect fetch handler for source: ${source}`);
-	}
-
-	if (["http:", "https:", "file:"].includes(parsed.protocol)) {
-		return BUILTIN_URL_FILE_FETCH_HANDLER;
-	}
-
-	throw runtimeError(`Unable to auto-detect fetch handler for source: ${source}`);
-}
-
 function isBuiltinHandlerName(
 	handler: string,
 ): handler is keyof typeof BUILTIN_HANDLER_PATHS {
@@ -478,7 +426,7 @@ export async function runDocsFetch(input: {
 		source: input.source,
 		target: resolvedTarget.targetRelativePath,
 		handler: normalizeStoredCommand(
-			input.handler ?? selectDefaultHandler(input.source),
+			input.handler ?? await selectDefaultFetchHandler(input.source),
 			input.projectDir,
 		),
 		...(input.root ? { root: input.root } : {}),

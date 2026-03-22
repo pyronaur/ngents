@@ -29,10 +29,9 @@ function validatorFingerprint(input: {
 	outputFileName: string;
 	etag: string | null;
 	lastModified: string | null;
-	contentLength: string | null;
 	transformSignature: string;
 }): string | null {
-	if (!input.etag && !input.lastModified && !input.contentLength) {
+	if (!input.etag && !input.lastModified) {
 		return null;
 	}
 
@@ -43,7 +42,6 @@ function validatorFingerprint(input: {
 			`file=${input.outputFileName}`,
 			`etag=${input.etag ?? ""}`,
 			`last-modified=${input.lastModified ?? ""}`,
-			`content-length=${input.contentLength ?? ""}`,
 			`transform=${input.transformSignature}`,
 		].join("\n"),
 	);
@@ -52,7 +50,6 @@ function validatorFingerprint(input: {
 async function readHeadValidators(source: string): Promise<{
 	etag: string | null;
 	lastModified: string | null;
-	contentLength: string | null;
 }> {
 	const result = await runExternalCommand({
 		command: "curl",
@@ -62,21 +59,22 @@ async function readHeadValidators(source: string): Promise<{
 		return {
 			etag: null,
 			lastModified: null,
-			contentLength: null,
 		};
 	}
 
-	const headerLines = result.stdout.split(/\r?\n/);
-	const etag = headerLines.find(line => /^etag:/i.test(line))?.split(":").slice(1).join(":").trim()
-		?? null;
-	const lastModified = headerLines
-		.find(line => /^last-modified:/i.test(line))
+	const headerBlocks = result.stdout
+		.split(/\r?\n\r?\n/)
+		.map(block => block.split(/\r?\n/).filter(line => line.length > 0))
+		.filter(block => block.length > 0);
+	const finalHeaderLines = headerBlocks.at(-1) ?? [];
+	const etag = finalHeaderLines
+		.find(line => /^etag:/i.test(line))
 		?.split(":")
 		.slice(1)
 		.join(":")
 		.trim() ?? null;
-	const contentLength = headerLines
-		.find(line => /^content-length:/i.test(line))
+	const lastModified = finalHeaderLines
+		.find(line => /^last-modified:/i.test(line))
 		?.split(":")
 		.slice(1)
 		.join(":")
@@ -85,7 +83,6 @@ async function readHeadValidators(source: string): Promise<{
 	return {
 		etag,
 		lastModified,
-		contentLength,
 	};
 }
 
@@ -124,7 +121,6 @@ async function readValidatorHash(input: {
 		outputFileName: input.outputFileName,
 		etag: validators.etag,
 		lastModified: validators.lastModified,
-		contentLength: validators.contentLength,
 		transformSignature: input.transformSignature,
 	});
 }

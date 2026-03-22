@@ -3,7 +3,6 @@ import path from "node:path";
 
 import browseContracts, {
 	type BrowseInventory,
-	type GuideMetadata,
 	type IndexData,
 	type MarkdownEntry,
 	type MergedTopic,
@@ -13,6 +12,7 @@ import browseContracts, {
 	type TopicContribution,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
+import browseGuides from "./browse-guides.ts";
 import browseParse from "./browse-parse.ts";
 
 const {
@@ -24,6 +24,13 @@ const {
 	toDisplayPath,
 	TOPICS_DIR,
 } = browseContracts;
+
+const {
+	collectSkillHints,
+	createTopicIndexRow,
+	mergeGuideDescriptions,
+	readGuideMetadata,
+} = browseGuides;
 
 async function lstatSafe(filePath: string): Promise<Awaited<ReturnType<typeof lstat>> | null> {
 	try {
@@ -108,44 +115,6 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 	}
 
 	return Array.from(roots).sort((a, b) => a.localeCompare(b));
-}
-async function readGuideMetadata(directoryPath: string): Promise<GuideMetadata> {
-	const guidePath = path.join(directoryPath, META_FILE);
-	if (!(await fileExists(guidePath))) {
-		return { title: null, short: null, summary: null, guideBody: null, readWhen: [] };
-	}
-
-	const content = await readFile(guidePath, "utf8");
-	const frontMatter = browseParse.parseFrontMatter(content);
-	return {
-		title: browseParse.stringField(frontMatter.values, "title")
-			?? browseParse.stringField(frontMatter.values, "name"),
-		short: browseParse.stringField(frontMatter.values, "short"),
-		summary: browseParse.stringField(frontMatter.values, "summary")
-			?? browseParse.parseGuideSummary(content),
-		guideBody: browseParse.parseGuideBody(content),
-		readWhen: browseParse.stringArrayField(frontMatter.values, "read_when"),
-		error: frontMatter.error,
-	};
-}
-function mergeGuideDescriptions(
-	target: { short: string | null; summary: string | null },
-	guide: GuideMetadata,
-): void {
-	if (!target.short && guide.short) {
-		target.short = guide.short;
-	}
-	if (!target.summary && guide.summary) {
-		target.summary = guide.summary;
-	}
-}
-function createTopicIndexRow(topicName: string, guide: GuideMetadata): TopicIndexRow {
-	return {
-		name: topicName,
-		title: guide.title ?? topicName,
-		short: guide.short,
-		summary: guide.summary,
-	};
 }
 async function listMarkdownEntries(directoryPath: string): Promise<MarkdownEntry[]> {
 	const entries = await readDirEntriesOrEmpty(directoryPath);
@@ -342,6 +311,7 @@ async function readSectionEntry(topicDir: string, sectionKey: string): Promise<S
 	const skillFiles = await listSkillFiles(absolutePath);
 	const markdownEntries = skillFiles.length > 0 ? [] : await listMarkdownEntries(absolutePath);
 	const skills: SkillEntry[] = [];
+	const guideCache = new Map([[absolutePath, guide]]);
 
 	for (const skillFile of skillFiles) {
 		const content = await readFile(skillFile, "utf8");
@@ -351,6 +321,9 @@ async function readSectionEntry(topicDir: string, sectionKey: string): Promise<S
 		);
 		skill.absolutePath = normalizePath(skillFile);
 		skill.referencePaths = await extractReferencePaths(path.dirname(skillFile), content);
+		const skillDirectory = normalizePath(path.dirname(skillFile));
+		skill.hint = (await collectSkillHints(topicDir, skillFile, guideCache)).get(skillDirectory)
+			?? null;
 		skills.push(skill);
 	}
 

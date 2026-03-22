@@ -149,6 +149,7 @@ Global docs collection metadata is cached for 1 hour.
 - It is the main browse surface for grouped reusable knowledge.
 - It may expose regular topic docs and skill-backed sections together.
 - It labels skill-bearing sections as `Skills` in topic output.
+- In topic overviews, regular sections list their discovered docs directly.
 - It can derive skill summaries directly from `SKILL.md` when a section has no `.docs.md`.
 
 ### Selector scope examples
@@ -210,6 +211,8 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 - `short` is the compact one-line description for indexes and compact help output.
 - `summary` is the fuller expanded description for browsing.
 - `read_when` adds browse hints.
+- `hints` adds compact skill labels in topic overviews.
+- Each `hints` key is a skill directory path relative to the `.docs.md` directory.
 - The first non-list paragraph is the fallback summary when `summary` is absent.
 - The rest of the body is rendered when the topic or section is opened.
 

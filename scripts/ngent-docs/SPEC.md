@@ -22,6 +22,7 @@ Fields:
 - `summary`
 - `guideBody`
 - `readWhen`
+- `hints`
 - `error`
 
 Current decisions:
@@ -32,6 +33,11 @@ Current decisions:
   first Markdown heading.
 - `summary` falls back to the first non-list paragraph from the guide body when
   frontmatter does not provide it.
+- `hints` is an optional frontmatter list of `relative/path: description`
+  strings used only for compact skill labels in topic overviews.
+- Each `hints` key targets a skill directory path relative to the guide
+  directory that owns the `.docs.md`.
+- Malformed `hints` entries are ignored.
 
 ### `MarkdownEntry`
 
@@ -51,6 +57,7 @@ Fields:
 - `name`
 - `title`
 - `description`
+- `hint`
 - `referencePaths`
 - `error`
 
@@ -59,6 +66,11 @@ Current decisions:
 - `name` falls back to the skill directory basename.
 - `title` falls back to `title`, then `name`, then the same basename fallback.
 - `description` is read from frontmatter only.
+- `hint` is resolved from ancestor `.docs.md` `hints` entries on the path from
+  the topic contribution root down to the skill directory.
+- `hint` lookup targets the normalized skill directory path, not `skill.name`.
+- Deeper `.docs.md` `hints` override shallower ones when they resolve to the
+  same skill directory path.
 - `referencePaths` are discovered from local Markdown links inside the skill
   body.
 
@@ -279,29 +291,18 @@ Current decisions:
 
 - Skill sections are intentionally compact in the topic overview.
 - The overview does not print skill descriptions.
-- A skill entry prints:
-  - name
-  - absolute path to `SKILL.md`
-  - reference count, when non-zero
-
-### Root Skill Sections in Overview
-
-Current decisions:
-
-- A section is treated as a root-skill section when it contains exactly one
-  skill and that skill path is `<section>/SKILL.md`.
-- In the overview, root-skill sections render as a single compact entry for the
-  section itself instead of as a counted skill group.
-- The heading label for that compact entry is the section key, not the skill
-  title.
-
-### Non-Root Skill Sections in Overview
-
-Current decisions:
-
-- A section with nested skills renders as `<section key> - N skills`.
+- All skill-backed sections render as `<section key> - N skills`, including
+  sections whose only skill is `<section>/SKILL.md`.
 - The section path is shown with a trailing slash.
+- The section body prints one bullet per discovered skill after the section
+  path.
 - Child skill entries use `skill.name`, not `skill.title`.
+- A child skill bullet prints:
+  - `- <skill.name>` when no matching hint exists
+  - `- <skill.name>: <hint>` when a matching hint exists
+- Topic overview skill entries do not print per-skill absolute `SKILL.md`
+  paths.
+- Topic overview skill entries do not print per-skill reference counts.
 
 ### Regular Sections in Overview
 
@@ -310,10 +311,12 @@ Current decisions:
 - Non-skill sections render under `Sections`.
 - Section metadata can include:
   - summary or short fallback
-  - aggregate contains text
   - `readWhen`
   - parse error
-- Aggregate `contains` can report docs, skills, and total reference files.
+- When a regular section has discovered Markdown docs, the overview prints one
+  bullet per doc after the section path.
+- Regular-section doc bullets use the doc title, else the Markdown basename.
+- Topic overview regular sections do not print aggregate `contains` text.
 
 ## Focused Section Rendering
 
@@ -382,8 +385,6 @@ Current decisions:
 These are observable from the current code and tests, but they should not be
 treated as settled design decisions yet.
 
-- The topic overview help line says `docs topic <topic> <section|glob>`, but
-  the current `docs topic` implementation resolves exact section keys only.
 - Topic overview skill entries use `skill.name`, while focused skill entries
   prefer `skill.title`. That split is current behavior, but the repo does not
   yet document whether this distinction is part of the intended public

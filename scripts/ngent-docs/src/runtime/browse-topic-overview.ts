@@ -12,7 +12,6 @@ import browseContracts from "./browse-contracts.ts";
 const {
 	compactDescription,
 	errorText,
-	formatContains,
 	heading,
 	normalizeInlineText,
 	printLine,
@@ -88,78 +87,31 @@ function skillCountLabel(count: number): string {
 	return `${count} ${count === 1 ? "skill" : "skills"}`;
 }
 
-function referenceCountLabel(count: number): string {
-	return `${count} ${count === 1 ? "reference file" : "reference files"}`;
-}
-
-function printReferenceCount(count: number): void {
-	if (count === 0) {
+function printTopicSkill(skill: SkillEntry): void {
+	if (skill.hint) {
+		printLine(`- ${skill.name}: ${skill.hint}`);
 		return;
 	}
 
-	printLine(`contains: ${referenceCountLabel(count)}`);
-}
-
-function printTopicSkill(skill: SkillEntry): void {
-	printLine(`#### ${skill.name}`);
-	printLine(skill.absolutePath);
-	printReferenceCount(skill.referencePaths.length);
-}
-
-function rootSkillForSection(section: SectionEntry): SkillEntry | null {
-	if (section.skills.length !== 1) {
-		return null;
-	}
-
-	const [skill] = section.skills;
-	if (!skill) {
-		return null;
-	}
-
-	return skill.relativePath === `${section.key}/SKILL.md` ? skill : null;
+	printLine(`- ${skill.name}`);
 }
 
 function sectionPath(section: SectionEntry): string {
 	return section.absolutePath.endsWith("/") ? section.absolutePath : `${section.absolutePath}/`;
 }
 
-function printTopicRootSkill(section: SectionEntry, skill: SkillEntry): void {
-	printLine(heading(3, section.key));
-	printLine(skill.absolutePath);
-	printReferenceCount(skill.referencePaths.length);
-}
-
 function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4): void {
-	const rootSkill = rootSkillForSection(section);
-	if (rootSkill) {
-		if (headingLevel === 3) {
-			printTopicRootSkill(section, rootSkill);
-			return;
-		}
-
-		printLine(heading(4, section.key));
-		printLine(rootSkill.absolutePath);
-		printReferenceCount(rootSkill.referencePaths.length);
-		return;
-	}
-
 	printLine(heading(headingLevel, `${section.key} - ${skillCountLabel(section.skills.length)}`));
 	printLine(sectionPath(section));
 	printLine();
 
-	for (const [index, skill] of section.skills.entries()) {
+	for (const skill of section.skills) {
 		printTopicSkill(skill);
-		if (index < section.skills.length - 1) {
-			printLine();
-		}
 	}
 }
 
 function printTopicSkills(sections: SectionEntry[], sectionHeadingLevel: 2 | 3): void {
 	printLine(heading(sectionHeadingLevel, "Skills"));
-	printLine();
-	printLine(`Expand skill information in this topic with: \`docs topic <topic> <section|glob>\``);
-	printLine(`For example: \`docs topic foo bar/lux*\``);
 	printLine();
 
 	for (const [index, section] of sections.entries()) {
@@ -175,9 +127,8 @@ function printTopicSection(section: SectionEntry, headingLevel: 3 | 4): void {
 	printLine(section.absolutePath);
 
 	const summary = normalizeInlineText(section.summary) ?? compactDescription(section.short, null);
-	const contains = formatContains(section);
 	const readWhen = section.readWhen.length > 0 ? `Read when: ${section.readWhen.join("; ")}` : null;
-	if (!summary && !contains && !readWhen && !section.error) {
+	if (!summary && section.markdownEntries.length === 0 && !readWhen && !section.error) {
 		return;
 	}
 
@@ -185,14 +136,21 @@ function printTopicSection(section: SectionEntry, headingLevel: 3 | 4): void {
 	if (summary) {
 		printLine(summary);
 	}
-	if (contains) {
-		printLine(`contains: ${contains}`);
-	}
 	if (readWhen) {
 		printLine(readWhen);
 	}
 	if (section.error) {
 		printLine(errorText(section.error));
+	}
+	if (section.markdownEntries.length > 0) {
+		if (summary || readWhen || section.error) {
+			printLine();
+		}
+		for (const entry of section.markdownEntries) {
+			printLine(
+				`- ${entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath))}`,
+			);
+		}
 	}
 }
 

@@ -1580,35 +1580,178 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 			"",
 			"## Skills",
 			"",
-			"Expand skill information in this topic with: `docs topic <topic> <section|glob>`",
-			"For example: `docs topic foo bar/lux*`",
-			"",
 			"### hig-doctor - 1 skill",
 			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor")}/`,
 			"",
-			"#### hig-components-content",
-			path.join(
-				normalizedRepoDir,
-				"docs",
-				"topics",
-				"ios",
-				"hig-doctor",
-				"skills",
-				"hig-components-content",
-				"SKILL.md",
-			),
-			"contains: 2 reference files",
+			"- hig-components-content",
 			"",
-			"### ios-debugger-agent",
-			path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md"),
-			"contains: 1 reference file",
+			"### ios-debugger-agent - 1 skill",
+			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent")}/`,
 			"",
-			"### swiftui-pro",
-			path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md"),
+			"- ios-debugger-agent",
+			"",
+			"### swiftui-pro - 1 skill",
+			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro")}/`,
+			"",
+			"- swiftui-pro",
 		].join("\n");
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout.trim()).toBe(expected);
+	});
+});
+
+test("docs topic overview renders skill hints from ancestor guides with deeper overrides", async () => {
+	await withTempDir("docs-topic-skill-hints-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+		await seedSkillBackedSection(repoDir);
+		const normalizedRepoDir = await realpath(repoDir);
+
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", ".docs.md"),
+			[
+				"---",
+				"title: iOS Library",
+				"short: Apple-platform docs",
+				"summary: This topic collects iOS-focused references, Apple HIG skills, and Dynamic Skills for Apple-platform work.",
+				"hints:",
+				"  - ios-debugger-agent: Build and debug on a booted simulator.",
+				"  - hig-doctor/skills/hig-components-content: General HIG content guidance.",
+				"  - malformed-entry-without-colon",
+				"  - swiftui-pro:",
+				"---",
+				"",
+				"Use `docs topic ios <section>` to focus one section.",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "hig-doctor", "skills", ".docs.md"),
+			[
+				"---",
+				"title: HIG Skills",
+				"hints:",
+				"  - hig-components-content: Section override for HIG content guidance.",
+				"---",
+				"",
+				"# HIG Skills",
+				"",
+			].join("\n"),
+		);
+
+		const result = await runDocsCli(["topic", "ios"], {
+			cwd: repoDir,
+			env: docsEnv(path.join(tempDir, "home")),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("- hig-components-content: Section override for HIG content guidance.");
+		expect(result.stdout).toContain(
+			[
+				`### ios-debugger-agent - 1 skill`,
+				`${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent")}/`,
+				"",
+				"- ios-debugger-agent: Build and debug on a booted simulator.",
+			].join("\n"),
+		);
+		expect(result.stdout).toContain(
+			[
+				`### swiftui-pro - 1 skill`,
+				`${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro")}/`,
+				"",
+				"- swiftui-pro",
+			].join("\n"),
+		);
+	});
+});
+
+test("docs topic overview resolves hints by skill path instead of skill name", async () => {
+	await withTempDir("docs-topic-skill-hints-path-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", ".docs.md"),
+			[
+				"---",
+				"title: iOS Library",
+				"hints:",
+				"  - renamed-skill: Hint matched by skill directory path.",
+				"---",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "renamed-skill", "SKILL.md"),
+			[
+				"---",
+				"name: display-name-from-frontmatter",
+				"description: Uses a different display name.",
+				"---",
+				"",
+				"# Renamed Skill",
+				"",
+			].join("\n"),
+		);
+
+		const result = await runDocsCli(["topic", "ios"], {
+			cwd: repoDir,
+			env: docsEnv(path.join(tempDir, "home")),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("- display-name-from-frontmatter: Hint matched by skill directory path.");
+	});
+});
+
+test("docs topic overview renders docs sections as compact doc lists", async () => {
+	await withTempDir("docs-topic-doc-section-overview-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+		const normalizedRepoDir = await realpath(repoDir);
+
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "docs", "ng-hig-doctor.md"),
+			[
+				"---",
+				"title: ng hig-doctor",
+				"summary: Local CLI wrapper for HIG Doctor.",
+				"---",
+				"",
+				"# ng hig-doctor",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "docs", "SOSUMI.md"),
+			[
+				"---",
+				"title: Sosumi CLI",
+				"summary: Sosumi CLI docs.",
+				"---",
+				"",
+				"# Sosumi CLI",
+				"",
+			].join("\n"),
+		);
+
+		const result = await runDocsCli(["topic", "ios"], {
+			cwd: repoDir,
+			env: docsEnv(path.join(tempDir, "home")),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(
+			[
+				"### docs",
+				path.join(normalizedRepoDir, "docs", "topics", "ios", "docs"),
+				"",
+				"- ng hig-doctor",
+				"- Sosumi CLI",
+			].join("\n"),
+		);
+		expect(result.stdout).not.toContain("contains:");
 	});
 });
 
@@ -1732,6 +1875,27 @@ test("docs topic section resolves single-skill titles as title then name then ba
 		expect(nameResult.stdout).toContain("## Name Frontmatter Title");
 		expect(basenameResult.exitCode).toBe(0);
 		expect(basenameResult.stdout).toContain("## basename-skill");
+	});
+});
+
+test("docs bare topic selectors match docs topic when no registered docs overlap", async () => {
+	await withTempDir("docs-topic-root-same-output-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+		await seedSkillBackedSection(repoDir);
+
+		const bareResult = await runDocsCli(["ios"], {
+			cwd: repoDir,
+			env: docsEnv(path.join(tempDir, "home")),
+		});
+		const topicResult = await runDocsCli(["topic", "ios"], {
+			cwd: repoDir,
+			env: docsEnv(path.join(tempDir, "home")),
+		});
+
+		expect(bareResult.exitCode).toBe(0);
+		expect(topicResult.exitCode).toBe(0);
+		expect(bareResult.stdout.trim()).toBe(topicResult.stdout.trim());
 	});
 });
 

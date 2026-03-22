@@ -314,6 +314,28 @@ function stringArrayField(values: Map<string, FrontMatterValue>, key: string): s
 	return compactStrings(value);
 }
 
+function hintMapField(values: Map<string, FrontMatterValue>, key: string): Map<string, string> {
+	const entries = stringArrayField(values, key);
+	const hints = new Map<string, string>();
+
+	for (const entry of entries) {
+		const separatorIndex = entry.indexOf(":");
+		if (separatorIndex <= 0) {
+			continue;
+		}
+
+		const hintKey = entry.slice(0, separatorIndex).trim();
+		const hintValue = entry.slice(separatorIndex + 1).trim();
+		if (hintKey.length === 0 || hintValue.length === 0) {
+			continue;
+		}
+
+		hints.set(hintKey, hintValue);
+	}
+
+	return hints;
+}
+
 function markdownBasename(relativePath: string): string {
 	return path.basename(relativePath, path.extname(relativePath));
 }
@@ -433,6 +455,7 @@ function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 			name: fallbackName,
 			title: fallbackName,
 			description: null,
+			hint: null,
 			error: frontMatter.error,
 			referencePaths: [],
 		};
@@ -444,11 +467,13 @@ function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 		name: stringField(frontMatter.values, "name") ?? fallbackName,
 		title: titleField(frontMatter.values) ?? fallbackName,
 		description: stringField(frontMatter.values, "description"),
+		hint: null,
 		referencePaths: [],
 	};
 }
 
 export default {
+	hintMapField,
 	parseFrontMatter,
 	parseGuideBody,
 	parseGuideSummary,

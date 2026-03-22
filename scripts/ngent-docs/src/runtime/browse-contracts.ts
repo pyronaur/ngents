@@ -23,6 +23,7 @@ export type GuideMetadata = {
 	summary: string | null;
 	guideBody: string | null;
 	readWhen: string[];
+	hints: Map<string, string>;
 	error?: string;
 };
 
@@ -42,6 +43,7 @@ export type SkillEntry = {
 	name: string;
 	title: string | null;
 	description: string | null;
+	hint: string | null;
 	error?: string;
 	referencePaths: string[];
 };
@@ -223,32 +225,6 @@ function hasHiddenOrExcludedSegment(relativePath: string): boolean {
 	return false;
 }
 
-function formatContains(section: SectionEntry): string | null {
-	const parts: string[] = [];
-	if (section.markdownEntries.length > 0) {
-		parts.push(
-			`${section.markdownEntries.length} ${section.markdownEntries.length === 1 ? "doc" : "docs"}`,
-		);
-	}
-	if (section.skills.length > 0) {
-		parts.push(`${section.skills.length} ${section.skills.length === 1 ? "skill" : "skills"}`);
-	}
-
-	let referenceCount = 0;
-	for (const skill of section.skills) {
-		referenceCount += skill.referencePaths.length;
-	}
-	if (referenceCount > 0) {
-		parts.push(`${referenceCount} ${referenceCount === 1 ? "reference file" : "reference files"}`);
-	}
-
-	if (parts.length === 0) {
-		return null;
-	}
-
-	return parts.join(", ");
-}
-
 export default {
 	EXCLUDED_DIRS,
 	META_FILE,
@@ -257,7 +233,6 @@ export default {
 	compactStrings,
 	compactDescription,
 	errorText,
-	formatContains,
 	hasHiddenOrExcludedSegment,
 	heading,
 	normalizeInlineText,

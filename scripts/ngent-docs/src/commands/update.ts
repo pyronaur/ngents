@@ -6,7 +6,7 @@ import { runDocsUpdate } from "../runtime/update.ts";
 
 export const updateCommand = defineCommand({
 	path: ["update"],
-	description: "Refresh the global docs QMD index and embeddings.",
+	description: "Refresh registered fetches, then the global docs QMD index and embeddings.",
 	usage: docsCommandUsage.update,
 	optionsSchema: z.object({}),
 	run: async () => {

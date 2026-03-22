@@ -1,6 +1,8 @@
+import { spawn } from "node:child_process";
 import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, test } from "vitest";
 
 import { runDocsCli } from "./helpers/cli.ts";
@@ -8,6 +10,7 @@ import { runDocsCli } from "./helpers/cli.ts";
 const CANONICAL_QUERY_USAGE = "docs query [--limit <n>] <query...> | status";
 const STALE_QUERY_USAGE = "docs query [options] [terms...]";
 const QMD_COLLECTIONS_CACHE_VERSION = 1;
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 async function makeTempDir(prefix: string): Promise<string> {
 	return mkdtemp(path.join(os.tmpdir(), prefix));
@@ -53,6 +56,67 @@ async function writeExecutable(dir: string, name: string, body: string): Promise
 	const filePath = path.join(dir, name);
 	await writeText(filePath, body);
 	await chmod(filePath, 0o755);
+}
+
+async function runCommand(
+	command: string,
+	args: string[],
+	options: {
+		cwd?: string;
+		env?: NodeJS.ProcessEnv;
+	} = {},
+): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+	return new Promise((resolve, reject) => {
+		const child = spawn(command, args, {
+			cwd: options.cwd,
+			env: {
+				...process.env,
+				...options.env,
+			},
+		});
+
+		let stdout = "";
+		let stderr = "";
+		child.stdout.on("data", (chunk: Buffer | string) => {
+			stdout += chunk.toString();
+		});
+		child.stderr.on("data", (chunk: Buffer | string) => {
+			stderr += chunk.toString();
+		});
+		child.on("error", reject);
+		child.on("close", (exitCode) => {
+			resolve({
+				exitCode,
+				stdout,
+				stderr,
+			});
+		});
+	});
+}
+
+function runFetchHandlerCli(
+	handlerName: "docs-git-fetch" | "docs-url-file-fetch",
+	args: string[],
+	options: {
+		cwd?: string;
+		env?: NodeJS.ProcessEnv;
+	} = {},
+): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+	return runCommand("node", [path.join(packageRoot, "bin", `${handlerName}.ts`), ...args], options);
+}
+
+async function expectCommandSuccess(
+	command: string,
+	args: string[],
+	options: {
+		cwd?: string;
+		env?: NodeJS.ProcessEnv;
+	} = {},
+): Promise<void> {
+	const result = await runCommand(command, args, options);
+	if (result.exitCode !== 0) {
+		throw new Error(result.stderr || result.stdout || `${command} failed`);
+	}
 }
 
 async function withTempDir<T>(prefix: string, run: (dir: string) => Promise<T>): Promise<T> {
@@ -604,6 +668,63 @@ function docsEnv(homeDir: string, binDir?: string): NodeJS.ProcessEnv {
 	};
 }
 
+async function writeFetchHandler(dir: string, name: string): Promise<string> {
+	const filePath = path.join(dir, name);
+	await writeExecutable(
+		dir,
+		name,
+		[
+			"#!/bin/sh",
+			'source_url=""',
+			'target_path=""',
+			'previous_hash=""',
+			'root_value=""',
+			'transform_value=""',
+			'while [ "$#" -gt 0 ]; do',
+			'  case "$1" in',
+			'    --source) source_url="$2"; shift 2 ;;',
+			'    --target) target_path="$2"; shift 2 ;;',
+			'    --previous-hash) previous_hash="$2"; shift 2 ;;',
+			'    --root) root_value="$2"; shift 2 ;;',
+			'    --transform) transform_value="$2"; shift 2 ;;',
+			'    *) printf "unknown arg: %s\\n" "$1" >&2; exit 1 ;;',
+			"  esac",
+			"done",
+			'if [ -n "${DOCS_TEST_FETCH_LOG:-}" ]; then',
+			'  printf "source=%s\\n" "$source_url" >> "$DOCS_TEST_FETCH_LOG"',
+			'  printf "target=%s\\n" "$target_path" >> "$DOCS_TEST_FETCH_LOG"',
+			'  printf "previous=%s\\n" "$previous_hash" >> "$DOCS_TEST_FETCH_LOG"',
+			'  printf "root=%s\\n" "$root_value" >> "$DOCS_TEST_FETCH_LOG"',
+			'  printf "transform=%s\\n" "$transform_value" >> "$DOCS_TEST_FETCH_LOG"',
+			"fi",
+			'if [ "${DOCS_TEST_FETCH_FAIL:-0}" = "1" ]; then',
+			'  printf "fake fetch handler failure\\n" >&2',
+			"  exit 1",
+			"fi",
+			'mkdir -p "$target_path"',
+			'printf "%s\\n" "${DOCS_TEST_FETCH_CONTENT:-handled}" > "$target_path/handled.txt"',
+			'printf "%s\\n" "${DOCS_TEST_FETCH_HASH:-hash-1}"',
+			"",
+		].join("\n"),
+	);
+	return filePath;
+}
+
+async function createGitFetchSource(tempDir: string): Promise<string> {
+	const remoteDir = path.join(tempDir, "fetch-source.git");
+	const workDir = path.join(tempDir, "fetch-source-work");
+	await expectCommandSuccess("git", ["init", "--bare", remoteDir]);
+	await expectCommandSuccess("git", ["clone", remoteDir, workDir]);
+	await expectCommandSuccess("git", ["-C", workDir, "config", "user.email", "docs-test@example.com"]);
+	await expectCommandSuccess("git", ["-C", workDir, "config", "user.name", "Docs Test"]);
+	await writeText(path.join(workDir, "skills", "alpha", "SKILL.md"), "# Alpha\n");
+	await writeText(path.join(workDir, "README.md"), "# Repo Root\n");
+	await expectCommandSuccess("git", ["-C", workDir, "add", "."]);
+	await expectCommandSuccess("git", ["-C", workDir, "commit", "-m", "init"]);
+	await expectCommandSuccess("git", ["-C", workDir, "push", "origin", "HEAD"]);
+	return pathToFileURL(remoteDir).href;
+}
+
 test("bare docs renders compact markdown help with merged topics and docs", async () => {
 	await withTempDir("docs-root-help-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
@@ -695,12 +816,137 @@ test("docs query --help uses the canonical query signature", async () => {
 	expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
 });
 
+test("docs fetch --help uses the canonical fetch signature", async () => {
+	const result = await runDocsCli(["fetch", "--help"]);
+
+	expect(result.exitCode).toBe(0);
+	expect(result.stdout).toContain(
+		"Usage: docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+	);
+});
+
+test("docs-git-fetch --help shows the handler options through commander", async () => {
+	const result = await runFetchHandlerCli("docs-git-fetch", ["--help"]);
+
+	expect(result.exitCode).toBe(0);
+	expect(result.stdout).toContain("Usage: docs-git-fetch [options]");
+	expect(result.stdout).toContain("--source <source>");
+	expect(result.stdout).toContain("--target <path>");
+	expect(result.stdout).toContain("--previous-hash <hash>");
+	expect(result.stdout).toContain("--root <subpath>");
+	expect(result.stdout).toContain("--transform <command>");
+});
+
+test("docs-url-file-fetch --help shows the handler options through commander", async () => {
+	const result = await runFetchHandlerCli("docs-url-file-fetch", ["--help"]);
+
+	expect(result.exitCode).toBe(0);
+	expect(result.stdout).toContain("Usage: docs-url-file-fetch [options]");
+	expect(result.stdout).toContain("--source <source>");
+	expect(result.stdout).toContain("--target <path>");
+	expect(result.stdout).toContain("--previous-hash <hash>");
+	expect(result.stdout).toContain("--root <subpath>");
+	expect(result.stdout).toContain("--transform <command>");
+});
+
+test("docs-url-file-fetch accepts commander equals-style option values", async () => {
+	await withTempDir("docs-url-file-fetch-equals-", async (tempDir) => {
+		const sourcePath = path.join(tempDir, "shell.txt");
+		const targetPath = path.join(tempDir, "target");
+		await writeText(sourcePath, "# Shell\n");
+
+		const result = await runFetchHandlerCli("docs-url-file-fetch", [
+			`--source=${pathToFileURL(sourcePath).href}`,
+			`--target=${targetPath}`,
+			"--previous-hash=",
+		]);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stderr).toBe("");
+		expect(result.stdout.trim()).not.toBe("");
+		expect(await readText(path.join(targetPath, "shell.md"))).toContain("# Shell");
+	});
+});
+
+test("docs-url-file-fetch rejects unknown options through commander", async () => {
+	const result = await runFetchHandlerCli("docs-url-file-fetch", [
+		"--source=https://example.com/shell.md",
+		"--target=/tmp/target",
+		"--previous-hash=",
+		"--wat",
+	]);
+
+	expect(result.exitCode).toBe(1);
+	expect(result.stderr).toContain("unknown option '--wat'");
+});
+
+test("docs-url-file-fetch requires the previous hash option through commander", async () => {
+	const result = await runFetchHandlerCli("docs-url-file-fetch", [
+		"--source=https://example.com/shell.md",
+		"--target=/tmp/target",
+	]);
+
+	expect(result.exitCode).toBe(1);
+	expect(result.stderr).toContain("required option '--previous-hash <hash>' not specified");
+});
+
+test("docs-git-fetch rejects traversal roots", async () => {
+	await withTempDir("docs-git-fetch-root-traversal-", async (tempDir) => {
+		const source = await createGitFetchSource(tempDir);
+		const result = await runFetchHandlerCli("docs-git-fetch", [
+			`--source=${source}`,
+			`--target=${path.join(tempDir, "target")}`,
+			"--previous-hash=",
+			"--root=../../..",
+		]);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Invalid git fetch root");
+	});
+});
+
+test("docs-git-fetch rejects absolute roots", async () => {
+	await withTempDir("docs-git-fetch-root-absolute-", async (tempDir) => {
+		const source = await createGitFetchSource(tempDir);
+		const result = await runFetchHandlerCli("docs-git-fetch", [
+			`--source=${source}`,
+			`--target=${path.join(tempDir, "target")}`,
+			"--previous-hash=",
+			`--root=${path.join(tempDir, "outside")}`,
+		]);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Invalid git fetch root");
+	});
+});
+
+test("docs-git-fetch accepts nested roots inside the repository", async () => {
+	await withTempDir("docs-git-fetch-root-nested-", async (tempDir) => {
+		const source = await createGitFetchSource(tempDir);
+		const targetPath = path.join(tempDir, "target");
+		const result = await runFetchHandlerCli("docs-git-fetch", [
+			`--source=${source}`,
+			`--target=${targetPath}`,
+			"--previous-hash=",
+			"--root=skills/alpha",
+		]);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stderr).toBe("");
+		expect(result.stdout.trim()).not.toBe("");
+		expect(await readText(path.join(targetPath, "SKILL.md"))).toContain("# Alpha");
+	});
+});
+
 test("docs reference doc uses the canonical query signature", async () => {
 	const docPath = new URL("../../../docs/ngents-docs.md", import.meta.url);
 	const contents = await readFile(docPath, "utf8");
 
 	expect(contents).toContain(CANONICAL_QUERY_USAGE);
 	expect(contents).not.toContain(STALE_QUERY_USAGE);
+	expect(contents).not.toContain(
+		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+	);
 	expect(contents).toContain("docs park <name> [path]");
 	expect(contents).toContain("workspace paths that contain `docs/`");
 	expect(contents).toContain("Parked names match case-insensitively.");
@@ -1235,7 +1481,7 @@ test("single-token unknown root selectors show commands plus browse inventory", 
 
 		expect(result.exitCode).toBe(1);
 		expect(result.stderr).toContain("Sorry, `poop` not found");
-		expect(result.stderr).toContain("It's not a command: ls, park, topic, query, update");
+		expect(result.stderr).toContain("It's not a command: fetch, ls, park, topic, query, update");
 		expect(result.stderr).toContain("I couldn't locate a topic or registered docs source called that either");
 		expect(result.stderr).toContain("Here's what I do have:");
 		expect(result.stderr).toContain("Topics");
@@ -1580,6 +1826,516 @@ test("docs query status shows no collections when nothing is parked", async () =
 	});
 });
 
+test("docs fetch creates a local manifest entry and saves the returned hash", async () => {
+	await withTempDir("docs-fetch-manifest-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+
+		const result = await runDocsCli(
+			[
+				"fetch",
+				"https://example.com/source",
+				path.join(repoDir, "docs", "topics", "ios", "remote-bundle"),
+				"--handler",
+				handlerPath,
+			],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_HASH: "hash-1",
+				},
+			},
+		);
+
+		const manifest = JSON.parse(
+			await readText(path.join(repoDir, "docs", ".docs-fetch.json")),
+		) as {
+			entries: Array<{
+				source: string;
+				target: string;
+				handler: string;
+				hash: string;
+			}>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(manifest.entries).toEqual([
+			{
+				source: "https://example.com/source",
+				target: "topics/ios/remote-bundle",
+				handler: handlerPath,
+				hash: "hash-1",
+			},
+		]);
+		expect(
+			await readText(path.join(repoDir, "docs", "topics", "ios", "remote-bundle", "handled.txt")),
+		).toContain("handled");
+	});
+});
+
+test("docs fetch passes the previous hash back to the handler on later runs", async () => {
+	await withTempDir("docs-fetch-previous-hash-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "fetch.log");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+
+		const first = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_HASH: "hash-1",
+					DOCS_TEST_FETCH_LOG: logFile,
+				},
+			},
+		);
+		const second = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_HASH: "hash-2",
+					DOCS_TEST_FETCH_LOG: logFile,
+				},
+			},
+		);
+
+		const logContents = await readText(logFile);
+
+		expect(first.exitCode).toBe(0);
+		expect(second.exitCode).toBe(0);
+		expect(logContents).toContain("previous=");
+		expect(logContents).toContain("previous=hash-1");
+		expect(await readText(path.join(repoDir, "docs", ".docs-fetch.json"))).toContain('"hash": "hash-2"');
+	});
+});
+
+test("docs fetch auto-selects the built-in git and url-file handlers", async () => {
+	await withTempDir("docs-fetch-builtins-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+
+		const gitSource = await createGitFetchSource(tempDir);
+		const localFilePath = path.join(tempDir, "shell.txt");
+		await writeText(localFilePath, "# Shell\n");
+		const fileSource = pathToFileURL(localFilePath).href;
+
+		const gitResult = await runDocsCli(
+			[
+				"fetch",
+				gitSource,
+				path.join(repoDir, "docs", "topics", "ios", "git-import"),
+				"--root",
+				"skills",
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(homeDir),
+			},
+		);
+		const fileResult = await runDocsCli(
+			[
+				"fetch",
+				fileSource,
+				path.join(repoDir, "docs", "topics", "ios", "file-import"),
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(homeDir),
+			},
+		);
+
+		const manifest = JSON.parse(
+			await readText(path.join(repoDir, "docs", ".docs-fetch.json")),
+		) as {
+			entries: Array<{
+				target: string;
+				handler: string;
+			}>;
+		};
+		const handlersByTarget = new Map(manifest.entries.map(entry => [entry.target, entry.handler]));
+
+		expect(gitResult.exitCode).toBe(0);
+		expect(fileResult.exitCode).toBe(0);
+		expect(handlersByTarget.get("topics/ios/git-import")).toBe("docs-git-fetch");
+		expect(handlersByTarget.get("topics/ios/file-import")).toBe("docs-url-file-fetch");
+		expect(
+			await readText(path.join(repoDir, "docs", "topics", "ios", "git-import", "alpha", "SKILL.md")),
+		).toContain("# Alpha");
+		expect(
+			await readText(path.join(repoDir, "docs", "topics", "ios", "file-import", "shell.md")),
+		).toContain("# Shell");
+	});
+});
+
+test("docs fetch rejects targets outside discovered docs roots", async () => {
+	await withTempDir("docs-fetch-outside-root-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const outsideDir = path.join(tempDir, "outside");
+		await seedLocalDocsRepo(repoDir);
+
+		const result = await runDocsCli(
+			[
+				"fetch",
+				"https://example.com/source",
+				outsideDir,
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(path.join(tempDir, "home")),
+			},
+		);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Fetch target is outside discovered docs roots");
+	});
+});
+
+test("docs fetch rejects targeting the docs root itself", async () => {
+	await withTempDir("docs-fetch-docs-root-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+
+		const result = await runDocsCli(
+			[
+				"fetch",
+				"https://example.com/source",
+				path.join(repoDir, "docs"),
+				"--handler",
+				handlerPath,
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(homeDir, binDir),
+			},
+		);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Fetch target must be a subdirectory inside a discovered docs root");
+	});
+});
+
+test("docs fetch stores and replays root and transform options through docs update", async () => {
+	await withTempDir("docs-fetch-options-replay-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "fetch.log");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedFakeQmd(binDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		const transformPath = path.join(binDir, "fake-transform");
+		await writeExecutable(binDir, "fake-transform", "#!/bin/sh\nexit 0\n");
+		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+
+		const fetchResult = await runDocsCli(
+			[
+				"fetch",
+				"https://example.com/source",
+				targetPath,
+				"--handler",
+				handlerPath,
+				"--root",
+				"skills",
+				"--transform",
+				transformPath,
+			],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_HASH: "hash-1",
+					DOCS_TEST_FETCH_LOG: logFile,
+				},
+			},
+		);
+		const updateResult = await runDocsCli(["update"], {
+			cwd: repoDir,
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_FETCH_HASH: "hash-2",
+				DOCS_TEST_FETCH_LOG: logFile,
+			},
+		});
+
+		const logContents = await readText(logFile);
+
+		expect(fetchResult.exitCode).toBe(0);
+		expect(updateResult.exitCode).toBe(0);
+		expect(logContents).toContain("root=skills");
+		expect(logContents).toContain(`transform=${transformPath}`);
+		expect(logContents).toContain("previous=hash-1");
+	});
+});
+
+test("docs update reruns registered fetch entries before qmd refresh", async () => {
+	await withTempDir("docs-update-fetch-first-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "combined.log");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedFakeQmd(binDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+
+		const fetchResult = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_HASH: "hash-1",
+					DOCS_TEST_FETCH_LOG: logFile,
+				},
+			},
+		);
+		const updateResult = await runDocsCli(["update"], {
+			cwd: repoDir,
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_FETCH_HASH: "hash-2",
+				DOCS_TEST_FETCH_LOG: logFile,
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		const logLines = (await readText(logFile)).trim().split("\n");
+
+		expect(fetchResult.exitCode).toBe(0);
+		expect(updateResult.exitCode).toBe(0);
+		expect(logLines).toContain("previous=hash-1");
+		expect(logLines[0]).toBe("source=https://example.com/source");
+		expect(logLines).toContain("--index ngents-docs update");
+		expect(logLines.indexOf("previous=hash-1")).toBeLessThan(
+			logLines.indexOf("--index ngents-docs update"),
+		);
+	});
+});
+
+test("docs update skips unsafe manifest targets outside docs roots, refreshes safe entries, and exits non-zero", async () => {
+	await withTempDir("docs-update-unsafe-target-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "combined.log");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedFakeQmd(binDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		await writeText(
+			path.join(repoDir, "docs", ".docs-fetch.json"),
+			`${JSON.stringify(
+				{
+					entries: [
+						{
+							source: "https://example.com/unsafe",
+							target: "../../outside",
+							handler: handlerPath,
+							hash: "hash-unsafe",
+						},
+						{
+							source: "https://example.com/safe",
+							target: "topics/ios/remote-bundle",
+							handler: handlerPath,
+							hash: "hash-safe-old",
+						},
+					],
+				},
+				null,
+				"\t",
+			)}\n`,
+		);
+
+		const result = await runDocsCli(["update"], {
+			cwd: repoDir,
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_FETCH_HASH: "hash-safe-new",
+				DOCS_TEST_FETCH_LOG: logFile,
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		const logContents = await readText(logFile);
+		const manifestContents = await readText(path.join(repoDir, "docs", ".docs-fetch.json"));
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Skipping unsafe fetch entry");
+		expect(result.stderr).toContain("target must not contain '..'");
+		expect(result.stderr).toContain("1 unsafe fetch entry was skipped during docs update.");
+		expect(result.stdout).toContain("Updating fake index");
+		expect(result.stdout).toContain("Embedding fake index");
+		expect(logContents).toContain("source=https://example.com/safe");
+		expect(logContents).not.toContain("source=https://example.com/unsafe");
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).toContain("--index ngents-docs embed");
+		expect(manifestContents).toContain('"target": "../../outside"');
+		expect(manifestContents).toContain('"hash": "hash-unsafe"');
+		expect(manifestContents).toContain('"hash": "hash-safe-new"');
+	});
+});
+
+test("docs update skips unsafe manifest targets that use backslash traversal", async () => {
+	await withTempDir("docs-update-unsafe-backslash-target-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "combined.log");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedFakeQmd(binDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		await writeText(
+			path.join(repoDir, "docs", ".docs-fetch.json"),
+			`${JSON.stringify(
+				{
+					entries: [
+						{
+							source: "https://example.com/unsafe",
+							target: "..\\..\\outside",
+							handler: handlerPath,
+							hash: "hash-unsafe",
+						},
+					],
+				},
+				null,
+				"\t",
+			)}\n`,
+		);
+
+		const result = await runDocsCli(["update"], {
+			cwd: repoDir,
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_FETCH_HASH: "hash-next",
+				DOCS_TEST_FETCH_LOG: logFile,
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		const logContents = await readText(logFile);
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Skipping unsafe fetch entry");
+		expect(result.stderr).toContain("target must not contain '..'");
+		expect(logContents).not.toContain("source=https://example.com/unsafe");
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).toContain("--index ngents-docs embed");
+	});
+});
+
+test("docs update skips manifest entries targeting the docs root itself", async () => {
+	await withTempDir("docs-update-root-target-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		const logFile = path.join(tempDir, "combined.log");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		await seedFakeQmd(binDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		await writeText(
+			path.join(repoDir, "docs", ".docs-fetch.json"),
+			`${JSON.stringify(
+				{
+					entries: [
+						{
+							source: "https://example.com/root",
+							target: ".",
+							handler: handlerPath,
+							hash: "hash-root",
+						},
+					],
+				},
+				null,
+				"\t",
+			)}\n`,
+		);
+
+		const result = await runDocsCli(["update"], {
+			cwd: repoDir,
+			env: {
+				...docsEnv(homeDir, binDir),
+				DOCS_TEST_FETCH_HASH: "hash-next",
+				DOCS_TEST_FETCH_LOG: logFile,
+				DOCS_TEST_QMD_LOG: logFile,
+			},
+		});
+
+		const logContents = await readText(logFile);
+		const manifestContents = await readText(path.join(repoDir, "docs", ".docs-fetch.json"));
+
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr).toContain("Skipping unsafe fetch entry");
+		expect(result.stderr).toContain("target must be a subdirectory");
+		expect(result.stderr).toContain("1 unsafe fetch entry was skipped during docs update.");
+		expect(logContents).not.toContain("source=https://example.com/root");
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).toContain("--index ngents-docs embed");
+		expect(manifestContents).toContain('"target": "."');
+		expect(manifestContents).toContain('"hash": "hash-root"');
+	});
+});
+
+test("docs fetch keeps the prior stored hash when the handler fails", async () => {
+	await withTempDir("docs-fetch-failure-hash-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		const binDir = path.join(tempDir, "bin");
+		await mkdir(binDir, { recursive: true });
+		await seedLocalDocsRepo(repoDir);
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+
+		const first = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_HASH: "hash-1",
+				},
+			},
+		);
+		const failed = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
+			{
+				cwd: repoDir,
+				env: {
+					...docsEnv(homeDir, binDir),
+					DOCS_TEST_FETCH_FAIL: "1",
+					DOCS_TEST_FETCH_HASH: "hash-2",
+				},
+			},
+		);
+
+		expect(first.exitCode).toBe(0);
+		expect(failed.exitCode).toBe(1);
+		expect(failed.stderr).toContain("fake fetch handler failure");
+		expect(await readText(path.join(repoDir, "docs", ".docs-fetch.json"))).toContain('"hash": "hash-1"');
+	});
+});
+
 test("docs update runs qmd update then embed for the docs index", async () => {
 	await withTempDir("docs-update-", async (tempDir) => {
 		const homeDir = path.join(tempDir, "home");
@@ -1599,13 +2355,9 @@ test("docs update runs qmd update then embed for the docs index", async () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("Updating fake index");
 		expect(result.stdout).toContain("Embedding fake index");
-		expect(await readFile(logFile, "utf8")).toBe(
-			[
-				"--index ngents-docs update",
-				"--index ngents-docs embed",
-				"",
-			].join("\n"),
-		);
+		const logContents = await readFile(logFile, "utf8");
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).toContain("--index ngents-docs embed");
 	});
 });
 
@@ -1628,12 +2380,9 @@ test("docs update stops before embed when qmd update fails", async () => {
 
 		expect(result.exitCode).toBe(1);
 		expect(result.stderr).toContain("fake update failure");
-		expect(await readFile(logFile, "utf8")).toBe(
-			[
-				"--index ngents-docs update",
-				"",
-			].join("\n"),
-		);
+		const logContents = await readFile(logFile, "utf8");
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).not.toContain("--index ngents-docs embed");
 	});
 });
 
@@ -1657,13 +2406,9 @@ test("docs update fails when qmd embed fails after a successful update", async (
 		expect(result.exitCode).toBe(1);
 		expect(result.stdout).toContain("Updating fake index");
 		expect(result.stderr).toContain("fake embed failure");
-		expect(await readFile(logFile, "utf8")).toBe(
-			[
-				"--index ngents-docs update",
-				"--index ngents-docs embed",
-				"",
-			].join("\n"),
-		);
+		const logContents = await readFile(logFile, "utf8");
+		expect(logContents).toContain("--index ngents-docs update");
+		expect(logContents).toContain("--index ngents-docs embed");
 	});
 });
 

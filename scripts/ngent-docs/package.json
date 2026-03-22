@@ -5,7 +5,9 @@
 	"type": "module",
 	"private": false,
 	"bin": {
-		"docs": "./bin/docs.ts"
+		"docs": "./bin/docs.ts",
+		"docs-git-fetch": "./bin/docs-git-fetch.ts",
+		"docs-url-file-fetch": "./bin/docs-url-file-fetch.ts"
 	},
 	"engines": {
 		"node": ">=25"

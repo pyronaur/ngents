@@ -320,7 +320,7 @@ async function extractReferencePaths(skillDir: string, content: string): Promise
 		}
 
 		const withoutAnchor = rawReference.split("#")[0] ?? "";
-		const normalizedRelative = toDisplayPath(withoutAnchor).replace(/^\.\//, "");
+		const normalizedRelative = path.posix.normalize(toDisplayPath(withoutAnchor));
 		if (normalizedRelative.length === 0 || hasHiddenOrExcludedSegment(normalizedRelative)) {
 			continue;
 		}

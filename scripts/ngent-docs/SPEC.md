@@ -142,9 +142,13 @@ Current decisions:
 
 Current decisions:
 
-- Bare `docs` renders root help and includes the docs index.
-- `docs --help`, `docs -h`, and `docs help` render the same help shape without
-  the docs index.
+- Bare `docs` renders browse-first root help and includes the docs index.
+- `docs --help`, `docs -h`, and `docs help` render the same browse-first help
+  shape without the docs index.
+- Browse-first root help does not explain `park`, `fetch`, or `update` beyond a
+  one-line pointer to `docs --ops-help`.
+- `docs --ops-help` renders the operations manual for `park`, `fetch`, and
+  `update`.
 
 ### Single-Token Root Selector Fallback
 

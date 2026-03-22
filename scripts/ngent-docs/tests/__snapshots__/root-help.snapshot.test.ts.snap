@@ -1,5 +1,34 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`printOpsHelp renders the ops help snapshot 1`] = `
+"Usage: docs --ops-help
+
+# docs operations
+This manual covers docs maintenance and meta operations.
+
+## Parking
+docs park <name> [path]
+
+Use this to attach a docs root to the global docs index.
+\`docs park foo\` - park \`./docs\` when present, otherwise \`.\`
+\`docs park foo ~/work/bar\` - park an explicit project or docs dir
+
+## Fetch
+docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]
+
+Use this to register and refresh fetched docs through an external handler.
+\`docs fetch https://example.com/spec docs/external/spec\` - fetch into a docs subtree
+\`docs fetch https://example.com/spec docs/external/spec --root api\` - limit the source root passed to the handler
+
+## Update
+docs update
+
+Use this to refresh registered fetches, then rebuild the global docs QMD index and embeddings.
+
+For command-specific syntax details, use each command's \`--help\`.
+"
+`;
+
 exports[`printRootHelp renders the bare root help snapshot 1`] = `
 "Usage: docs [options] [command]
 
@@ -17,13 +46,6 @@ docs query [--limit <n>] <query...> | status
 
 Use this to search through parked global docs collections with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
-
-## Parking
-docs park <name> [path]
-
-Use this to attach a docs root to the global docs index.
-\`docs park foo\` - park \`./docs\` when present, otherwise \`.\`
-\`docs park foo ~/work/bar\` - park an explicit project or docs dir
 
 ## Topics
 docs topic [topic] [section]
@@ -72,6 +94,8 @@ docs ls global - Global docs, expanded descriptions
 ### /fixture/repo/docs/architecture
   local-only.md - local architecture notes
   main.md - read this first
+
+To read docs operation manual use \`docs --ops-help\`.
 "
 `;
 
@@ -93,13 +117,6 @@ docs query [--limit <n>] <query...> | status
 Use this to search through parked global docs collections with semantic search fast.
 Returns matches optimized for quick context gathering with cat/sed followups.
 
-## Parking
-docs park <name> [path]
-
-Use this to attach a docs root to the global docs index.
-\`docs park foo\` - park \`./docs\` when present, otherwise \`.\`
-\`docs park foo ~/work/bar\` - park an explicit project or docs dir
-
 ## Topics
 docs topic [topic] [section]
 
@@ -112,5 +129,7 @@ TOPIC  TITLE        DESCRIPTION
 ios    iOS Library  Apple-platform docs
 ops    Ops Notes    This summary is intentionally longer than sixty-four characte...
 qmd    QMD          local search docs
+
+To read docs operation manual use \`docs --ops-help\`.
 "
 `;

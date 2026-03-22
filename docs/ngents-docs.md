@@ -65,12 +65,14 @@ This keeps reusable knowledge organized by domain instead of flattening everythi
 ```bash
 docs
 docs --help
+docs --ops-help
 docs help
 docs <where>
 docs ls [where]
-docs park <name> [path]
 docs topic [topic] [section]
 docs query [--limit <n>] <query...> | status
+docs park <name> [path]
+docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]
 docs update
 ```
 
@@ -86,9 +88,11 @@ Global docs collection metadata is cached for 1 hour.
 
 ## Help behavior
 
-- `docs` prints compact Markdown help with the command walkthrough, merged topic index, and merged docs index.
-- `docs --help` prints the same Markdown help style without the docs index.
-- `docs help` prints the same Markdown help style without the docs index.
+- `docs` prints compact browse-first Markdown help with the command walkthrough, merged topic index, and merged docs index.
+- `docs --help` prints the same browse-first Markdown help without the docs index.
+- `docs help` prints the same browse-first Markdown help without the docs index.
+- Regular root help ends with `To read docs operation manual use \`docs --ops-help\`.`
+- `docs --ops-help` prints the operations manual for `park`, `fetch`, and `update`.
 - In the compact docs index, each docs root is grouped under its own level-3 path heading.
 - `docs help <command>` prints Commander command usage.
 - `docs <command> --help` prints usage for that command.
@@ -126,18 +130,6 @@ Global docs collection metadata is cached for 1 hour.
 - When an exact topic name and an exact registered docs name overlap, it renders the topic first and the matching docs subtree after it.
 - Registered docs names reuse the same merged subtree behavior as `docs ls docs/<name>`.
 - When the token is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
-
-### `park`
-
-`park` attaches one docs root into the global docs index.
-
-- It accepts `docs park <name> [path]`.
-- `path` defaults to `.`.
-- If `<path>/docs` exists, that nested `docs/` directory is parked.
-- Otherwise the supplied path itself is treated as the docs root.
-- It fails when the name is already taken.
-- It fails when the docs root is already parked under another name.
-- It runs `qmd collection add`, then refreshes the dedicated docs index with `update` and `embed`.
 
 ### `topic`
 
@@ -179,11 +171,34 @@ Result output includes:
 - the absolute file path, with a line range when QMD exposes one
 - a lightly cleaned snippet for quick follow-up reading
 
+## Operations behavior
+
+### `park`
+
+`park` attaches one docs root into the global docs index.
+
+- It accepts `docs park <name> [path]`.
+- `path` defaults to `.`.
+- If `<path>/docs` exists, that nested `docs/` directory is parked.
+- Otherwise the supplied path itself is treated as the docs root.
+- It fails when the name is already taken.
+- It fails when the docs root is already parked under another name.
+- It runs `qmd collection add`, then refreshes the dedicated docs index with `update` and `embed`.
+
+### `fetch`
+
+`fetch` registers one fetched docs subtree and refreshes it immediately.
+
+- It accepts `docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]`.
+- The target path must resolve inside a discovered docs root.
+- The handler defaults from the source when possible.
+- Successful fetches update the local fetch manifest for future `docs update` runs.
+
 ### `update`
 
 `update` refreshes the same global QMD index that `docs query` reads.
 
-It runs `qmd update`, then `qmd embed`.
+It runs registered fetches first, then `qmd update`, then `qmd embed`.
 
 Use it when the global docs library changed and `query` needs a refreshed index.
 
@@ -232,6 +247,7 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 
 ```bash
 docs
+docs --ops-help
 docs ios
 docs architecture
 docs machine
@@ -245,6 +261,7 @@ docs ls machine
 docs park nconf
 docs park ngents ~/.ngents
 docs park nconf ~/.nconf
+docs fetch https://example.com/spec docs/external/spec
 docs topic qmd
 docs topic qmd references
 docs query shell environment policy

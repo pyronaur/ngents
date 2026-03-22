@@ -161,22 +161,31 @@ async function parseProgram(program: Command, argv: string[]): Promise<void> {
 	await program.parseAsync(argv, { from: "user" });
 }
 
-function isRootHelpRequest(argv: string[]): { isHelp: boolean; includeDocsIndex: boolean } {
+function readRootHelpRequest(
+	argv: string[],
+): { kind: "root"; includeDocsIndex: boolean } | { kind: "ops" } | { kind: "none" } {
 	if (argv.length === 0) {
-		return { isHelp: true, includeDocsIndex: true };
+		return { kind: "root", includeDocsIndex: true };
 	}
 	if (argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help")) {
-		return { isHelp: true, includeDocsIndex: false };
+		return { kind: "root", includeDocsIndex: false };
 	}
-	return { isHelp: false, includeDocsIndex: false };
+	if (argv.length === 1 && argv[0] === "--ops-help") {
+		return { kind: "ops" };
+	}
+	return { kind: "none" };
 }
 
 export async function runDocsCli(argv: string[], projectDir: string): Promise<void> {
-	const helpRequest = isRootHelpRequest(argv);
-	if (helpRequest.isHelp) {
+	const helpRequest = readRootHelpRequest(argv);
+	if (helpRequest.kind === "root") {
 		await runDocsRootHelp({
 			includeDocsIndex: helpRequest.includeDocsIndex,
 		});
+		return;
+	}
+	if (helpRequest.kind === "ops") {
+		browseRender.printOpsHelp();
 		return;
 	}
 

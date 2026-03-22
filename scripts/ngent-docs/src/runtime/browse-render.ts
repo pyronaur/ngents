@@ -25,6 +25,7 @@ import { printTopicOverview } from "./browse-topic-overview.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
 import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
 import rootHelpTemplate, {
+	type OpsHelpTemplateContext,
 	type RootHelpDocsGroup,
 	type RootHelpTemplateContext,
 } from "./root-help-template.ts";
@@ -187,14 +188,23 @@ function rootHelpTemplateContext(
 		docs_groups: docsGroups,
 		ls_command: rootHelpCommandLines.ls,
 		ls_usage: rootHelpUsageLines.ls,
-		park_command: rootHelpCommandLines.park,
-		park_usage: rootHelpUsageLines.park,
 		query_usage: rootHelpUsageLines.query,
 		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
 		topic_command: rootHelpCommandLines.topic,
 		topic_usage: rootHelpUsageLines.topic,
 		topic_lines: rootHelpTopicLines(topics),
 		topics_header: renderTopicTableHeader(topics),
+	};
+}
+
+function opsHelpTemplateContext(): OpsHelpTemplateContext {
+	return {
+		fetch_command: rootHelpCommandLines.fetch,
+		fetch_usage: rootHelpUsageLines.fetch,
+		park_command: rootHelpCommandLines.park,
+		park_usage: rootHelpUsageLines.park,
+		update_command: rootHelpCommandLines.update,
+		update_usage: rootHelpUsageLines.update,
 	};
 }
 
@@ -290,6 +300,13 @@ function printRootHelp(
 	const rendered = rootHelpTemplate.renderRootHelpTemplate(
 		rootHelpTemplateContext(topics, docs, options),
 	);
+	for (const line of rendered.split("\n")) {
+		printLine(formatRootHelpLine(line));
+	}
+}
+
+function printOpsHelp(): void {
+	const rendered = rootHelpTemplate.renderOpsHelpTemplate(opsHelpTemplateContext());
 	for (const line of rendered.split("\n")) {
 		printLine(formatRootHelpLine(line));
 	}
@@ -460,6 +477,7 @@ export default {
 	printCombinedSelectorView,
 	printDocsBrowser,
 	printFocusedSection,
+	printOpsHelp,
 	printRootHelp,
 	printScopedTopicBrowser,
 	renderRootSelectorNotFound,

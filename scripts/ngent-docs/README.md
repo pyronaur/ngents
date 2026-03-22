@@ -17,7 +17,8 @@ Package root: `scripts/ngent-docs`
 
 CLI entrypoint: `bin/docs.ts`
 
-Root help copy and Liquid template logic live in `templates/root-help.md`.
+Help copy and Liquid template logic live in `templates/root-help.md` and
+`templates/ops-help.md`.
 
 ## Development Commands
 
@@ -35,9 +36,10 @@ make verify
 - `src/core/command-definition.ts` command definition and registration contract
 - `src/commands/` command modules for `ls`, `park`, `topic`, `query`, and `update`
 - `src/runtime/browse*.ts` docs/topic discovery, parsing, and rendering
-- `src/runtime/help.ts` root help entrypoint
-- `src/runtime/root-help-template.ts` Liquid root-help renderer
-- `templates/root-help.md` editable root help template
+- `src/runtime/help.ts` root and ops help entrypoints
+- `src/runtime/root-help-template.ts` Liquid help-template renderer
+- `templates/root-help.md` editable browse-help template
+- `templates/ops-help.md` editable ops-help template
 - `docs/ngents-docs.md` product documentation: purpose, principles, usage, and behavior
 - `tests/` CLI-facing and root-help coverage
 

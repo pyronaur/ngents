@@ -6,7 +6,9 @@ import { expect, test } from "vitest";
 
 import {
 	createRootHelpLiquidEngine,
+	renderOpsHelpTemplate,
 	renderRootHelpTemplate,
+	type OpsHelpTemplateContext,
 	type RootHelpTemplateContext,
 } from "../src/runtime/root-help-template.ts";
 
@@ -14,14 +16,22 @@ const rootHelpTemplateContext: RootHelpTemplateContext = {
 	docs_groups: [],
 	ls_command: "docs ls",
 	ls_usage: "docs ls [where]",
-	park_command: "docs park",
-	park_usage: "docs park <name> [path]",
 	query_usage: "docs query [--limit <n>] <query...> | status",
 	show_docs_index: false,
 	topic_command: "docs topic",
 	topic_usage: "docs topic [topic] [section]",
 	topic_lines: [],
 	topics_header: "TOPIC  TITLE  DESCRIPTION",
+};
+
+const opsHelpTemplateContext: OpsHelpTemplateContext = {
+	fetch_command: "docs fetch",
+	fetch_usage:
+		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+	park_command: "docs park",
+	park_usage: "docs park <name> [path]",
+	update_command: "docs update",
+	update_usage: "docs update",
 };
 
 async function makeTempDir(prefix: string): Promise<string> {
@@ -95,6 +105,21 @@ test("renderRootHelpTemplate supports standard Liquid composition from the templ
 		const engine = createRootHelpLiquidEngine(tempDir);
 
 		expect(renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toBe(
+			["Before", "Shared", "After"].join("\n"),
+		);
+	});
+});
+
+test("renderOpsHelpTemplate supports standard Liquid composition from the templates root", async () => {
+	await withTempDir("docs-ops-help-template-render-", async tempDir => {
+		await writeText(
+			path.join(tempDir, "ops-help.md"),
+			["Before", "{% render shared.md %}", "After"].join("\n"),
+		);
+		await writeText(path.join(tempDir, "shared.md"), "Shared");
+		const engine = createRootHelpLiquidEngine(tempDir);
+
+		expect(renderOpsHelpTemplate(opsHelpTemplateContext, { engine })).toBe(
 			["Before", "Shared", "After"].join("\n"),
 		);
 	});

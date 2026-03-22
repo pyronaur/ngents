@@ -779,11 +779,12 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain("# docs");
 		expect(result.stdout).toContain(CANONICAL_QUERY_USAGE);
 		expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
-		expect(result.stdout).toContain("docs park <name> [path]");
+		expect(result.stdout).not.toContain("docs park <name> [path]");
 		expect(result.stdout).toContain("docs topic [topic] [section]");
 		expect(result.stdout).toContain("docs ls [where]");
 		expect(result.stdout).toContain("docs ls ~/work/foo - Resolve a workspace to its docs dir");
 		expect(result.stdout).toContain("docs ls machine - Parked global docs by name");
+		expect(result.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
 		expect(result.stdout).toContain("qmd");
 		expect(result.stdout).toContain("local search docs");
 		expect(result.stdout).toContain(
@@ -833,13 +834,28 @@ test("docs --help uses the same markdown help style without the docs index", asy
 		expect(help.stdout).toContain("# docs");
 		expect(help.stdout).toContain(CANONICAL_QUERY_USAGE);
 		expect(help.stdout).not.toContain(STALE_QUERY_USAGE);
-		expect(help.stdout).toContain("docs park <name> [path]");
+		expect(help.stdout).not.toContain("docs park <name> [path]");
 		expect(help.stdout).toContain("docs topic [topic] [section]");
+		expect(help.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
 		expect(help.stdout).not.toContain("web-fetching.md - web browser tools");
 		expect(help.stdout).not.toContain("## Project Docs");
 		expect(helpCommand.stdout).toBe(help.stdout);
 		expect(bare.stdout).not.toBe(help.stdout);
 	});
+});
+
+test("docs --ops-help renders the operations manual", async () => {
+	const result = await runDocsCli(["--ops-help"]);
+
+	expect(result.exitCode).toBe(0);
+	expect(result.stdout).toContain("Usage: docs --ops-help");
+	expect(result.stdout).toContain("# docs operations");
+	expect(result.stdout).toContain("docs park <name> [path]");
+	expect(result.stdout).toContain(
+		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+	);
+	expect(result.stdout).toContain("docs update");
+	expect(result.stdout).not.toContain(CANONICAL_QUERY_USAGE);
 });
 
 test("docs query --help uses the canonical query signature", async () => {
@@ -1083,7 +1099,8 @@ test("docs reference doc uses the canonical query signature", async () => {
 
 	expect(contents).toContain(CANONICAL_QUERY_USAGE);
 	expect(contents).not.toContain(STALE_QUERY_USAGE);
-	expect(contents).not.toContain(
+	expect(contents).toContain("docs --ops-help");
+	expect(contents).toContain(
 		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
 	);
 	expect(contents).toContain("docs park <name> [path]");

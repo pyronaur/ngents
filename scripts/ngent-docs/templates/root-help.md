@@ -9,7 +9,30 @@ docs organizes project local and global documentation optimized for information 
 - `docs/topics` includes larger organized sets of documentation within the given topic - useful to keep `docs` lean.
 - `query` indexes everything in global `docs/**` for lookup when quick scan with `ls` and `topic` doesn't include promising results at a glance. `query` doesn't index project docs directory.
 
-## Query
+### Browse
+docs <where>
+{{ ls_usage }}
+
+`docs <where>` accepts one non-command selector.
+It may open a topic like `docs ios` or a docs view like `docs machine`.
+
+`{{ ls_command }} [where]` browses docs only.
+
+`[where]` may be:
+- `.`
+- `global`
+- `docs/subdir` or `./docs/subdir`
+- a registered docs root like `browser`
+- a workspace path like `~/work/foo`
+- an explicit docs path like `~/work/foo/docs`
+
+Examples
+docs ios
+docs machine
+{{ ls_command }} .
+{{ ls_command }} docs/subdir
+
+### Query
 {{ query_usage }}
 
 Use this to search through parked global docs collections with semantic search fast.
@@ -35,20 +58,6 @@ Use `{{ topic_command }} <name>` to expand available docs for topic.
 {% if show_docs_index %}
 
 ## Docs
-{{ ls_usage }}
-docs ios - Bare selector fallback for a topic
-docs architecture - Bare selector fallback for a registered docs root
-docs machine - Bare selector fallback for a parked docs root, showing topics and docs
-docs ~/work/foo - Bare selector fallback for a workspace docs root
-{{ ls_command }} . - Project docs, expanded descriptions
-{{ ls_command }} ./docs/subdir - Project docs in dir
-{{ ls_command }} docs/subdir - Matching local and global docs dirs
-{{ ls_command }} architecture - Matching local and global docs dirs by registered name
-{{ ls_command }} ~/work/foo - Resolve a workspace to its docs dir
-{{ ls_command }} ~/work/foo/docs - Explicit docs dir
-{{ ls_command }} machine - Parked global docs by name
-{{ ls_command }} global - Global docs, expanded descriptions
-
 {% for docs_group in docs_groups %}
 ### {{ docs_group.directory_path }}
 {% for entry_line in docs_group.entry_lines -%}

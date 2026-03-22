@@ -92,6 +92,7 @@ Global docs collection metadata is cached for 1 hour.
 - `docs --help` prints the same browse-first Markdown help without the docs index.
 - `docs help` prints the same browse-first Markdown help without the docs index.
 - Regular root help ends with `To read docs operation manual use \`docs --ops-help\`.`
+- In the root help `Browse` section, `docs <where>` is documented as the single-token fallback surface and `docs ls [where]` as the docs-only browse surface.
 - `docs --ops-help` prints the operations manual for `park`, `fetch`, and `update`.
 - In the compact docs index, each docs root is grouped under its own level-3 path heading.
 - `docs help <command>` prints Commander command usage.
@@ -152,6 +153,13 @@ Global docs collection metadata is cached for 1 hour.
 - `docs browser` shows the `browser` topic and matching `docs/browser` docs together.
 - `docs ls browser` shows only matching `docs/browser` docs.
 - `docs topic browser` shows only the `browser` topic.
+
+### Root help browse examples
+
+- `docs ios`
+- `docs machine`
+- `docs ls .`
+- `docs ls docs/subdir`
 
 ### `query`
 

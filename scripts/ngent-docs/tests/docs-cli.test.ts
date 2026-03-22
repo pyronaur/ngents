@@ -781,9 +781,10 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
 		expect(result.stdout).not.toContain("docs park <name> [path]");
 		expect(result.stdout).toContain("docs topic [topic] [section]");
+		expect(result.stdout).toContain("docs <where>");
 		expect(result.stdout).toContain("docs ls [where]");
-		expect(result.stdout).toContain("docs ls ~/work/foo - Resolve a workspace to its docs dir");
-		expect(result.stdout).toContain("docs ls machine - Parked global docs by name");
+		expect(result.stdout).toContain("It may open a topic like `docs ios` or a docs view like `docs machine`.");
+		expect(result.stdout).toContain("docs ls docs/subdir");
 		expect(result.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
 		expect(result.stdout).toContain("qmd");
 		expect(result.stdout).toContain("local search docs");

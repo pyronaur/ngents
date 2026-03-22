@@ -41,7 +41,30 @@ docs organizes project local and global documentation optimized for information 
 - \`docs/topics\` includes larger organized sets of documentation within the given topic - useful to keep \`docs\` lean.
 - \`query\` indexes everything in global \`docs/**\` for lookup when quick scan with \`ls\` and \`topic\` doesn't include promising results at a glance. \`query\` doesn't index project docs directory.
 
-## Query
+### Browse
+docs <where>
+docs ls [where]
+
+\`docs <where>\` accepts one non-command selector.
+It may open a topic like \`docs ios\` or a docs view like \`docs machine\`.
+
+\`docs ls [where]\` browses docs only.
+
+\`[where]\` may be:
+- \`.\`
+- \`global\`
+- \`docs/subdir\` or \`./docs/subdir\`
+- a registered docs root like \`browser\`
+- a workspace path like \`~/work/foo\`
+- an explicit docs path like \`~/work/foo/docs\`
+
+Examples
+docs ios
+docs machine
+docs ls .
+docs ls docs/subdir
+
+### Query
 docs query [--limit <n>] <query...> | status
 
 Use this to search through parked global docs collections with semantic search fast.
@@ -61,19 +84,6 @@ ops    Ops Notes    This summary is intentionally longer than sixty-four charact
 qmd    QMD          local search docs
 
 ## Docs
-docs ls [where]
-docs ios - Bare selector fallback for a topic
-docs architecture - Bare selector fallback for a registered docs root
-docs machine - Bare selector fallback for a parked docs root, showing topics and docs
-docs ~/work/foo - Bare selector fallback for a workspace docs root
-docs ls . - Project docs, expanded descriptions
-docs ls ./docs/subdir - Project docs in dir
-docs ls docs/subdir - Matching local and global docs dirs
-docs ls architecture - Matching local and global docs dirs by registered name
-docs ls ~/work/foo - Resolve a workspace to its docs dir
-docs ls ~/work/foo/docs - Explicit docs dir
-docs ls machine - Parked global docs by name
-docs ls global - Global docs, expanded descriptions
 
 ### /fixture/home/.ngents/docs/architecture
   global-only.md - global architecture notes
@@ -111,7 +121,30 @@ docs organizes project local and global documentation optimized for information 
 - \`docs/topics\` includes larger organized sets of documentation within the given topic - useful to keep \`docs\` lean.
 - \`query\` indexes everything in global \`docs/**\` for lookup when quick scan with \`ls\` and \`topic\` doesn't include promising results at a glance. \`query\` doesn't index project docs directory.
 
-## Query
+### Browse
+docs <where>
+docs ls [where]
+
+\`docs <where>\` accepts one non-command selector.
+It may open a topic like \`docs ios\` or a docs view like \`docs machine\`.
+
+\`docs ls [where]\` browses docs only.
+
+\`[where]\` may be:
+- \`.\`
+- \`global\`
+- \`docs/subdir\` or \`./docs/subdir\`
+- a registered docs root like \`browser\`
+- a workspace path like \`~/work/foo\`
+- an explicit docs path like \`~/work/foo/docs\`
+
+Examples
+docs ios
+docs machine
+docs ls .
+docs ls docs/subdir
+
+### Query
 docs query [--limit <n>] <query...> | status
 
 Use this to search through parked global docs collections with semantic search fast.

@@ -291,15 +291,19 @@ Current decisions:
 
 - Skill sections are intentionally compact in the topic overview.
 - The overview does not print skill descriptions.
-- All skill-backed sections render as `<section key> - N skills`, including
-  sections whose only skill is `<section>/SKILL.md`.
-- The section path is shown with a trailing slash.
-- The section body prints one bullet per discovered skill after the section
-  path.
+- All skill-backed sections render as `<section key>`, including sections whose
+  only skill is `<section>/SKILL.md`.
+- The overview prints a `Path:` line for skill entry lookup.
+- Multi-skill sections use a `{$name}` path template when all discovered skills
+  share one stable path shape.
+- Single root-skill sections print the exact `SKILL.md` path instead of a
+  `{$name}` template.
+- The section body prints one bullet per discovered skill after the `Path:`
+  line.
 - Child skill entries use `skill.name`, not `skill.title`.
 - A child skill bullet prints:
-  - `- <skill.name>` when no matching hint exists
-  - `- <skill.name>: <hint>` when a matching hint exists
+  - `$<skill.name>` when no matching hint exists
+  - `$<skill.name> - <hint>` when a matching hint exists
 - Topic overview skill entries do not print per-skill absolute `SKILL.md`
   paths.
 - Topic overview skill entries do not print per-skill reference counts.
@@ -313,9 +317,12 @@ Current decisions:
   - summary or short fallback
   - `readWhen`
   - parse error
+- The overview prints a `Path:` line for regular-section doc entry lookup.
+- Regular sections print the section directory path with a trailing slash.
 - When a regular section has discovered Markdown docs, the overview prints one
-  bullet per doc after the section path.
-- Regular-section doc bullets use the doc title, else the Markdown basename.
+  bullet per doc after the `Path:` line.
+- Regular-section doc bullets use the Markdown filename and append the doc
+  title when it differs.
 - Topic overview regular sections do not print aggregate `contains` text.
 
 ## Focused Section Rendering

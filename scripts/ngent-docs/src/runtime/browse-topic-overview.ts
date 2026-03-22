@@ -15,6 +15,7 @@ const {
 	heading,
 	normalizeInlineText,
 	printLine,
+	toDisplayPath,
 } = browseContracts;
 
 function printGuideBody(guideBody: string): void {
@@ -83,26 +84,125 @@ function printTopicDocs(entries: MarkdownEntry[], options: {
 	}
 }
 
-function skillCountLabel(count: number): string {
-	return `${count} ${count === 1 ? "skill" : "skills"}`;
+function relativePathParts(basePath: string, absolutePath: string): string[] {
+	return toDisplayPath(path.relative(basePath, absolutePath)).split("/").filter(Boolean);
+}
+
+function consistentPathParts(pathParts: string[][]): string[] | null {
+	const firstParts = pathParts[0];
+	if (!firstParts) {
+		return null;
+	}
+
+	for (const parts of pathParts) {
+		if (parts.length !== firstParts.length) {
+			return null;
+		}
+	}
+
+	return firstParts;
+}
+
+function variableIndexForTemplate(
+	pathParts: string[][],
+	entries: Array<{ variableSegment: string }>,
+): number | null {
+	const firstParts = consistentPathParts(pathParts);
+	if (!firstParts) {
+		return null;
+	}
+
+	const variableIndexes: number[] = [];
+	for (let index = 0; index < firstParts.length; index += 1) {
+		const expected = firstParts[index];
+		if (pathParts.some(parts => parts[index] !== expected)) {
+			variableIndexes.push(index);
+		}
+	}
+	if (variableIndexes.length !== 1) {
+		return null;
+	}
+
+	const [variableIndex] = variableIndexes;
+	if (variableIndex === undefined) {
+		return null;
+	}
+
+	for (const [index, entry] of entries.entries()) {
+		if (pathParts[index]?.[variableIndex] !== entry.variableSegment) {
+			return null;
+		}
+	}
+
+	return variableIndex;
+}
+
+function entryPathTemplate(
+	basePath: string,
+	entries: Array<{
+		absolutePath: string;
+		variableSegment: string;
+	}>,
+): string | null {
+	if (entries.length === 0) {
+		return null;
+	}
+
+	if (entries.length === 1) {
+		const [entry] = entries;
+		return entry?.absolutePath ?? null;
+	}
+
+	const pathParts = entries.map(entry => relativePathParts(basePath, entry.absolutePath));
+	const firstParts = consistentPathParts(pathParts);
+	if (!firstParts) {
+		return null;
+	}
+
+	const variableIndex = variableIndexForTemplate(pathParts, entries);
+	if (variableIndex === null) {
+		return null;
+	}
+
+	const templateParts = [...firstParts];
+	templateParts[variableIndex] = "{$name}";
+	return `${basePath}/${templateParts.join("/")}`;
 }
 
 function printTopicSkill(skill: SkillEntry): void {
 	if (skill.hint) {
-		printLine(`- ${skill.name}: ${skill.hint}`);
+		printLine(`$${skill.name} - ${skill.hint}`);
 		return;
 	}
 
-	printLine(`- ${skill.name}`);
+	printLine(`$${skill.name}`);
 }
 
-function sectionPath(section: SectionEntry): string {
-	return section.absolutePath.endsWith("/") ? section.absolutePath : `${section.absolutePath}/`;
+function printPathLine(templatePath: string | null): void {
+	if (!templatePath) {
+		return;
+	}
+
+	printLine(`Path: ${templatePath}`);
+}
+
+function skillPathTemplate(section: SectionEntry): string | null {
+	return entryPathTemplate(
+		section.absolutePath,
+		section.skills.map(skill => ({
+			absolutePath: skill.absolutePath,
+			variableSegment: skill.name,
+		})),
+	);
+}
+
+function sectionDirectoryPath(section: SectionEntry): string {
+	return `${section.absolutePath}/`;
 }
 
 function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4): void {
-	printLine(heading(headingLevel, `${section.key} - ${skillCountLabel(section.skills.length)}`));
-	printLine(sectionPath(section));
+	printLine(heading(headingLevel, section.key));
+	printPathLine(skillPathTemplate(section));
 	printLine();
 
 	for (const skill of section.skills) {
@@ -112,7 +212,6 @@ function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4): voi
 
 function printTopicSkills(sections: SectionEntry[], sectionHeadingLevel: 2 | 3): void {
 	printLine(heading(sectionHeadingLevel, "Skills"));
-	printLine();
 
 	for (const [index, section] of sections.entries()) {
 		printTopicSkillSection(section, sectionHeadingLevel === 2 ? 3 : 4);
@@ -122,9 +221,20 @@ function printTopicSkills(sections: SectionEntry[], sectionHeadingLevel: 2 | 3):
 	}
 }
 
+function printTopicSectionDoc(entry: MarkdownEntry): void {
+	const fileName = path.basename(entry.absolutePath);
+	const title = entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath));
+	if (title === fileName) {
+		printLine(`- ${fileName}`);
+		return;
+	}
+
+	printLine(`- ${fileName}: ${title}`);
+}
+
 function printTopicSection(section: SectionEntry, headingLevel: 3 | 4): void {
 	printLine(heading(headingLevel, section.title));
-	printLine(section.absolutePath);
+	printPathLine(sectionDirectoryPath(section));
 
 	const summary = normalizeInlineText(section.summary) ?? compactDescription(section.short, null);
 	const readWhen = section.readWhen.length > 0 ? `Read when: ${section.readWhen.join("; ")}` : null;
@@ -147,9 +257,7 @@ function printTopicSection(section: SectionEntry, headingLevel: 3 | 4): void {
 			printLine();
 		}
 		for (const entry of section.markdownEntries) {
-			printLine(
-				`- ${entry.title ?? path.basename(entry.absolutePath, path.extname(entry.absolutePath))}`,
-			);
+			printTopicSectionDoc(entry);
 		}
 	}
 }
@@ -223,6 +331,9 @@ function printTopicContribution(
 	},
 ): void {
 	printContributionHeader(contribution);
+	if (contribution.guideBody || contribution.readWhen.length > 0 || contribution.error) {
+		printLine();
+	}
 	printContributionBlocksWithOptions(contribution, options);
 }
 

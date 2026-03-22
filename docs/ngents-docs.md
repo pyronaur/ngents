@@ -149,7 +149,7 @@ Global docs collection metadata is cached for 1 hour.
 - It is the main browse surface for grouped reusable knowledge.
 - It may expose regular topic docs and skill-backed sections together.
 - It labels skill-bearing sections as `Skills` in topic output.
-- In topic overviews, regular sections list their discovered docs directly.
+- In topic overviews, sections print a `Path:` lookup line plus compact entry lists.
 - It can derive skill summaries directly from `SKILL.md` when a section has no `.docs.md`.
 
 ### Selector scope examples
@@ -221,6 +221,8 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 - `SKILL.md` files are discovered recursively inside a section.
 - `docs topic <topic>` renders topic-root markdown docs under `Docs`.
 - `docs topic <topic>` renders skill-backed sections under `Skills`.
+- Topic overviews print skill section `Path:` templates as `.../{$name}/SKILL.md`.
+- Topic overviews print regular-section `Path:` lines as section directories with a trailing slash.
 - If a focused section contains any recursive `SKILL.md`, the CLI treats it as a skill-backed section.
 - A focused section that is exactly one root `SKILL.md` renders that skill directly.
 - Skill-backed focused sections render the discovered skills plus the local files linked from those skills.

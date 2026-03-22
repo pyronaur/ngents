@@ -1570,6 +1570,7 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 			"- Use `hig-doctor` when you need curated Apple HIG skills and references.",
 			"- Use the Skill sections when you need an on-demand iOS, Swift, SwiftUI, SwiftData, or Apple-tooling skill without loading it into the always-available skill context.",
 			"- Prefer `hig-doctor` before raw Apple docs when both could answer the question.",
+			"",
 			"## Docs",
 			"",
 			path.join(normalizedRepoDir, "docs", "topics", "ios", "SOSUMI.md"),
@@ -1579,21 +1580,20 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 			"---",
 			"",
 			"## Skills",
+			"### hig-doctor",
+			`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor", "skills", "hig-components-content", "SKILL.md")}`,
 			"",
-			"### hig-doctor - 1 skill",
-			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor")}/`,
+			"$hig-components-content",
 			"",
-			"- hig-components-content",
+			"### ios-debugger-agent",
+			`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md")}`,
 			"",
-			"### ios-debugger-agent - 1 skill",
-			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent")}/`,
+			"$ios-debugger-agent",
 			"",
-			"- ios-debugger-agent",
+			"### swiftui-pro",
+			`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md")}`,
 			"",
-			"### swiftui-pro - 1 skill",
-			`${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro")}/`,
-			"",
-			"- swiftui-pro",
+			"$swiftui-pro",
 		].join("\n");
 
 		expect(result.exitCode).toBe(0);
@@ -1646,21 +1646,21 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 		});
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("- hig-components-content: Section override for HIG content guidance.");
+		expect(result.stdout).toContain("$hig-components-content - Section override for HIG content guidance.");
 		expect(result.stdout).toContain(
 			[
-				`### ios-debugger-agent - 1 skill`,
-				`${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent")}/`,
+				`### ios-debugger-agent`,
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md")}`,
 				"",
-				"- ios-debugger-agent: Build and debug on a booted simulator.",
+				"$ios-debugger-agent - Build and debug on a booted simulator.",
 			].join("\n"),
 		);
 		expect(result.stdout).toContain(
 			[
-				`### swiftui-pro - 1 skill`,
-				`${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro")}/`,
+				`### swiftui-pro`,
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md")}`,
 				"",
-				"- swiftui-pro",
+				"$swiftui-pro",
 			].join("\n"),
 		);
 	});
@@ -1701,7 +1701,56 @@ test("docs topic overview resolves hints by skill path instead of skill name", a
 		});
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("- display-name-from-frontmatter: Hint matched by skill directory path.");
+		expect(result.stdout).toContain("$display-name-from-frontmatter - Hint matched by skill directory path.");
+	});
+});
+
+test("docs topic overview renders multi-skill sections with a path template", async () => {
+	await withTempDir("docs-topic-skill-path-template-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		await seedLocalDocsRepo(repoDir);
+		const normalizedRepoDir = await realpath(repoDir);
+
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "skills", "alpha-skill", "SKILL.md"),
+			[
+				"---",
+				"name: alpha-skill",
+				"description: Alpha skill.",
+				"---",
+				"",
+				"# Alpha Skill",
+				"",
+			].join("\n"),
+		);
+		await writeText(
+			path.join(repoDir, "docs", "topics", "ios", "skills", "beta-skill", "SKILL.md"),
+			[
+				"---",
+				"name: beta-skill",
+				"description: Beta skill.",
+				"---",
+				"",
+				"# Beta Skill",
+				"",
+			].join("\n"),
+		);
+
+		const result = await runDocsCli(["topic", "ios"], {
+			cwd: repoDir,
+			env: docsEnv(path.join(tempDir, "home")),
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain(
+			[
+				"### skills",
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "skills", "{$name}", "SKILL.md")}`,
+				"",
+				"$alpha-skill",
+				"$beta-skill",
+			].join("\n"),
+		);
 	});
 });
 
@@ -1745,10 +1794,10 @@ test("docs topic overview renders docs sections as compact doc lists", async () 
 		expect(result.stdout).toContain(
 			[
 				"### docs",
-				path.join(normalizedRepoDir, "docs", "topics", "ios", "docs"),
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "docs")}/`,
 				"",
-				"- ng hig-doctor",
-				"- Sosumi CLI",
+				"- ng-hig-doctor.md: ng hig-doctor",
+				"- SOSUMI.md: Sosumi CLI",
 			].join("\n"),
 		);
 		expect(result.stdout).not.toContain("contains:");

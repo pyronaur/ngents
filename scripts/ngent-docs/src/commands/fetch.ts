@@ -5,7 +5,7 @@ import { docsCommandUsage } from "../core/usage.ts";
 import { runDocsFetch } from "../runtime/fetch.ts";
 
 const fetchOptionsSchema = z.object({
-	handler: z.string().optional(),
+	handler: z.string(),
 	root: z.string().optional(),
 	transform: z.string().optional(),
 });
@@ -18,8 +18,11 @@ export const fetchCommand = defineCommand({
 		command
 			.argument("<source>", "Fetch source URL.")
 			.argument("<path>", "Target directory inside a discovered docs root.")
+			.requiredOption(
+				"--handler <command>",
+				"Fetch handler CLI to run. Use `git` or `url` for the built-in handlers.",
+			)
 			.option("--root <subpath>", "Handler-specific subtree or source root.")
-			.option("--handler <command>", "Fetch handler CLI to run.")
 			.option("--transform <command>", "Optional transform CLI passed through to the handler.");
 	},
 	optionsSchema: fetchOptionsSchema,

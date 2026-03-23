@@ -15,7 +15,6 @@ import {
 	type FetchManifestEntry,
 } from "./fetch-contract.ts";
 import { expandHomePath } from "./fetch-handler-support.ts";
-import { selectDefaultFetchHandler } from "./fetch-source-detection.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -26,6 +25,11 @@ const BUILTIN_HANDLER_PATHS = {
 	[BUILTIN_URL_FILE_FETCH_HANDLER]: fileURLToPath(
 		new URL("../../bin/docs-url-file-fetch.ts", import.meta.url),
 	),
+} as const;
+
+const BUILTIN_HANDLER_SHORTHANDS = {
+	git: BUILTIN_GIT_FETCH_HANDLER,
+	url: BUILTIN_URL_FILE_FETCH_HANDLER,
 } as const;
 
 type ResolvedFetchTarget = {
@@ -49,6 +53,19 @@ function normalizeStoredCommand(command: string, projectDir: string): string {
 		return normalizePath(path.resolve(projectDir, expandedCommand));
 	}
 	return command;
+}
+
+function isBuiltinHandlerShorthand(
+	handler: string,
+): handler is keyof typeof BUILTIN_HANDLER_SHORTHANDS {
+	return Object.hasOwn(BUILTIN_HANDLER_SHORTHANDS, handler);
+}
+
+function normalizeHandlerReference(handler: string, projectDir: string): string {
+	const builtinHandler = isBuiltinHandlerShorthand(handler)
+		? BUILTIN_HANDLER_SHORTHANDS[handler]
+		: handler;
+	return normalizeStoredCommand(builtinHandler, projectDir);
 }
 
 function manifestPathForDocsRoot(docsRoot: string): string {
@@ -407,7 +424,7 @@ export async function runDocsFetch(input: {
 	projectDir: string;
 	source: string;
 	targetArg: string;
-	handler?: string;
+	handler: string;
 	root?: string;
 	transform?: string;
 }): Promise<void> {
@@ -425,10 +442,7 @@ export async function runDocsFetch(input: {
 	const nextEntry: FetchManifestEntry = {
 		source: input.source,
 		target: resolvedTarget.targetRelativePath,
-		handler: normalizeStoredCommand(
-			input.handler ?? await selectDefaultFetchHandler(input.source),
-			input.projectDir,
-		),
+		handler: normalizeHandlerReference(input.handler, input.projectDir),
 		...(input.root ? { root: input.root } : {}),
 		...(input.transform
 			? { transform: normalizeStoredCommand(input.transform, input.projectDir) }

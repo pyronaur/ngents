@@ -14,11 +14,11 @@ Use this to attach a docs root to the global docs index.
 \`docs park foo ~/work/bar\` - park an explicit project or docs dir
 
 ## Fetch
-docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]
+docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]
 
 Use this to register and refresh fetched docs through an external handler.
-\`docs fetch https://example.com/spec docs/external/spec\` - fetch into a docs subtree
-\`docs fetch https://example.com/spec docs/external/spec --root api\` - limit the source root passed to the handler
+\`docs fetch https://example.com/spec docs/external/spec --handler url\` - fetch one remote file into a docs subtree
+\`docs fetch https://example.com/org/repo docs/external/spec --handler git --root api\` - limit the git source root passed to the handler
 
 ## Update
 docs update

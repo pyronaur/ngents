@@ -1,5 +1,5 @@
 export const docsCommandUsage = {
-	fetch: "<source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+	fetch: "<source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
 	ls: "[where]",
 	park: "<name> [path]",
 	query: "[--limit <n>] <query...> | status",

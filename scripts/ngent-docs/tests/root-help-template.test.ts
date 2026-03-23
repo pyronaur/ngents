@@ -27,7 +27,7 @@ const rootHelpTemplateContext: RootHelpTemplateContext = {
 const opsHelpTemplateContext: OpsHelpTemplateContext = {
 	fetch_command: "docs fetch",
 	fetch_usage:
-		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
 	park_command: "docs park",
 	park_usage: "docs park <name> [path]",
 	update_command: "docs update",

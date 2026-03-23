@@ -14,8 +14,8 @@ Use this to attach a docs root to the global docs index.
 {{ fetch_usage }}
 
 Use this to register and refresh fetched docs through an external handler.
-`{{ fetch_command }} https://example.com/spec docs/external/spec` - fetch into a docs subtree
-`{{ fetch_command }} https://example.com/spec docs/external/spec --root api` - limit the source root passed to the handler
+`{{ fetch_command }} https://example.com/spec docs/external/spec --handler url` - fetch one remote file into a docs subtree
+`{{ fetch_command }} https://example.com/org/repo docs/external/spec --handler git --root api` - limit the git source root passed to the handler
 
 ## Update
 {{ update_usage }}

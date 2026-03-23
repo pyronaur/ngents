@@ -741,11 +741,8 @@ async function writeFetchHandler(dir: string, name: string): Promise<string> {
 	return filePath;
 }
 
-async function createGitFetchSource(
-	tempDir: string,
-	repositoryName = "fetch-source.git",
-): Promise<string> {
-	const remoteDir = path.join(tempDir, repositoryName);
+async function createGitFetchSource(tempDir: string): Promise<string> {
+	const remoteDir = path.join(tempDir, "fetch-source.git");
 	const workDir = path.join(tempDir, "fetch-source-work");
 	await expectCommandSuccess("git", ["init", "--bare", remoteDir]);
 	await expectCommandSuccess("git", ["clone", remoteDir, workDir]);
@@ -853,7 +850,7 @@ test("docs --ops-help renders the operations manual", async () => {
 	expect(result.stdout).toContain("# docs operations");
 	expect(result.stdout).toContain("docs park <name> [path]");
 	expect(result.stdout).toContain(
-		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
 	);
 	expect(result.stdout).toContain("docs update");
 	expect(result.stdout).not.toContain(CANONICAL_QUERY_USAGE);
@@ -872,8 +869,11 @@ test("docs fetch --help uses the canonical fetch signature", async () => {
 
 	expect(result.exitCode).toBe(0);
 	expect(result.stdout).toContain(
-		"Usage: docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+		"Usage: docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
 	);
+	expect(result.stdout).toContain("--handler <command>");
+	expect(result.stdout).toContain("git");
+	expect(result.stdout).toContain("url");
 });
 
 test("docs-git-fetch --help shows the handler options through commander", async () => {
@@ -1102,7 +1102,7 @@ test("docs reference doc uses the canonical query signature", async () => {
 	expect(contents).not.toContain(STALE_QUERY_USAGE);
 	expect(contents).toContain("docs --ops-help");
 	expect(contents).toContain(
-		"docs fetch <source> <path> [--root <subpath>] [--handler <command>] [--transform <command>]",
+		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
 	);
 	expect(contents).toContain("docs park <name> [path]");
 	expect(contents).toContain("workspace paths that contain `docs/`");
@@ -2292,7 +2292,30 @@ test("docs fetch passes the previous hash back to the handler on later runs", as
 	});
 });
 
-test("docs fetch auto-selects the built-in git and url-file handlers", async () => {
+test("docs fetch requires --handler", async () => {
+	await withTempDir("docs-fetch-missing-handler-", async (tempDir) => {
+		const repoDir = path.join(tempDir, "repo");
+		const homeDir = path.join(tempDir, "home");
+		await seedLocalDocsRepo(repoDir);
+
+		const result = await runDocsCli(
+			[
+				"fetch",
+				"https://example.com/source",
+				path.join(repoDir, "docs", "topics", "ios", "remote-bundle"),
+			],
+			{
+				cwd: repoDir,
+				env: docsEnv(homeDir),
+			},
+		);
+
+		expect(result.exitCode).not.toBe(0);
+		expect(result.stderr).toContain("required option '--handler <command>' not specified");
+	});
+});
+
+test("docs fetch accepts git and url handler shorthands", async () => {
 	await withTempDir("docs-fetch-builtins-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
 		const homeDir = path.join(tempDir, "home");
@@ -2308,6 +2331,8 @@ test("docs fetch auto-selects the built-in git and url-file handlers", async () 
 				"fetch",
 				gitSource,
 				path.join(repoDir, "docs", "topics", "ios", "git-import"),
+				"--handler",
+				"git",
 				"--root",
 				"skills",
 			],
@@ -2321,6 +2346,8 @@ test("docs fetch auto-selects the built-in git and url-file handlers", async () 
 				"fetch",
 				fileSource,
 				path.join(repoDir, "docs", "topics", "ios", "file-import"),
+				"--handler",
+				"url",
 			],
 			{
 				cwd: repoDir,
@@ -2351,121 +2378,6 @@ test("docs fetch auto-selects the built-in git and url-file handlers", async () 
 	});
 });
 
-test("docs fetch auto-selects the built-in git handler for dotted local git file URLs", async () => {
-	await withTempDir("docs-fetch-dotted-local-git-", async (tempDir) => {
-		const repoDir = path.join(tempDir, "repo");
-		const homeDir = path.join(tempDir, "home");
-		await seedLocalDocsRepo(repoDir);
-
-		const gitSource = await createGitFetchSource(tempDir, "fetch.source.repo.v2");
-		const result = await runDocsCli(
-			[
-				"fetch",
-				gitSource,
-				path.join(repoDir, "docs", "topics", "ios", "git-import"),
-				"--root",
-				"skills",
-			],
-			{
-				cwd: repoDir,
-				env: docsEnv(homeDir),
-			},
-		);
-		const manifest = JSON.parse(
-			await readText(path.join(repoDir, "docs", ".docs-fetch.json")),
-		) as {
-			entries: Array<{
-				target: string;
-				handler: string;
-			}>;
-		};
-
-		expect(result.exitCode).toBe(0);
-		expect(manifest.entries).toContainEqual(expect.objectContaining({
-			target: "topics/ios/git-import",
-			handler: "docs-git-fetch",
-		}));
-		expect(
-			await readText(path.join(repoDir, "docs", "topics", "ios", "git-import", "alpha", "SKILL.md")),
-		).toContain("# Alpha");
-	});
-});
-
-test("docs fetch auto-selects the built-in git handler for dotted hosted repo URLs", async () => {
-	await withTempDir("docs-fetch-dotted-hosted-git-", async (tempDir) => {
-		const repoDir = path.join(tempDir, "repo");
-		const homeDir = path.join(tempDir, "home");
-		const binDir = path.join(tempDir, "bin");
-		await mkdir(binDir, { recursive: true });
-		await seedLocalDocsRepo(repoDir);
-		await writeExecutable(
-			binDir,
-			"git",
-			[
-				"#!/bin/sh",
-				'if [ "$1" = "ls-remote" ]; then',
-				"  printf '0123456789abcdef0123456789abcdef01234567\\tHEAD\\n'",
-				"  exit 0",
-				"fi",
-				'if [ "$1" = "clone" ]; then',
-				'  for last_arg in "$@"; do checkout_dir="$last_arg"; done',
-				'  mkdir -p "$checkout_dir/skills/alpha"',
-				'  printf "# Alpha\\n" > "$checkout_dir/skills/alpha/SKILL.md"',
-				'  printf "# Repo Root\\n" > "$checkout_dir/README.md"',
-				"  exit 0",
-				"fi",
-				'if [ "$1" = "-C" ] && [ "$3" = "sparse-checkout" ] && [ "$4" = "set" ]; then',
-				"  exit 0",
-				"fi",
-				'printf "unexpected git args: %s\\n" "$*" >&2',
-				"exit 1",
-				"",
-			].join("\n"),
-		);
-		await writeExecutable(
-			binDir,
-			"curl",
-			[
-				"#!/bin/sh",
-				'printf "curl should not run for hosted git auto-detection\\n" >&2',
-				"exit 1",
-				"",
-			].join("\n"),
-		);
-
-		const result = await runDocsCli(
-			[
-				"fetch",
-				"https://github.com/org/repo.v2",
-				path.join(repoDir, "docs", "topics", "ios", "git-import"),
-				"--root",
-				"skills",
-			],
-			{
-				cwd: repoDir,
-				env: docsEnv(homeDir, binDir),
-			},
-		);
-		const manifest = JSON.parse(
-			await readText(path.join(repoDir, "docs", ".docs-fetch.json")),
-		) as {
-			entries: Array<{
-				target: string;
-				handler: string;
-			}>;
-		};
-
-		expect(result.exitCode).toBe(0);
-		expect(manifest.entries).toContainEqual(expect.objectContaining({
-			target: "topics/ios/git-import",
-			handler: "docs-git-fetch",
-		}));
-		expect(
-			await readText(path.join(repoDir, "docs", "topics", "ios", "git-import", "alpha", "SKILL.md")),
-		).toContain("# Alpha");
-	});
-});
-
 test("docs fetch rejects targets outside discovered docs roots", async () => {
 	await withTempDir("docs-fetch-outside-root-", async (tempDir) => {
 		const repoDir = path.join(tempDir, "repo");
@@ -2477,6 +2389,8 @@ test("docs fetch rejects targets outside discovered docs roots", async () => {
 				"fetch",
 				"https://example.com/source",
 				outsideDir,
+				"--handler",
+				"url",
 			],
 			{
 				cwd: repoDir,

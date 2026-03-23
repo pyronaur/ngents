@@ -118,7 +118,7 @@ Filtered HIG audit wrapper with repo-local YAML ignores.
 - Ignore entries must set `file`, `pattern`, `line`, and `reason`.
 - Exclude entries are config-relative glob strings such as `**/Testing/**`.
 - The command writes markdown to `stdout` only for remaining issues and a separate `Ignored Concerns` section for filtered matches.
-- When issues remain, `stderr` prints the concern count and the `docs topic ios hig-doctor` hint for the relevant HIG skill.
+- When issues remain, `stderr` prints the concern count and the `docs topic apple hig-doctor` hint for the relevant HIG skill.
 
 ## mcporter
 

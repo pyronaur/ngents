@@ -317,7 +317,7 @@ function writeIssueSummary(categories: CategorySummary[]): void {
 
 	const skills = [...new Set(categories.map(category => category.skillName))].sort();
 	for (const skill of skills) {
-		process.stderr.write(`Relevant HIG skill: ${skill} — docs topic ios hig-doctor\n`);
+		process.stderr.write(`Relevant HIG skill: ${skill} — docs topic apple hig-doctor\n`);
 	}
 }
 

@@ -14,7 +14,7 @@ docs <where>
 {{ ls_usage }}
 
 `docs <where>` accepts one non-command selector.
-It may open a topic like `docs ios` or a docs view like `docs machine`.
+It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.
 
 `{{ ls_command }} [where]` browses docs only.
 
@@ -27,8 +27,8 @@ It may open a topic like `docs ios` or a docs view like `docs machine`.
 - an explicit docs path like `~/work/foo/docs`
 
 Examples
-docs ios
-docs machine
+docs <topic>
+docs <docs-root>
 {{ ls_command }} .
 {{ ls_command }} docs/subdir
 

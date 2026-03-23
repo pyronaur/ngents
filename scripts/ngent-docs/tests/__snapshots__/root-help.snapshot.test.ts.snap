@@ -46,7 +46,7 @@ docs <where>
 docs ls [where]
 
 \`docs <where>\` accepts one non-command selector.
-It may open a topic like \`docs ios\` or a docs view like \`docs machine\`.
+It may open a topic like \`docs <topic>\` or a docs view like \`docs <docs-root>\`.
 
 \`docs ls [where]\` browses docs only.
 
@@ -59,8 +59,8 @@ It may open a topic like \`docs ios\` or a docs view like \`docs machine\`.
 - an explicit docs path like \`~/work/foo/docs\`
 
 Examples
-docs ios
-docs machine
+docs <topic>
+docs <docs-root>
 docs ls .
 docs ls docs/subdir
 
@@ -78,10 +78,10 @@ Use \`docs topic <name>\` to expand available docs for topic.
 \`docs topic foo\` - view foo about/index first
 \`docs topic foo bar\` - learn about bar section
 
-TOPIC  TITLE        DESCRIPTION
-ios    iOS Library  Apple-platform docs
-ops    Ops Notes    This summary is intentionally longer than sixty-four characte...
-qmd    QMD          local search docs
+TOPIC  TITLE          DESCRIPTION
+apple  Apple Library  Apple-platform docs
+ops    Ops Notes      This summary is intentionally longer than sixty-four characte...
+qmd    QMD            local search docs
 
 ## Docs
 
@@ -126,7 +126,7 @@ docs <where>
 docs ls [where]
 
 \`docs <where>\` accepts one non-command selector.
-It may open a topic like \`docs ios\` or a docs view like \`docs machine\`.
+It may open a topic like \`docs <topic>\` or a docs view like \`docs <docs-root>\`.
 
 \`docs ls [where]\` browses docs only.
 
@@ -139,8 +139,8 @@ It may open a topic like \`docs ios\` or a docs view like \`docs machine\`.
 - an explicit docs path like \`~/work/foo/docs\`
 
 Examples
-docs ios
-docs machine
+docs <topic>
+docs <docs-root>
 docs ls .
 docs ls docs/subdir
 
@@ -158,10 +158,10 @@ Use \`docs topic <name>\` to expand available docs for topic.
 \`docs topic foo\` - view foo about/index first
 \`docs topic foo bar\` - learn about bar section
 
-TOPIC  TITLE        DESCRIPTION
-ios    iOS Library  Apple-platform docs
-ops    Ops Notes    This summary is intentionally longer than sixty-four characte...
-qmd    QMD          local search docs
+TOPIC  TITLE          DESCRIPTION
+apple  Apple Library  Apple-platform docs
+ops    Ops Notes      This summary is intentionally longer than sixty-four characte...
+qmd    QMD            local search docs
 
 To read docs operation manual use \`docs --ops-help\`.
 "

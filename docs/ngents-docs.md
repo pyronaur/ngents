@@ -156,8 +156,8 @@ Global docs collection metadata is cached for 1 hour.
 
 ### Root help browse examples
 
-- `docs ios`
-- `docs machine`
+- `docs <topic>`
+- `docs <docs-root>`
 - `docs ls .`
 - `docs ls docs/subdir`
 
@@ -258,9 +258,9 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 ```bash
 docs
 docs --ops-help
-docs ios
+docs <topic>
 docs architecture
-docs machine
+docs <docs-root>
 docs ~/work/foo
 docs ls
 docs ls .

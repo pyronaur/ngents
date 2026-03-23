@@ -54,3 +54,7 @@ do
   require_path "$SOURCE_ROOT/$entry"
   copy_path "$SOURCE_ROOT/$entry" "$TARGET_DIR/$entry"
 done
+
+if [[ -f "$TARGET_DIR/packages/hig-doctor/src-termcast/src/cli.ts" ]]; then
+  chmod 755 "$TARGET_DIR/packages/hig-doctor/src-termcast/src/cli.ts"
+fi

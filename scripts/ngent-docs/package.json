@@ -13,15 +13,14 @@
 		"node": ">=25"
 	},
 	"scripts": {
-		"lint": "npm run lint:dprint:fix && npm run lint:oxlint:fix && npm run typecheck && npm run jscpd && npm run knip",
-		"lint-dry": "npm run lint:dprint && npm run lint:oxlint && npm run typecheck && npm run jscpd && npm run knip",
 		"lint:dprint": "dprint check",
 		"lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.json .",
 		"lint:dprint:fix": "dprint fmt",
 		"lint:oxlint:fix": "oxlint --type-aware --tsconfig tsconfig.json --fix .",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"jscpd": "jscpd --config .jscpd.json",
-		"knip": "knip",
+		"jscpd:src": "jscpd --config .jscpd.json",
+		"jscpd:tests": "jscpd --config .jscpd.tests.json",
+		"knip": "knip --no-progress",
 		"test": "vitest run"
 	},
 	"dependencies": {

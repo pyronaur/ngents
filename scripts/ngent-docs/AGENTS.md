@@ -1,6 +1,7 @@
 # Requirements
-This template uses Node.js + npm.
-Do not introduce Bun runtime APIs or `bun:test` usage.
+This template uses Node.js + npm for runtime code, installs, and tests.
+Use Bun only for the hidden lint runner and lint-script execution.
+Do not introduce Bun runtime APIs into the package runtime or `bun:test` usage.
 Use npm commands for install and test verification.
 Run `npm test` before handoff when behavior changes.
 

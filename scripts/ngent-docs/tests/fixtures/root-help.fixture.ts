@@ -77,7 +77,8 @@ export const rootHelpFixture = {
 			relativePath: "ngents/docs.md",
 			title: "Documentation Commands",
 			short: "command index",
-			summary: "Need one place that explains which ngents script commands exist and how to run them.",
+			summary:
+				"Need one place that explains which ngents script commands exist and how to run them.",
 			readWhen: [],
 		},
 		{

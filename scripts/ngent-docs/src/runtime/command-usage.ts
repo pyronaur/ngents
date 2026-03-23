@@ -16,8 +16,3 @@ export const rootHelpUsageLines = {
 	topic: `${rootHelpCommandLines.topic} ${docsCommandUsage.topic}`,
 	update: rootHelpCommandLines.update,
 } as const;
-
-export default {
-	rootHelpCommandLines,
-	rootHelpUsageLines,
-};

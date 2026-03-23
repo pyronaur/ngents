@@ -158,6 +158,16 @@ function matchingTopicName(
 	)?.name;
 }
 
+async function renderDocsSelectorNotFound(
+	currentDir: string,
+	selector: string,
+): Promise<string> {
+	const inventory = await browseInventoryForCurrentDir(currentDir);
+	return browseRender.renderSelectorNotFound(selector, inventory, {
+		topicHint: matchingTopicName(inventory, selector),
+	});
+}
+
 export async function runDocsParkedCollectionSelector(
 	currentDir: string,
 	selector: string,
@@ -189,16 +199,6 @@ export async function runDocsBrowseSelector(currentDir: string, where: string): 
 	browseRender.printDocsBrowser(docs, {
 		title,
 		topicHint,
-	});
-}
-
-export async function renderDocsSelectorNotFound(
-	currentDir: string,
-	selector: string,
-): Promise<string> {
-	const inventory = await browseInventoryForCurrentDir(currentDir);
-	return browseRender.renderSelectorNotFound(selector, inventory, {
-		topicHint: matchingTopicName(inventory, selector),
 	});
 }
 

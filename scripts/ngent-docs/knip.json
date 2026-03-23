@@ -1,11 +1,11 @@
 {
 	"entry": [
-		"src/core/command-dispatch.ts",
-		"src/core/command-definition.ts",
-		"src/commands/index.ts",
-		"src/commands/*.ts",
-		"src/runtime/*.ts"
+		"src/**/*.ts",
+		".lint/run.ts"
 	],
-	"project": ["tsconfig.json"],
+	"project": ["bin/**/*.ts", "src/**/*.ts", "tests/**/*.ts", ".lint/**/*.ts"],
+	"ignoreIssues": {
+		"tests/helpers/docs-cli-fixture.ts": ["exports", "types"]
+	},
 	"ignoreDependencies": ["oxlint-plugin-inhuman"]
 }

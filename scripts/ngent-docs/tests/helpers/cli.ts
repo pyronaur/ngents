@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export type CommandResult = {
+type CommandResult = {
 	exitCode: number | null;
 	stdout: string;
 	stderr: string;
@@ -11,7 +11,7 @@ export type CommandResult = {
 const helpersDir = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(helpersDir, "..", "..");
 
-function runCommand(
+export function runCommand(
 	command: string,
 	args: string[],
 	options: {

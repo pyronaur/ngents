@@ -1,10 +1,10 @@
 .PHONY: lint lint-dry verify
 
 lint:
-	npm run lint
+	bun ./.lint/run.ts fix
 
 lint-dry:
-	npm run lint-dry
+	bun ./.lint/run.ts check
 
 verify:
 	$(MAKE) lint-dry

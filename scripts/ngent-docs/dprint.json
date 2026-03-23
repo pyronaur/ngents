@@ -2,8 +2,15 @@
 	"$schema": "https://dprint.dev/schemas/v0.json",
 	"lineWidth": 100,
 	"includes": [
-		"bin/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
-		"src/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}"
+		"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+		"!**/*.d.ts",
+		"!**/tmp/**",
+		"!**/.tmp/**",
+		"!**/temp/**",
+		"!**/dist/**",
+		"!**/build/**",
+		"!**/coverage/**",
+		"!**/out/**"
 	],
 	"excludes": ["**/.git/**", "**/node_modules/**"],
 	"typescript": {
@@ -18,4 +25,3 @@
 	},
 	"plugins": ["https://plugins.dprint.dev/typescript-0.95.15.wasm"]
 }
-

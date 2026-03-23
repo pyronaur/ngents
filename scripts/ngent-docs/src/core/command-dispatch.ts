@@ -176,7 +176,7 @@ function readRootHelpRequest(
 	return { kind: "none" };
 }
 
-export async function runDocsCli(argv: string[], projectDir: string): Promise<void> {
+async function runDocsCli(argv: string[], projectDir: string): Promise<void> {
 	const helpRequest = readRootHelpRequest(argv);
 	if (helpRequest.kind === "root") {
 		await runDocsRootHelp({

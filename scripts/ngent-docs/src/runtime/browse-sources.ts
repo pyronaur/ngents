@@ -86,7 +86,7 @@ function isBareSelectorName(selector: string): boolean {
 	return selector.length > 0 && !selector.includes("/") && !selector.includes("\\");
 }
 
-export class BrowseSelectorNotFoundError extends Error {
+class BrowseSelectorNotFoundError extends Error {
 	public readonly selector: string;
 
 	constructor(selector: string) {

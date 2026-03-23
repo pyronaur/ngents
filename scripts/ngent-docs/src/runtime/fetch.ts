@@ -44,6 +44,10 @@ type ValidatedFetchDefinition = RunFetchDefinition & {
 	absoluteTargetPath: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return !!value && typeof value === "object";
+}
+
 function normalizeStoredCommand(command: string, projectDir: string): string {
 	const expandedCommand = expandHomePath(command);
 	if (
@@ -82,16 +86,16 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 function isFetchManifest(value: unknown): value is FetchManifest {
-	if (!value || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
 
-	const candidate = value as { entries?: unknown };
-	if (!Array.isArray(candidate.entries)) {
+	const entries = value.entries;
+	if (!Array.isArray(entries)) {
 		return false;
 	}
 
-	return candidate.entries.every(isFetchManifestEntry);
+	return entries.every(isFetchManifestEntry);
 }
 
 async function readFetchManifest(docsRoot: string): Promise<FetchManifest> {
@@ -114,16 +118,15 @@ async function readFetchManifest(docsRoot: string): Promise<FetchManifest> {
 }
 
 function isFetchManifestEntry(value: unknown): value is FetchManifestEntry {
-	if (!value || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
-	const candidate = value as Partial<FetchManifestEntry>;
-	return typeof candidate.source === "string"
-		&& typeof candidate.target === "string"
-		&& typeof candidate.handler === "string"
-		&& typeof candidate.hash === "string"
-		&& (candidate.root === undefined || typeof candidate.root === "string")
-		&& (candidate.transform === undefined || typeof candidate.transform === "string");
+	return typeof value.source === "string"
+		&& typeof value.target === "string"
+		&& typeof value.handler === "string"
+		&& typeof value.hash === "string"
+		&& (value.root === undefined || typeof value.root === "string")
+		&& (value.transform === undefined || typeof value.transform === "string");
 }
 
 async function writeFetchManifest(docsRoot: string, manifest: FetchManifest): Promise<void> {

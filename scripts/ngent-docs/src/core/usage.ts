@@ -6,7 +6,3 @@ export const docsCommandUsage = {
 	topic: "[topic] [section]",
 	update: "",
 } as const;
-
-export default {
-	docsCommandUsage,
-};

@@ -1,14 +1,14 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
 import { expect, test } from "vitest";
 
+import { withTempDir, writeText } from "./helpers/fs.ts";
+
 import {
 	createRootHelpLiquidEngine,
+	type OpsHelpTemplateContext,
 	renderOpsHelpTemplate,
 	renderRootHelpTemplate,
-	type OpsHelpTemplateContext,
 	type RootHelpTemplateContext,
 } from "../src/runtime/root-help-template.ts";
 
@@ -34,30 +34,12 @@ const opsHelpTemplateContext: OpsHelpTemplateContext = {
 	update_usage: "docs update",
 };
 
-async function makeTempDir(prefix: string): Promise<string> {
-	return mkdtemp(path.join(os.tmpdir(), prefix));
-}
-
-async function writeText(filePath: string, contents: string): Promise<void> {
-	await mkdir(path.dirname(filePath), { recursive: true });
-	await writeFile(filePath, contents);
-}
-
-async function withTempDir<T>(prefix: string, run: (dir: string) => Promise<T>): Promise<T> {
-	const dir = await makeTempDir(prefix);
-	try {
-		return await run(dir);
-	} finally {
-		await rm(dir, { force: true, recursive: true });
-	}
-}
-
 test("renderRootHelpTemplate fails with a clear error when the template file is missing", async () => {
 	await withTempDir("docs-root-help-template-missing-", async tempDir => {
 		const engine = createRootHelpLiquidEngine(tempDir);
 
 		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
-			'Failed to render root help template "root-help.md":',
+			"Failed to render root help template \"root-help.md\":",
 		);
 	});
 });
@@ -68,7 +50,7 @@ test("renderRootHelpTemplate fails on Liquid syntax errors", async () => {
 		const engine = createRootHelpLiquidEngine(tempDir);
 
 		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
-			'Failed to render root help template "root-help.md":',
+			"Failed to render root help template \"root-help.md\":",
 		);
 	});
 });
@@ -79,7 +61,7 @@ test("renderRootHelpTemplate fails when a required variable is missing", async (
 		const engine = createRootHelpLiquidEngine(tempDir);
 
 		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
-			'Failed to render root help template "root-help.md": undefined variable: missing_var',
+			"Failed to render root help template \"root-help.md\": undefined variable: missing_var",
 		);
 	});
 });
@@ -90,7 +72,7 @@ test("renderRootHelpTemplate fails on unknown filters", async () => {
 		const engine = createRootHelpLiquidEngine(tempDir);
 
 		expect(() => renderRootHelpTemplate(rootHelpTemplateContext, { engine })).toThrowError(
-			'Failed to render root help template "root-help.md": undefined filter: missing_filter',
+			"Failed to render root help template \"root-help.md\": undefined filter: missing_filter",
 		);
 	});
 });

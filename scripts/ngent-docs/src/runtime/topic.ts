@@ -70,16 +70,6 @@ function sectionsOrFail(
 	);
 }
 
-class TopicNotFoundError extends Error {
-	public readonly topicName: string;
-
-	constructor(topicName: string) {
-		super(`Topic not found: ${topicName}`);
-		this.name = "TopicNotFoundError";
-		this.topicName = topicName;
-	}
-}
-
 async function printTopicOrParkedCollection(
 	currentDir: string,
 	docsRoots: string[],
@@ -102,10 +92,6 @@ async function printTopicOrParkedCollection(
 	return true;
 }
 
-export function isTopicNotFoundError(error: unknown): error is TopicNotFoundError {
-	return error instanceof TopicNotFoundError;
-}
-
 export async function readDocsTopicSelector(
 	currentDir: string,
 	requestedTopic: string,
@@ -115,19 +101,6 @@ export async function readDocsTopicSelector(
 		return null;
 	}
 	return readTopicOrNull(sources.mergedDocsRoots, requestedTopic);
-}
-
-export async function runDocsTopicSelector(
-	currentDir: string,
-	requestedTopic: string,
-): Promise<void> {
-	const sources = await discoverDocsSources(currentDir);
-	ensureDocsRoots(sources.mergedDocsRoots, currentDir);
-	const topic = await readTopicOrNull(sources.mergedDocsRoots, requestedTopic);
-	if (!topic) {
-		throw new TopicNotFoundError(requestedTopic);
-	}
-	browseRender.printTopicView(topic);
 }
 
 export async function runDocsTopic(positionals: string[]): Promise<void> {

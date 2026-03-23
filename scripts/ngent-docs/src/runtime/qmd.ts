@@ -33,6 +33,10 @@ function fail(message: string): never {
 	throw runtimeError(message);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return !!value && typeof value === "object";
+}
+
 function collectionsCacheFilePath(): string {
 	return path.join(CACHE_ROOT, "docs-qmd-collections-cache.json");
 }
@@ -117,37 +121,36 @@ async function readCollectionsCache(): Promise<CollectionsCacheFile | null> {
 }
 
 function isCollectionsCacheFile(value: unknown): value is CollectionsCacheFile {
-	if (!value || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
 
-	const candidate = value as Partial<CollectionsCacheFile>;
-	if (candidate.version !== COLLECTIONS_CACHE_VERSION || typeof candidate.fetchedAt !== "string") {
-		return false;
-	}
-	if (!Array.isArray(candidate.collections)) {
+	if (value.version !== COLLECTIONS_CACHE_VERSION || typeof value.fetchedAt !== "string") {
 		return false;
 	}
 
-	return candidate.collections.every(isQmdCollection);
+	const collections = value.collections;
+	if (!Array.isArray(collections)) {
+		return false;
+	}
+
+	return collections.every(isQmdCollection);
 }
 
 function isQmdCollection(value: unknown): value is QmdCollection {
-	if (!value || typeof value !== "object") {
+	if (!isRecord(value)) {
 		return false;
 	}
 
-	const candidate = value as Partial<QmdCollection>;
-	if (typeof candidate.name !== "string" || typeof candidate.path !== "string") {
+	if (typeof value.name !== "string" || typeof value.path !== "string") {
 		return false;
 	}
 	if (
-		candidate.pattern !== null && candidate.pattern !== undefined
-		&& typeof candidate.pattern !== "string"
+		value.pattern !== null && value.pattern !== undefined && typeof value.pattern !== "string"
 	) {
 		return false;
 	}
-	return typeof candidate.includeByDefault === "boolean";
+	return typeof value.includeByDefault === "boolean";
 }
 
 function isExpiredCollectionsCache(cache: CollectionsCacheFile): boolean {
@@ -204,42 +207,7 @@ function spawnCollectionsCacheRefresh(): void {
 	child.unref();
 }
 
-export const INDEX_NAME = "ngents-docs";
-export const CACHE_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-cache");
-export const CONFIG_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-config");
-
-export async function listQmdCollections(): Promise<QmdCollection[]> {
-	const cached = await readCollectionsCache();
-	if (cached) {
-		if (!isExpiredCollectionsCache(cached)) {
-			return cached.collections;
-		}
-
-		spawnCollectionsCacheRefresh();
-		return cached.collections;
-	}
-
-	const collections = await fetchQmdCollections();
-	await writeCollectionsCache(collections);
-	return collections;
-}
-
-export async function listQmdCollectionsFresh(): Promise<QmdCollection[]> {
-	const collections = await fetchQmdCollections();
-	await writeCollectionsCache(collections);
-	return collections;
-}
-
-export async function runQmdCollectionsCacheRefreshFromProcess(): Promise<void> {
-	const collections = await fetchQmdCollections();
-	await writeCollectionsCache(collections);
-}
-
-export async function invalidateQmdCollectionsCache(): Promise<void> {
-	await rm(collectionsCacheFilePath(), { force: true }).catch(() => undefined);
-}
-
-export function qmdEnv(): NodeJS.ProcessEnv {
+function qmdEnv(): NodeJS.ProcessEnv {
 	return {
 		...process.env,
 		XDG_CACHE_HOME: CACHE_ROOT,
@@ -274,4 +242,39 @@ export async function addQmdCollection(name: string, collectionPath: string): Pr
 
 export function isQmdRequiredError(error: unknown): boolean {
 	return error instanceof Error && error.message === "qmd is required";
+}
+
+export const INDEX_NAME = "ngents-docs";
+export const CACHE_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-cache");
+export const CONFIG_ROOT = path.join(os.homedir(), ".ngents", "local", "qmd-config");
+
+export async function listQmdCollections(): Promise<QmdCollection[]> {
+	const cached = await readCollectionsCache();
+	if (cached) {
+		if (!isExpiredCollectionsCache(cached)) {
+			return cached.collections;
+		}
+
+		spawnCollectionsCacheRefresh();
+		return cached.collections;
+	}
+
+	const collections = await fetchQmdCollections();
+	await writeCollectionsCache(collections);
+	return collections;
+}
+
+export async function listQmdCollectionsFresh(): Promise<QmdCollection[]> {
+	const collections = await fetchQmdCollections();
+	await writeCollectionsCache(collections);
+	return collections;
+}
+
+export async function runQmdCollectionsCacheRefreshFromProcess(): Promise<void> {
+	const collections = await fetchQmdCollections();
+	await writeCollectionsCache(collections);
+}
+
+export async function invalidateQmdCollectionsCache(): Promise<void> {
+	await rm(collectionsCacheFilePath(), { force: true }).catch(() => undefined);
 }

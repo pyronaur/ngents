@@ -30,12 +30,7 @@ function renderTopicTableRow(
 	}`;
 }
 
-export function renderTopicTableHeader(topics: TopicIndexRow[]): string {
-	const { titleWidth, topicWidth } = topicColumnWidths(topics);
-	return pc.bold(`${"TOPIC".padEnd(topicWidth)}  ${"TITLE".padEnd(titleWidth)}  DESCRIPTION`);
-}
-
-export function renderTopicsTable(topics: TopicIndexRow[]): string {
+function renderTopicsTable(topics: TopicIndexRow[]): string {
 	if (topics.length === 0) {
 		return "- [no topics found]";
 	}
@@ -45,6 +40,11 @@ export function renderTopicsTable(topics: TopicIndexRow[]): string {
 		renderTopicTableHeader(topics),
 		...topics.map(topic => renderTopicTableRow(topic, widths)),
 	].join("\n");
+}
+
+export function renderTopicTableHeader(topics: TopicIndexRow[]): string {
+	const { titleWidth, topicWidth } = topicColumnWidths(topics);
+	return pc.bold(`${"TOPIC".padEnd(topicWidth)}  ${"TITLE".padEnd(titleWidth)}  DESCRIPTION`);
 }
 
 export function rootHelpTopicLines(topics: TopicIndexRow[]): string[] {

@@ -22,26 +22,12 @@ function isExecutableAccessible(candidatePath: string): Promise<boolean> {
 		.catch(() => false);
 }
 
-export function expandHomePath(value: string): string {
-	const homeDir = process.env.HOME;
-	if (!homeDir) {
-		return value;
-	}
-	if (value === "~") {
-		return homeDir;
-	}
-	if (value.startsWith("~/")) {
-		return path.join(homeDir, value.slice(2));
-	}
-	return value;
-}
-
-export function isPathLikeCommand(command: string): boolean {
+function isPathLikeCommand(command: string): boolean {
 	return path.isAbsolute(command) || command.startsWith("./") || command.startsWith("../")
 		|| command.startsWith("~/") || command.includes(path.posix.sep);
 }
 
-export async function resolveCommandPath(command: string): Promise<string | null> {
+async function resolveCommandPath(command: string): Promise<string | null> {
 	const expandedCommand = expandHomePath(command);
 	if (isPathLikeCommand(expandedCommand)) {
 		return expandedCommand;
@@ -56,6 +42,20 @@ export async function resolveCommandPath(command: string): Promise<string | null
 	}
 
 	return null;
+}
+
+export function expandHomePath(value: string): string {
+	const homeDir = process.env.HOME;
+	if (!homeDir) {
+		return value;
+	}
+	if (value === "~") {
+		return homeDir;
+	}
+	if (value.startsWith("~/")) {
+		return path.join(homeDir, value.slice(2));
+	}
+	return value;
 }
 
 export async function commandSignature(command: string | undefined): Promise<string> {

@@ -1,6 +1,6 @@
 import { EXIT_RUNTIME_ERROR, EXIT_USAGE_ERROR } from "../constants.ts";
 
-export class DocsError extends Error {
+class DocsError extends Error {
 	public readonly exitCode: number;
 
 	constructor(message: string, exitCode: number) {

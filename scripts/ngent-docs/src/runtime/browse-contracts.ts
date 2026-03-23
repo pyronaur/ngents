@@ -62,6 +62,7 @@ type BrowseNode = {
 export type SectionEntry = BrowseNode & {
 	key: string;
 	skills: SkillEntry[];
+	children: SectionEntry[];
 };
 
 export type TopicContribution = BrowseNode & {
@@ -192,7 +193,7 @@ function compactDescription(short: string | null, summary: string | null): strin
 	return truncateCompactText(normalizedSummary, 64);
 }
 
-function heading(level: 1 | 2 | 3 | 4, text: string): string {
+function heading(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): string {
 	const content = `${"#".repeat(level)} ${text}`;
 	if (level === 1) {
 		return pc.cyan(pc.bold(content));

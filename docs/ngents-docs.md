@@ -69,7 +69,7 @@ docs --ops-help
 docs help
 docs <where>
 docs ls [where]
-docs topic [topic] [section]
+docs topic [topic] [path]
 docs query [--limit <n>] <query...> | status
 docs park <name> [path]
 docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]
@@ -137,13 +137,14 @@ Global docs collection metadata is cached for 1 hour.
 `topic` browses topics only.
 
 - It merges same-name local and global topic contributions.
-- It accepts an optional section selector.
+- It accepts an optional topic-relative path selector.
 - When the selector matches a parked collection name and not a topic name, it lists only the topics from that parked collection.
 - It is the main browse surface for grouped reusable knowledge.
-- It may expose regular topic docs and skill-backed sections together.
-- It labels skill-bearing sections as `Skills` in topic output.
-- In topic overviews, sections print a `Path:` lookup line plus compact entry lists.
-- It can derive skill summaries directly from `SKILL.md` when a section has no `.docs.md`.
+- It treats a topic as a recursive docs tree rooted at `docs/topics/<topic>/`.
+- Topic overviews render grouped `Docs` and `Skills` blocks.
+- Topic overviews keep docs as docs, keep skills as skills, and use directories only for grouping and navigation.
+- Topic overviews expand nested doc directories up to depth 2.
+- Exact paths such as `docs/guides` or `hig-doctor/skills/hig-components-content` can be focused directly.
 
 ### Selector scope examples
 
@@ -218,9 +219,9 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 
 - Markdown files directly under a `docs/` root are free-floating docs.
 - Topics live under `docs/topics/<topic>/`.
-- Direct child directories inside a topic are sections.
 - Directories outside `docs/topics/` are not topics.
-- Topic and section membership comes from filesystem placement, not metadata files.
+- Topic membership comes from filesystem placement, not metadata files.
+- Visible directories inside a topic are grouping and navigation paths inside the topic.
 - Hidden directories and files are ignored.
 - `archive`, `research`, and `node_modules` are ignored.
 
@@ -230,7 +231,7 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 
 - `.docs.md` is excluded from normal scans and lists.
 - Prefer one `.docs.md` at a meaningful topic boundary over many small child `.docs.md` files.
-- `.docs.md` does not decide whether something is a topic or section.
+- `.docs.md` does not decide whether something is a topic or path.
 - `.docs.md` does not decide whether a file belongs to a topic.
 - Display titles resolve from frontmatter `title`, then frontmatter `name`, then the raw basename.
 - `short` is the compact one-line description for indexes and compact help output.
@@ -239,19 +240,16 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 - `hints` adds compact skill labels in topic overviews.
 - Each `hints` key is a skill directory path relative to the `.docs.md` directory.
 - The first non-list paragraph is the fallback summary when `summary` is absent.
-- The rest of the body is rendered when the topic or section is opened.
+- The rest of the body is rendered when the topic or path is opened.
 
 ### Skills
 
-- `SKILL.md` files are discovered recursively inside a section.
-- `docs topic <topic>` renders topic-root markdown docs under `Docs`.
-- `docs topic <topic>` renders skill-backed sections under `Skills`.
-- Topic overviews print skill section `Path:` templates as `.../{$name}/SKILL.md`.
-- Topic overviews print regular-section `Path:` lines as section directories with a trailing slash.
-- If a focused section contains any recursive `SKILL.md`, the CLI treats it as a skill-backed section.
-- A focused section that is exactly one root `SKILL.md` renders that skill directly.
-- Skill-backed focused sections render the discovered skills plus the local files linked from those skills.
-- Focused sections without any `SKILL.md` continue rendering markdown docs as usual.
+- `SKILL.md` is the only skill marker.
+- A directory that contains `SKILL.md` is treated as skill content.
+- Docs are discovered recursively inside a topic except below directories rooted at `SKILL.md`.
+- Skill directories do not suppress ordinary docs in ancestor or sibling paths.
+- A focused path that is exactly one root `SKILL.md` renders that skill directly.
+- Focused ordinary paths can render direct docs and nested skill directories together.
 
 ## Examples
 
@@ -274,6 +272,7 @@ docs park nconf ~/.nconf
 docs fetch https://example.com/spec docs/external/spec
 docs topic qmd
 docs topic qmd references
+docs topic platform docs/guides
 docs query shell environment policy
 docs query --limit 3 swiftui scroll view best practices
 docs query status

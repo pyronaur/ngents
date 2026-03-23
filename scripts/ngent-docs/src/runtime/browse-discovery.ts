@@ -222,9 +222,6 @@ async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
 async function listTopLevelDirectories(docsRoot: string): Promise<string[]> {
 	return (await listVisibleDirectories(docsRoot)).filter(name => name !== TOPICS_DIR);
 }
-async function listSectionKeys(topicDir: string): Promise<string[]> {
-	return listVisibleDirectories(topicDir);
-}
 
 async function listVisibleDirectories(directoryPath: string): Promise<string[]> {
 	let entries;
@@ -241,39 +238,6 @@ async function listVisibleDirectories(directoryPath: string): Promise<string[]> 
 		)
 		.map(entry => entry.name)
 		.sort((a, b) => a.localeCompare(b));
-}
-
-async function listSkillFiles(sectionDir: string): Promise<string[]> {
-	const result: string[] = [];
-
-	async function walk(currentDir: string): Promise<void> {
-		let entries;
-		try {
-			entries = await readdir(currentDir, { withFileTypes: true });
-		} catch {
-			return;
-		}
-
-		for (const entry of entries) {
-			const absolutePath = path.join(currentDir, entry.name);
-			const relativePath = toDisplayPath(path.relative(sectionDir, absolutePath));
-			if (hasHiddenOrExcludedSegment(relativePath)) {
-				continue;
-			}
-
-			if (entry.isDirectory()) {
-				await walk(absolutePath);
-				continue;
-			}
-
-			if (entry.isFile() && entry.name === "SKILL.md") {
-				result.push(absolutePath);
-			}
-		}
-	}
-
-	await walk(sectionDir);
-	return result.sort((a, b) => a.localeCompare(b));
 }
 
 async function extractReferencePaths(skillDir: string, content: string): Promise<string[]> {
@@ -305,26 +269,61 @@ async function extractReferencePaths(skillDir: string, content: string): Promise
 	return Array.from(discovered).sort((a, b) => a.localeCompare(b));
 }
 
-async function readSectionEntry(topicDir: string, sectionKey: string): Promise<SectionEntry> {
-	const absolutePath = normalizePath(path.join(topicDir, sectionKey));
-	const guide = await readGuideMetadata(absolutePath);
-	const skillFiles = await listSkillFiles(absolutePath);
-	const markdownEntries = skillFiles.length > 0 ? [] : await listMarkdownEntries(absolutePath);
-	const skills: SkillEntry[] = [];
-	const guideCache = new Map([[absolutePath, guide]]);
+async function readSkillEntryAtRoot(
+	topicDir: string,
+	subtreeDir: string,
+	guideCache: Map<string, Awaited<ReturnType<typeof readGuideMetadata>>>,
+): Promise<SkillEntry | null> {
+	const skillFile = path.join(subtreeDir, "SKILL.md");
+	if (!(await fileExists(skillFile))) {
+		return null;
+	}
 
-	for (const skillFile of skillFiles) {
-		const content = await readFile(skillFile, "utf8");
-		const skill = browseParse.parseSkillEntry(
-			content,
-			toDisplayPath(path.relative(topicDir, skillFile)),
-		);
-		skill.absolutePath = normalizePath(skillFile);
-		skill.referencePaths = await extractReferencePaths(path.dirname(skillFile), content);
-		const skillDirectory = normalizePath(path.dirname(skillFile));
-		skill.hint = (await collectSkillHints(topicDir, skillFile, guideCache)).get(skillDirectory)
-			?? null;
-		skills.push(skill);
+	const content = await readFile(skillFile, "utf8");
+	const skill = browseParse.parseSkillEntry(
+		content,
+		toDisplayPath(path.relative(topicDir, skillFile)),
+	);
+	skill.absolutePath = normalizePath(skillFile);
+	skill.referencePaths = await extractReferencePaths(path.dirname(skillFile), content);
+	const skillDirectory = normalizePath(path.dirname(skillFile));
+	skill.hint = (await collectSkillHints(topicDir, skillFile, guideCache)).get(skillDirectory) ?? null;
+	return skill;
+}
+
+async function readSectionEntry(
+	topicDir: string,
+	sectionKey: string,
+	guideCache: Map<string, Awaited<ReturnType<typeof readGuideMetadata>>> = new Map(),
+): Promise<SectionEntry> {
+	const absolutePath = normalizePath(path.join(topicDir, sectionKey));
+	let guide = guideCache.get(absolutePath);
+	if (!guide) {
+		guide = await readGuideMetadata(absolutePath);
+		guideCache.set(absolutePath, guide);
+	}
+
+	const rootSkill = await readSkillEntryAtRoot(topicDir, absolutePath, guideCache);
+	if (rootSkill) {
+		return {
+			key: sectionKey,
+			absolutePath,
+			title: guide.title ?? path.basename(sectionKey),
+			short: guide.short,
+			summary: guide.summary,
+			guideBody: guide.guideBody,
+			readWhen: guide.readWhen,
+			error: guide.error,
+			markdownEntries: [],
+			skills: [rootSkill],
+			children: [],
+		};
+	}
+
+	const childKeys = await listVisibleDirectories(absolutePath);
+	const children: SectionEntry[] = [];
+	for (const childKey of childKeys) {
+		children.push(await readSectionEntry(topicDir, path.posix.join(sectionKey, childKey), guideCache));
 	}
 
 	return {
@@ -336,8 +335,9 @@ async function readSectionEntry(topicDir: string, sectionKey: string): Promise<S
 		guideBody: guide.guideBody,
 		readWhen: guide.readWhen,
 		error: guide.error,
-		markdownEntries,
-		skills: skills.sort((a, b) => a.relativePath.localeCompare(b.relativePath)),
+		markdownEntries: await listMarkdownEntries(absolutePath),
+		skills: [],
+		children,
 	};
 }
 
@@ -353,9 +353,10 @@ async function readTopicContribution(
 	const guide = await readGuideMetadata(topicDir);
 	const markdownEntries = await listMarkdownEntries(topicDir);
 	const sectionEntries: SectionEntry[] = [];
+	const guideCache = new Map([[topicDir, guide]]);
 
-	for (const sectionKey of await listSectionKeys(topicDir)) {
-		sectionEntries.push(await readSectionEntry(topicDir, sectionKey));
+	for (const sectionKey of await listVisibleDirectories(topicDir)) {
+		sectionEntries.push(await readSectionEntry(topicDir, sectionKey, guideCache));
 	}
 
 	return {

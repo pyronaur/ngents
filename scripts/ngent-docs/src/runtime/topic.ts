@@ -41,12 +41,21 @@ async function readTopicOrNull(
 	return browseDiscovery.readMergedTopic(docsRoots, requestedTopic);
 }
 
-function matchingSections(topic: MergedTopic, requestedSection: string): SectionEntry[] {
+function matchingSections(topic: MergedTopic, requestedPath: string): SectionEntry[] {
 	const sections: SectionEntry[] = [];
+
+	function collectMatches(section: SectionEntry): void {
+		if (section.key === requestedPath) {
+			sections.push(section);
+		}
+		for (const child of section.children) {
+			collectMatches(child);
+		}
+	}
+
 	for (const contribution of topic.contributions) {
-		const match = contribution.sectionEntries.find(section => section.key === requestedSection);
-		if (match) {
-			sections.push(match);
+		for (const section of contribution.sectionEntries) {
+			collectMatches(section);
 		}
 	}
 
@@ -56,15 +65,15 @@ function matchingSections(topic: MergedTopic, requestedSection: string): Section
 function sectionsOrFail(
 	topic: MergedTopic,
 	requestedTopic: string,
-	requestedSection: string,
+	requestedPath: string,
 ): SectionEntry[] {
-	const sections = matchingSections(topic, requestedSection);
+	const sections = matchingSections(topic, requestedPath);
 	if (sections.length > 0) {
 		return sections;
 	}
 
 	fail(
-		`Unknown section "${requestedSection}" for topic "${requestedTopic}". Available: ${
+		`Unknown path "${requestedPath}" for topic "${requestedTopic}". Available: ${
 			availableSectionKeys(topic).join(", ")
 		}`,
 	);
@@ -105,7 +114,7 @@ export async function readDocsTopicSelector(
 
 export async function runDocsTopic(positionals: string[]): Promise<void> {
 	if (positionals.length > 2) {
-		fail("Usage: docs topic [topic] [section]");
+		fail("Usage: docs topic [topic] [path]");
 	}
 
 	const currentDir = normalizePath(process.cwd());

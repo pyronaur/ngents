@@ -13,7 +13,7 @@ future behavior.
 
 ### `GuideMetadata`
 
-Parsed from `.docs.md` in a topic or section directory.
+Parsed from `.docs.md` in a topic or topic-path directory.
 
 Fields:
 
@@ -76,14 +76,15 @@ Current decisions:
 
 ### `SectionEntry`
 
-Represents one topic subdirectory.
+Represents one visible directory path under the topic.
 
 Current decisions:
 
-- A section can be doc-backed, skill-backed, or mixed in metadata only.
-- If any `SKILL.md` exists anywhere under the section, normal Markdown docs in
-  that section are suppressed from `markdownEntries` and the section is treated
-  as skill-backed for rendering.
+- A path can be ordinary or skill-rooted.
+- A path is skill-rooted only when that directory itself contains
+  `SKILL.md`.
+- Ordinary paths keep direct Markdown docs plus nested child paths.
+- Docs are not discovered below a skill-rooted directory.
 
 ### `TopicContribution`
 
@@ -93,7 +94,7 @@ Current decisions:
 
 - A merged topic preserves separate contributions rather than flattening them
   into one synthetic directory.
-- Contribution guide body, docs, skills, and sections are rendered contribution
+- Contribution guide body, docs, skills, and grouped paths are rendered contribution
   by contribution.
 
 ### `MergedTopic`
@@ -120,10 +121,10 @@ Current decisions:
 
 Current decisions:
 
-- Skill files are discovered recursively under a section directory.
 - Only files named `SKILL.md` are treated as skills.
-- A section with discovered skills does not also list sibling Markdown docs in
-  the section output path.
+- Topic traversal is recursive.
+- A directory that contains `SKILL.md` becomes a skill-rooted directory.
+- Ordinary docs remain visible in ancestor and sibling paths.
 
 ### Skill Reference Discovery
 
@@ -234,15 +235,15 @@ Current decisions:
 - If the topic does not exist but a parked collection with the same selector
   exists, it renders a scoped topic browser for that parked collection.
 
-### Topic Plus Section
+### Topic Plus Path
 
 Current decisions:
 
-- `docs topic <topic> <section>` requires an exact section key match in the
+- `docs topic <topic> <path>` requires an exact topic-relative path match in the
   current implementation.
-- Matching sections from multiple topic contributions are collected and rendered
-  together.
-- Unknown sections fail with a list of available section keys.
+- Matching paths from multiple topic contributions are collected and
+  rendered together.
+- Unknown paths fail with a list of available topic paths.
 
 ## Topic Browser Rendering
 
@@ -275,8 +276,7 @@ Current decisions:
 
 - Within one contribution, block order is:
   1. topic docs
-  2. skill sections
-  3. regular sections
+  2. skills
 - Blocks are separated by `---`.
 - Omitted blocks do not leave placeholder text.
 
@@ -289,81 +289,61 @@ Current decisions:
 - When there are multiple docs, each doc gets its own heading.
 - Topic doc metadata prefers full `summary`, then falls back to `short`.
 
-### Skill Sections in Overview
+### Docs and Skills in Overview
 
 Current decisions:
 
-- Skill sections are intentionally compact in the topic overview.
-- The overview does not print skill descriptions.
-- All skill-backed sections render as `<section key>`, including sections whose
-  only skill is `<section>/SKILL.md`.
-- The overview prints a `Path:` line for skill entry lookup.
-- Multi-skill sections use a `{$name}` path template when all discovered skills
-  share one stable path shape.
-- Single root-skill sections print the exact `SKILL.md` path instead of a
-  `{$name}` template.
-- The section body prints one bullet per discovered skill after the `Path:`
-  line.
-- Child skill entries use `skill.name`, not `skill.title`.
-- A child skill bullet prints:
-  - `$<skill.name>` when no matching hint exists
-  - `$<skill.name> - <hint>` when a matching hint exists
-- Topic overview skill entries do not print per-skill absolute `SKILL.md`
-  paths.
-- Topic overview skill entries do not print per-skill reference counts.
+- Topic overviews print grouped `Docs` and `Skills` headings.
+- The root overview expands nested doc directories to depth 2 from the topic root.
+- Grouped docs print trailing-slash directory `Path:` lines.
+- Direct skill directories can print the exact `SKILL.md` `Path:`.
+- Skill overview entries are compact and print `$<skill.name>` with an
+  optional hint.
+- Grouped path metadata can include summary, `readWhen`, and parse error.
+- Grouped docs print direct Markdown docs as compact filename bullets.
+- Mixed directories that contain nested skills are classified under `Skills` in
+  the root overview.
+- Deeper nested content stays navigable through focused paths instead of
+  expanding indefinitely in the root overview.
 
-### Regular Sections in Overview
+## Focused Path Rendering
 
-Current decisions:
-
-- Non-skill sections render under `Sections`.
-- Section metadata can include:
-  - summary or short fallback
-  - `readWhen`
-  - parse error
-- The overview prints a `Path:` line for regular-section doc entry lookup.
-- Regular sections print the section directory path with a trailing slash.
-- When a regular section has discovered Markdown docs, the overview prints one
-  bullet per doc after the `Path:` line.
-- Regular-section doc bullets use the Markdown filename and append the doc
-  title when it differs.
-- Topic overview regular sections do not print aggregate `contains` text.
-
-## Focused Section Rendering
-
-This is the `docs topic <topic> <section>` path.
+This is the `docs topic <topic> <path>` path.
 
 ### Compact Single-Root-Skill View
 
 Current decisions:
 
-- If there is exactly one matching section contribution and it is a root-skill
-  section, the CLI renders a compact direct skill view.
+- If there is exactly one matching path contribution and it is a root-skill
+  directory, the CLI renders a compact direct skill view.
 - This compact view prints:
   - heading from `skill.title`, then `skill.name`, then basename fallback
   - skill path
   - skill description
   - grouped reference filenames
 
-### General Focused Section View
+### General Focused Path View
 
 Current decisions:
 
-- Otherwise the CLI renders a merged section view with a shared section title.
+- Otherwise the CLI renders a merged path view with a shared path title.
 - Each contribution renders separately.
-- Each contribution begins with `source: <section path>`.
+- Each contribution begins with `source: <path>`.
 - Contribution guide body, parse error, and `readWhen` render before entries.
-- Skills render before Markdown docs.
-- Empty sections render `[no section entries found]`.
+- Direct Markdown docs render before nested child paths.
+- Nested skill-rooted child directories render inline beneath their parent path.
+- Empty paths render `[no section entries found]`.
 
 ### Focused Skills Block
 
 Current decisions:
 
-- Focused skill blocks are expanded, unlike topic overview skill blocks.
+- Focused direct-skill views expand the skill content instead of using the
+  compact overview form.
 - Each focused skill prints:
   - `skill.title` if present, else `skill.name`
-  - labeled `path:`
+  - either a bare absolute path in compact direct-skill mode or a labeled
+    `path:` in grouped skill blocks
   - description when present
   - grouped reference filenames
 
@@ -387,9 +367,9 @@ Current decisions:
 - Today, that means:
   - topic browser: compact
   - root help topic/docs index: compact
-  - topic overview skill entries: compact
+  - topic overview docs and skills entries: compact
   - docs browser: expanded
-  - focused section skill rendering: expanded
+  - focused path skill rendering: expanded
 
 ## Open Questions and Known Mismatches
 

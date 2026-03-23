@@ -237,8 +237,8 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 			`summary: ${TEST_TOPIC_SUMMARY}`,
 			"---",
 			"",
-			`Use \`docs topic ${TEST_TOPIC_NAME} <section>\` to focus one section.`,
-			"This topic collects platform references, HIG skills, and Skill for platform work.",
+			`Use \`docs topic ${TEST_TOPIC_NAME} <path>\` to focus one path inside the topic.`,
+			"This topic collects platform references, HIG skills, and reusable docs for platform work.",
 			"",
 			"- Prioritize `hig-doctor` first when you need Apple HIG guidance",
 			"- Use `SOSUMI.md` when you need Apple Developer docs in Markdown.",
@@ -458,6 +458,20 @@ async function seedSkillBackedSection(repoDir: string): Promise<void> {
 	const sectionDir = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "hig-doctor");
 	const skillDir = path.join(sectionDir, "skills", "hig-components-content");
 	await writeText(
+		path.join(sectionDir, "usage.md"),
+		[
+			"---",
+			"title: HIG Doctor Usage",
+			"summary: Run the HIG skill set against the current app before broader Apple docs.",
+			"---",
+			"",
+			"# HIG Doctor Usage",
+			"",
+			"Use this directory before falling back to raw references.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
 		path.join(skillDir, "SKILL.md"),
 		[
 			"---",
@@ -502,8 +516,6 @@ async function seedSkillBackedSection(repoDir: string): Promise<void> {
 			"",
 		].join("\n"),
 	);
-	await writeText(path.join(sectionDir, "README.md"), "# Hidden README\n");
-	await writeText(path.join(sectionDir, "AGENTS.md"), "# Hidden AGENTS\n");
 	await writeText(path.join(sectionDir, "package.json"),
 		"{\n  \"name\": \"hidden-root-file\"\n}\n");
 }

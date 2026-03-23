@@ -7,7 +7,6 @@ import {
 	compactListEntries,
 	globalDocsPath,
 	hasHeading,
-	nonEmptySectionLines,
 	normalizedPathForOutput,
 	seedSkillBackedSection,
 	TEST_TOPIC_NAME,
@@ -21,23 +20,13 @@ import {
 } from "./helpers/docs-cli-fixture.ts";
 
 function expectTopicIndex(stdout: string): void {
-	expect(stdout).toContain("Usage: docs topic [topic] [section]");
+	expect(stdout).toContain("Usage: docs topic [topic] [path]");
 	expect(stdout).toContain("qmd");
 	expect(stdout).toContain("local search docs");
 	expect(stdout).toContain(TEST_TOPIC_NAME);
 	expect(stdout).toContain(TEST_TOPIC_SHORT);
 	expect(stdout).toMatch(
 		/ops\s+Ops Notes\s+This summary is intentionally longer than sixty-four characte\.\.\./,
-	);
-}
-
-function expectSkillPathLine(
-	stdout: string,
-	normalizedRepoDir: string,
-	...segments: string[]
-): void {
-	expect(nonEmptySectionLines(stdout, "Skills", 2)).toContain(
-		`Path: ${normalizedPathForOutput(topicDocsPath(normalizedRepoDir, ...segments, "SKILL.md"))}`,
 	);
 }
 
@@ -61,58 +50,32 @@ test("docs topic merges local and global topic contributions", async () => {
 	});
 });
 
-test("docs topic renders docs and skills in the topic overview", async () => {
-	await withDocsCliWorkspace("docs-topic-dynamic-skills-", async ({ repoDir, env }) => {
-		await seedSkillBackedSection(repoDir);
-		const normalizedRepoDir = await realpath(repoDir);
-		const result = await runDocsCli(["topic", TEST_TOPIC_NAME], { cwd: repoDir, env });
-		expect(result.exitCode).toBe(0);
-		expect(hasHeading(result.stdout, 1, `Topic: ${TEST_TOPIC_TITLE}`)).toBe(true);
-		expect(result.stdout).toContain(topicDocsPathForOutput(normalizedRepoDir));
-		expect(nonEmptySectionLines(result.stdout, "Docs", 2)).toContain(
-			topicDocsPathForOutput(normalizedRepoDir, "SOSUMI.md"),
-		);
-		expectSkillPathLine(result.stdout, normalizedRepoDir, "hig-doctor", "skills",
-			"hig-components-content");
-		expectSkillPathLine(result.stdout, normalizedRepoDir, "ios-debugger-agent");
-		expectSkillPathLine(result.stdout, normalizedRepoDir, "swiftui-pro");
-	});
-});
-
-test("docs topic overview renders skill hints from ancestor guides with deeper overrides", async () => {
+test("docs topic overview renders grouped docs and skills without a Subtrees block", async () => {
 	await withDocsCliWorkspace(
-		"docs-topic-skill-hints-",
+		"docs-topic-recursive-overview-",
 		async ({ repoDir, env, normalizedRepoDir }) => {
 			await seedSkillBackedSection(repoDir);
-
 			await writeText(
-				topicDocsPath(repoDir, ".docs.md"),
+				topicDocsPath(repoDir, "docs", "guides", "simulator.md"),
 				[
 					"---",
-					`title: ${TEST_TOPIC_TITLE}`,
-					`short: ${TEST_TOPIC_SHORT}`,
-					`summary: ${TEST_TOPIC_SUMMARY}`,
-					"hints:",
-					"  - ios-debugger-agent: Build and debug on a booted simulator.",
-					"  - hig-doctor/skills/hig-components-content: General HIG content guidance.",
-					"  - malformed-entry-without-colon",
-					"  - swiftui-pro:",
+					"title: Simulator Guide",
+					"summary: Boot and prepare the simulator for Apple tooling.",
 					"---",
 					"",
-					`Use \`docs topic ${TEST_TOPIC_NAME} <section>\` to focus one section.`,
+					"# Simulator Guide",
 					"",
 				].join("\n"),
 			);
 			await writeText(
-				topicDocsPath(repoDir, "hig-doctor", "skills", ".docs.md"),
+				topicDocsPath(repoDir, "docs", "guides", "deep", "ignored.md"),
 				[
 					"---",
-					"title: HIG Skills",
-					"hints:",
-					"  - hig-components-content: Section override for HIG content guidance.",
+					"title: Deep Guide",
+					"summary: This doc lives below the root overview depth.",
 					"---",
 					"",
-					"# HIG Skills",
+					"# Deep Guide",
 					"",
 				].join("\n"),
 			);
@@ -120,34 +83,35 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 			const result = await runDocsCli(["topic", TEST_TOPIC_NAME], { cwd: repoDir, env });
 
 			expect(result.exitCode).toBe(0);
+			expect(hasHeading(result.stdout, 1, `Topic: ${TEST_TOPIC_TITLE}`)).toBe(true);
+			expect(result.stdout).toContain(topicDocsPathForOutput(normalizedRepoDir));
+			expect(result.stdout).toContain(topicDocsPathForOutput(normalizedRepoDir, "SOSUMI.md"));
+			expect(result.stdout).toContain("## Docs");
+			expect(result.stdout).toContain("## Skills");
+			expect(result.stdout).not.toContain("## Subtrees");
 			expect(result.stdout).toContain(
-				"$hig-components-content - Section override for HIG content guidance.",
+				`### docs\nPath: ${topicDocsPath(normalizedRepoDir, "docs")}/`,
 			);
 			expect(result.stdout).toContain(
-				[
-					`### ios-debugger-agent`,
-					`Path: ${topicDocsPath(normalizedRepoDir, "ios-debugger-agent", "SKILL.md")}`,
-					"",
-					"$ios-debugger-agent - Build and debug on a booted simulator.",
-				].join("\n"),
+				`#### guides\nPath: ${topicDocsPath(normalizedRepoDir, "docs", "guides")}/`,
 			);
+			expect(result.stdout).toContain("- simulator.md: Simulator Guide");
+			expect(result.stdout).not.toContain("ignored.md");
 			expect(result.stdout).toContain(
-				[
-					`### swiftui-pro`,
-					`Path: ${topicDocsPath(normalizedRepoDir, "swiftui-pro", "SKILL.md")}`,
-					"",
-					"$swiftui-pro",
-				].join("\n"),
+				`### hig-doctor\nPath: ${topicDocsPath(normalizedRepoDir, "hig-doctor")}/`,
+			);
+			expect(result.stdout).toContain("$hig-components-content");
+			expect(result.stdout).toContain(
+				`### ios-debugger-agent\nPath: ${
+					topicDocsPath(normalizedRepoDir, "ios-debugger-agent", "SKILL.md")
+				}`,
 			);
 		},
-		{
-			seedGlobalDocsIndex: false,
-			seedGlobalDocsHome: false,
-		},
+		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);
 });
 
-test("docs topic overview resolves hints by skill path instead of skill name", async () => {
+test("docs topic overview renders root-level skill hints by directory path", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-skill-hints-path-",
 		async ({ repoDir, env }) => {
@@ -186,100 +150,40 @@ test("docs topic overview resolves hints by skill path instead of skill name", a
 	);
 });
 
-test("docs topic overview renders multi-skill sections with a path template", async () => {
+test("docs topic focus accepts nested topic paths", async () => {
 	await withDocsCliWorkspace(
-		"docs-topic-skill-path-template-",
+		"docs-topic-focus-nested-docs-",
 		async ({ repoDir, env, normalizedRepoDir }) => {
 			await writeText(
-				topicDocsPath(repoDir, "skills", "alpha-skill", "SKILL.md"),
+				topicDocsPath(repoDir, "docs", "guides", "simulator.md"),
 				[
 					"---",
-					"name: alpha-skill",
-					"description: Alpha skill.",
+					"title: Simulator Guide",
+					"summary: Boot and prepare the simulator for Apple tooling.",
 					"---",
 					"",
-					"# Alpha Skill",
-					"",
-				].join("\n"),
-			);
-			await writeText(
-				topicDocsPath(repoDir, "skills", "beta-skill", "SKILL.md"),
-				[
-					"---",
-					"name: beta-skill",
-					"description: Beta skill.",
-					"---",
-					"",
-					"# Beta Skill",
+					"# Simulator Guide",
 					"",
 				].join("\n"),
 			);
 
-			const result = await runDocsCli(["topic", TEST_TOPIC_NAME], { cwd: repoDir, env });
+			const result = await runDocsCli(["topic", TEST_TOPIC_NAME, "docs/guides"], {
+				cwd: repoDir,
+				env,
+			});
 
 			expect(result.exitCode).toBe(0);
-			expect(result.stdout).toContain(
-				[
-					"### skills",
-					`Path: ${topicDocsPath(normalizedRepoDir, "skills", "{$name}", "SKILL.md")}`,
-					"",
-					"$alpha-skill",
-					"$beta-skill",
-				].join("\n"),
+			expect(result.stdout).toContain("## guides");
+			expect(normalizedPathForOutput(result.stdout)).toContain(
+				`source: ${topicDocsPathForOutput(normalizedRepoDir, "docs", "guides")}`,
 			);
+			expect(result.stdout).toContain("### Simulator Guide");
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);
 });
 
-test("docs topic overview renders docs sections as compact doc lists", async () => {
-	await withDocsCliWorkspace(
-		"docs-topic-doc-section-overview-",
-		async ({ repoDir, env, normalizedRepoDir }) => {
-			await writeText(
-				topicDocsPath(repoDir, "docs", "ng-hig-doctor.md"),
-				[
-					"---",
-					"title: ng hig-doctor",
-					"summary: Local CLI wrapper for HIG Doctor.",
-					"---",
-					"",
-					"# ng hig-doctor",
-					"",
-				].join("\n"),
-			);
-			await writeText(
-				topicDocsPath(repoDir, "docs", "SOSUMI.md"),
-				[
-					"---",
-					"title: Sosumi CLI",
-					"summary: Sosumi CLI docs.",
-					"---",
-					"",
-					"# Sosumi CLI",
-					"",
-				].join("\n"),
-			);
-
-			const result = await runDocsCli(["topic", TEST_TOPIC_NAME], { cwd: repoDir, env });
-
-			expect(result.exitCode).toBe(0);
-			expect(result.stdout).toContain(
-				[
-					"### docs",
-					`Path: ${topicDocsPath(normalizedRepoDir, "docs")}/`,
-					"",
-					"- ng-hig-doctor.md: ng hig-doctor",
-					"- SOSUMI.md: Sosumi CLI",
-				].join("\n"),
-			);
-			expect(result.stdout).not.toContain("contains:");
-		},
-		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
-	);
-});
-
-test("docs topic section focuses a merged section view", async () => {
+test("docs topic focus keeps merged path views", async () => {
 	await withDocsCliWorkspace("docs-topic-section-", async ({ repoDir, homeDir, env }) => {
 		const result = await runDocsCli(["topic", "qmd", "references"], { cwd: repoDir, env });
 
@@ -312,6 +216,44 @@ test("docs topic section renders a single root skill directly", async () => {
 			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3))
 				.toContain("- quickstart.md");
 		},
+	);
+});
+
+test("docs topic focus resolves nested skill paths directly", async () => {
+	await withDocsCliWorkspace(
+		"docs-topic-skill-path-",
+		async ({ repoDir, env, normalizedRepoDir }) => {
+			await seedSkillBackedSection(repoDir);
+			const result = await runDocsCli(
+				["topic", TEST_TOPIC_NAME, "hig-doctor/skills/hig-components-content"],
+				{ cwd: repoDir, env },
+			);
+			const referencesDir = topicDocsPath(
+				normalizedRepoDir,
+				"hig-doctor",
+				"skills",
+				"hig-components-content",
+				"references",
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(hasHeading(result.stdout, 2, "Apple HIG: Content Components")).toBe(true);
+			expect(result.stdout).toContain(
+				topicDocsPathForOutput(
+					normalizedRepoDir,
+					"hig-doctor",
+					"skills",
+					"hig-components-content",
+					"SKILL.md",
+				),
+			);
+			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3))
+				.toEqual([
+					"- alpha.md",
+					"- beta.md",
+				]);
+		},
+		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);
 });
 
@@ -390,7 +332,7 @@ test("docs bare topic selectors match docs topic when no registered docs overlap
 	);
 });
 
-test("docs topic skill-backed sections show only skills and grouped references", async () => {
+test("docs topic path focus keeps sibling docs outside nested skill paths", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-skills-",
 		async ({ repoDir, env, normalizedRepoDir }) => {
@@ -411,20 +353,19 @@ test("docs topic skill-backed sections show only skills and grouped references",
 			expect(normalizedPathForOutput(result.stdout)).toContain(
 				`source: ${topicDocsPathForOutput(normalizedRepoDir, "hig-doctor")}`,
 			);
-			expect(hasHeading(result.stdout, 3, "Skills")).toBe(true);
+			expect(result.stdout).toContain("### HIG Doctor Usage");
+			expect(hasHeading(result.stdout, 3, "skills")).toBe(true);
 			expect(hasHeading(result.stdout, 4, "Apple HIG: Content Components")).toBe(true);
 			expect(normalizedPathForOutput(result.stdout)).toContain(
-				`path: ${
-					topicDocsPathForOutput(
-						normalizedRepoDir,
-						"hig-doctor",
-						"skills",
-						"hig-components-content",
-						"SKILL.md",
-					)
-				}`,
+				topicDocsPathForOutput(
+					normalizedRepoDir,
+					"hig-doctor",
+					"skills",
+					"hig-components-content",
+					"SKILL.md",
+				),
 			);
-			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 5))
+			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3))
 				.toEqual([
 					"- alpha.md",
 					"- beta.md",

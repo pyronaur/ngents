@@ -3,6 +3,6 @@ export const docsCommandUsage = {
 	ls: "[where]",
 	park: "<name> [path]",
 	query: "[--limit <n>] <query...> | status",
-	topic: "[topic] [section]",
+	topic: "[topic] [path]",
 	update: "",
 } as const;

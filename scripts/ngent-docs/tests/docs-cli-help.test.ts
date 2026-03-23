@@ -64,7 +64,7 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain(CANONICAL_QUERY_USAGE);
 		expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
 		expect(result.stdout).not.toContain("docs park <name> [path]");
-		expect(result.stdout).toContain("docs topic [topic] [section]");
+		expect(result.stdout).toContain("docs topic [topic] [path]");
 		expect(result.stdout).toContain("docs <where>");
 		expect(result.stdout).toContain("docs ls [where]");
 		expect(result.stdout).toContain(
@@ -105,7 +105,7 @@ test("docs --help uses the same markdown help style without the docs index", asy
 		expect(help.stdout).toContain(CANONICAL_QUERY_USAGE);
 		expect(help.stdout).not.toContain(STALE_QUERY_USAGE);
 		expect(help.stdout).not.toContain("docs park <name> [path]");
-		expect(help.stdout).toContain("docs topic [topic] [section]");
+		expect(help.stdout).toContain("docs topic [topic] [path]");
 		expect(help.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
 		expect(help.stdout).not.toContain("web-fetching.md - web browser tools");
 		expect(help.stdout).not.toContain("## Project Docs");

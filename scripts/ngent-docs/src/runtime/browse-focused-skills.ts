@@ -108,8 +108,11 @@ export function isCompactFocusedSkillSection(section: SectionEntry): boolean {
 	return skill.relativePath === rootSkillRelativePath(section);
 }
 
-export function printCompactFocusedSkillSection(section: SectionEntry): void {
-	printLine(heading(2, skillDisplayLabel(section)));
+export function printCompactFocusedSkillSection(
+	section: SectionEntry,
+	options: { headingLevel?: 1 | 2 | 3 | 4 | 5 | 6 } = {},
+): void {
+	printLine(heading(options.headingLevel ?? 2, skillDisplayLabel(section)));
 	printSkillDescriptionAndReferences(section, {
 		pathLabel: false,
 		referenceHeadingPrefix: "###",
@@ -117,16 +120,22 @@ export function printCompactFocusedSkillSection(section: SectionEntry): void {
 	});
 }
 
-export function printFocusedSkillsBlock(section: SectionEntry): void {
+export function printFocusedSkillsBlock(
+	section: SectionEntry,
+	options: {
+		blockHeadingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+		entryHeadingPrefix?: "####" | "#####";
+	} = {},
+): void {
 	if (section.skills.length === 0) {
 		return;
 	}
 
-	printLine(heading(3, "Skills"));
+	printLine(heading(options.blockHeadingLevel ?? 3, "Skills"));
 	printLine();
 
 	for (const [index, skill] of section.skills.entries()) {
-		printLine(`#### ${skill.title ?? skill.name}`);
+		printLine(`${options.entryHeadingPrefix ?? "####"} ${skill.title ?? skill.name}`);
 		printSkillDescriptionAndReferences(
 			{
 				...section,

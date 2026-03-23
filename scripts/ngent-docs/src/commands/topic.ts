@@ -13,7 +13,7 @@ export const topicCommand = defineCommand({
 	configure: (command) => {
 		command
 			.argument("[topic]", "Topic to open.")
-			.argument("[section]", "Section to focus within the topic.");
+			.argument("[path]", "Path to focus within the topic.");
 	},
 	optionsSchema: topicOptionsSchema,
 	run: async ({ args }) => {

@@ -73,7 +73,7 @@ export function printScopedTopicBrowser(
 }
 
 export function printTopicBrowser(topics: TopicIndexRow[]): void {
-	printLine("Usage: docs topic [topic] [section]");
+	printLine("Usage: docs topic [topic] [path]");
 	printLine();
 	printScopedTopicBrowser(topics, {
 		title: "Topics",
@@ -81,5 +81,5 @@ export function printTopicBrowser(topics: TopicIndexRow[]): void {
 	});
 	printLine();
 	printLine("docs topic foo - view foo about/index first");
-	printLine("docs topic foo bar - learn about bar section");
+	printLine("docs topic foo bar/baz - focus one path inside the topic");
 }

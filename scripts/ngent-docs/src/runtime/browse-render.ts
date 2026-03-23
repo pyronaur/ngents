@@ -345,6 +345,10 @@ function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): strin
 	return path.basename(sectionKey);
 }
 
+function nextHeadingLevel(level: number): 2 | 3 | 4 | 5 | 6 {
+	return Math.min(6, level + 1) as 2 | 3 | 4 | 5 | 6;
+}
+
 function printGuideSectionMetadata(
 	guideBody: string | null,
 	error: string | undefined,
@@ -379,7 +383,61 @@ function printFocusedSectionBody(section: SectionEntry): void {
 			printLine();
 		}
 	}
-	if (section.markdownEntries.length === 0 && section.skills.length === 0) {
+
+	if ((section.skills.length > 0 || section.markdownEntries.length > 0) && section.children.length > 0) {
+		printLine();
+	}
+
+	for (const [index, child] of section.children.entries()) {
+		printFocusedSubtree(child, 3);
+		if (index < section.children.length - 1) {
+			printLine();
+		}
+	}
+	if (section.markdownEntries.length === 0 && section.skills.length === 0 && section.children.length === 0) {
+		printLine(pc.dim("[no section entries found]"));
+	}
+}
+
+function printFocusedSubtree(section: SectionEntry, headingLevel: 2 | 3 | 4 | 5 | 6): void {
+	if (isCompactFocusedSkillSection(section)) {
+		printCompactFocusedSkillSection(section, { headingLevel });
+		return;
+	}
+
+	printLine(heading(headingLevel, sharedSectionTitle(section.key, [section])));
+	printLine(`${pc.dim("path:")} ${pc.dim(section.absolutePath)}/`);
+	printGuideSectionMetadata(section.guideBody, section.error, section.readWhen);
+
+	if (section.skills.length > 0) {
+		printFocusedSkillsBlock(section, {
+			blockHeadingLevel: nextHeadingLevel(headingLevel),
+			entryHeadingPrefix: "#####",
+		});
+		if (section.markdownEntries.length > 0 || section.children.length > 0) {
+			printLine();
+		}
+	}
+
+	for (const [index, entry] of section.markdownEntries.entries()) {
+		printMarkdownDetails(entry, nextHeadingLevel(headingLevel));
+		if (index < section.markdownEntries.length - 1) {
+			printLine();
+		}
+	}
+
+	if (section.markdownEntries.length > 0 && section.children.length > 0) {
+		printLine();
+	}
+
+	for (const [index, child] of section.children.entries()) {
+		printFocusedSubtree(child, nextHeadingLevel(headingLevel));
+		if (index < section.children.length - 1) {
+			printLine();
+		}
+	}
+
+	if (section.skills.length === 0 && section.markdownEntries.length === 0 && section.children.length === 0) {
 		printLine(pc.dim("[no section entries found]"));
 	}
 }

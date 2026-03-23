@@ -19,7 +19,7 @@ const rootHelpTemplateContext: RootHelpTemplateContext = {
 	query_usage: "docs query [--limit <n>] <query...> | status",
 	show_docs_index: false,
 	topic_command: "docs topic",
-	topic_usage: "docs topic [topic] [section]",
+	topic_usage: "docs topic [topic] [path]",
 	topic_lines: [],
 	topics_header: "TOPIC  TITLE  DESCRIPTION",
 };

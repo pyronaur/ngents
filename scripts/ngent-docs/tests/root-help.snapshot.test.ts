@@ -101,7 +101,7 @@ test("printRootHelp renders the bare root help behavior", async () => {
 	expect(rendered).toContain("docs <where>");
 	expect(rendered).toContain("docs ls [where]");
 	expect(rendered).toContain("docs query [--limit <n>] <query...> | status");
-	expect(rendered).toContain("docs topic [topic] [section]");
+	expect(rendered).toContain("docs topic [topic] [path]");
 	expect(rendered).toContain("docs <topic>");
 	expect(rendered).toContain("docs <docs-root>");
 	expect(rendered).toContain("platform  Platform Library  platform docs");

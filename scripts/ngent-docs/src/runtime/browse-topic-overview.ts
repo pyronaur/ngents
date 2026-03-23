@@ -18,6 +18,8 @@ const {
 	toDisplayPath,
 } = browseContracts;
 
+const ROOT_OVERVIEW_DEPTH = 2;
+
 function printGuideBody(guideBody: string): void {
 	for (const line of guideBody.split("\n")) {
 		printLine(line);
@@ -28,6 +30,10 @@ function printSeparator(): void {
 	printLine();
 	printLine("---");
 	printLine();
+}
+
+function clampedHeading(level: number): 1 | 2 | 3 | 4 | 5 | 6 {
+	return Math.max(1, Math.min(6, level)) as 1 | 2 | 3 | 4 | 5 | 6;
 }
 
 function printTopicDocMetadata(entry: MarkdownEntry): void {
@@ -49,7 +55,7 @@ function printTopicDocMetadata(entry: MarkdownEntry): void {
 	}
 }
 
-function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4): void {
+function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4 | 5 | 6): void {
 	printLine(
 		heading(
 			headingLevel,
@@ -58,30 +64,6 @@ function printTopicDoc(entry: MarkdownEntry, headingLevel: 3 | 4): void {
 	);
 	printLine(entry.absolutePath);
 	printTopicDocMetadata(entry);
-}
-
-function printTopicDocs(entries: MarkdownEntry[], options: {
-	sectionHeadingLevel: 2 | 3;
-	entryHeadingLevel: 3 | 4;
-}): void {
-	printLine(heading(options.sectionHeadingLevel, "Docs"));
-	printLine();
-
-	if (entries.length === 1) {
-		const [entry] = entries;
-		if (entry) {
-			printLine(entry.absolutePath);
-			printTopicDocMetadata(entry);
-		}
-		return;
-	}
-
-	for (const [index, entry] of entries.entries()) {
-		printTopicDoc(entry, options.entryHeadingLevel);
-		if (index < entries.length - 1) {
-			printSeparator();
-		}
-	}
 }
 
 function relativePathParts(basePath: string, absolutePath: string): string[] {
@@ -178,47 +160,35 @@ function printTopicSkill(skill: SkillEntry): void {
 	printLine(`$${skill.name}`);
 }
 
-function printPathLine(templatePath: string | null): void {
-	if (!templatePath) {
+function printPathLine(value: string | null): void {
+	if (!value) {
 		return;
 	}
 
-	printLine(`Path: ${templatePath}`);
+	printLine(`Path: ${value}`);
 }
 
-function skillPathTemplate(section: SectionEntry): string | null {
-	return entryPathTemplate(
-		section.absolutePath,
-		section.skills.map(skill => ({
-			absolutePath: skill.absolutePath,
-			variableSegment: skill.name,
-		})),
-	);
-}
+function printNodeMetadata(node: Pick<
+	SectionEntry,
+	"summary" | "short" | "readWhen" | "error"
+>): boolean {
+	const summary = normalizeInlineText(node.summary) ?? compactDescription(node.short, null);
+	const readWhen = node.readWhen.length > 0 ? `Read when: ${node.readWhen.join("; ")}` : null;
+	if (!summary && !readWhen && !node.error) {
+		return false;
+	}
 
-function sectionDirectoryPath(section: SectionEntry): string {
-	return `${section.absolutePath}/`;
-}
-
-function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4): void {
-	printLine(heading(headingLevel, section.key));
-	printPathLine(skillPathTemplate(section));
 	printLine();
-
-	for (const skill of section.skills) {
-		printTopicSkill(skill);
+	if (summary) {
+		printLine(summary);
 	}
-}
-
-function printTopicSkills(sections: SectionEntry[], sectionHeadingLevel: 2 | 3): void {
-	printLine(heading(sectionHeadingLevel, "Skills"));
-
-	for (const [index, section] of sections.entries()) {
-		printTopicSkillSection(section, sectionHeadingLevel === 2 ? 3 : 4);
-		if (index < sections.length - 1) {
-			printLine();
-		}
+	if (readWhen) {
+		printLine(readWhen);
 	}
+	if (node.error) {
+		printLine(errorText(node.error));
+	}
+	return true;
 }
 
 function printTopicSectionDoc(entry: MarkdownEntry): void {
@@ -232,47 +202,149 @@ function printTopicSectionDoc(entry: MarkdownEntry): void {
 	printLine(`- ${fileName}: ${title}`);
 }
 
-function printTopicSection(section: SectionEntry, headingLevel: 3 | 4): void {
-	printLine(heading(headingLevel, section.title));
-	printPathLine(sectionDirectoryPath(section));
+function sectionHasSkillContent(section: SectionEntry): boolean {
+	if (section.skills.length > 0) {
+		return true;
+	}
 
-	const summary = normalizeInlineText(section.summary) ?? compactDescription(section.short, null);
-	const readWhen = section.readWhen.length > 0 ? `Read when: ${section.readWhen.join("; ")}` : null;
-	if (!summary && section.markdownEntries.length === 0 && !readWhen && !section.error) {
+	return section.children.some(child => sectionHasSkillContent(child));
+}
+
+function collectOverviewSkills(section: SectionEntry): SkillEntry[] {
+	const skills = [...section.skills];
+	for (const child of section.children) {
+		skills.push(...collectOverviewSkills(child));
+	}
+
+	return skills.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+}
+
+function skillPathTemplate(section: SectionEntry, skills: SkillEntry[]): string | null {
+	return entryPathTemplate(
+		section.absolutePath,
+		skills.map(skill => ({
+			absolutePath: skill.absolutePath,
+			variableSegment: skill.name,
+		})),
+	);
+}
+
+function sectionDirectoryPath(section: SectionEntry): string {
+	return `${section.absolutePath}/`;
+}
+
+function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4 | 5 | 6): void {
+	const skills = collectOverviewSkills(section);
+	if (skills.length === 0) {
 		return;
 	}
 
+	printLine(heading(headingLevel, section.key));
+	const pathLine = section.skills.length > 0 ? skillPathTemplate(section, skills) : sectionDirectoryPath(section);
+	printPathLine(pathLine);
+	const printedMetadata = printNodeMetadata(section);
+	if (printedMetadata || skills.length > 0) {
+		printLine();
+	}
+
+	for (const skill of skills) {
+		printTopicSkill(skill);
+	}
+}
+
+function printTopicSkills(
+	sections: SectionEntry[],
+	options: {
+		sectionHeadingLevel: 2 | 3 | 4 | 5 | 6;
+		entryHeadingLevel: 3 | 4 | 5 | 6;
+	},
+): void {
+	printLine(heading(options.sectionHeadingLevel, "Skills"));
 	printLine();
-	if (summary) {
-		printLine(summary);
-	}
-	if (readWhen) {
-		printLine(readWhen);
-	}
-	if (section.error) {
-		printLine(errorText(section.error));
-	}
-	if (section.markdownEntries.length > 0) {
-		if (summary || readWhen || section.error) {
+
+	for (const [index, section] of sections.entries()) {
+		printTopicSkillSection(section, options.entryHeadingLevel);
+		if (index < sections.length - 1) {
 			printLine();
-		}
-		for (const entry of section.markdownEntries) {
-			printTopicSectionDoc(entry);
 		}
 	}
 }
 
-function printTopicSections(sections: SectionEntry[], options: {
-	sectionHeadingLevel: 2 | 3;
-	entryHeadingLevel: 3 | 4;
-}): void {
-	printLine(heading(options.sectionHeadingLevel, "Sections"));
+function printTopicDocGroup(
+	section: SectionEntry,
+	headingLevel: 3 | 4 | 5 | 6,
+	depth: number,
+	maxDepth: number,
+): void {
+	printLine(heading(headingLevel, section.title));
+	printPathLine(sectionDirectoryPath(section));
+	const printedMetadata = printNodeMetadata(section);
+	const docChildren = section.children.filter(child => !sectionHasSkillContent(child));
+
+	if (section.markdownEntries.length > 0) {
+		printLine();
+		for (const entry of section.markdownEntries) {
+			printTopicSectionDoc(entry);
+		}
+	}
+
+	if (depth >= maxDepth || docChildren.length === 0) {
+		return;
+	}
+
+	if (printedMetadata || section.markdownEntries.length > 0) {
+		printLine();
+	}
+
+	for (const [index, child] of docChildren.entries()) {
+		printTopicDocGroup(child, clampedHeading(headingLevel + 1), depth + 1, maxDepth);
+		if (index < docChildren.length - 1) {
+			printLine();
+		}
+	}
+}
+
+function printTopicDocs(
+	rootDocs: MarkdownEntry[],
+	sections: SectionEntry[],
+	options: {
+		sectionHeadingLevel: 2 | 3 | 4 | 5 | 6;
+		entryHeadingLevel: 3 | 4 | 5 | 6;
+		maxDepth: number;
+	},
+): void {
+	printLine(heading(options.sectionHeadingLevel, "Docs"));
 	printLine();
 
-	for (const [index, section] of sections.entries()) {
-		printTopicSection(section, options.entryHeadingLevel);
-		if (index < sections.length - 1) {
-			printLine();
+	let printedAny = false;
+
+	if (rootDocs.length === 1 && sections.length === 0) {
+		const [entry] = rootDocs;
+		if (entry) {
+			printLine(entry.absolutePath);
+			printTopicDocMetadata(entry);
+			printedAny = true;
+		}
+	} else if (rootDocs.length > 0) {
+		for (const [index, entry] of rootDocs.entries()) {
+			printTopicDoc(entry, options.entryHeadingLevel);
+			if (index < rootDocs.length - 1) {
+				printSeparator();
+			}
+		}
+		printedAny = true;
+	}
+
+	if (sections.length > 0) {
+		if (printedAny) {
+			printSeparator();
+		}
+
+		for (const [index, section] of sections.entries()) {
+			printTopicDocGroup(section, options.entryHeadingLevel, 1, options.maxDepth);
+			if (index < sections.length - 1) {
+				printLine();
+			}
 		}
 	}
 }
@@ -295,24 +367,20 @@ function printContributionHeader(contribution: TopicContribution): void {
 function printContributionBlocksWithOptions(
 	contribution: TopicContribution,
 	options: {
-		sectionHeadingLevel: 2 | 3;
-		entryHeadingLevel: 3 | 4;
+		sectionHeadingLevel: 2 | 3 | 4 | 5 | 6;
+		entryHeadingLevel: 3 | 4 | 5 | 6;
+		maxDepth: number;
 	},
 ): void {
-	const skillSections = contribution.sectionEntries.filter(section => section.skills.length > 0);
-	const regularSections = contribution.sectionEntries.filter(section =>
-		section.skills.length === 0
-	);
+	const docsSections = contribution.sectionEntries.filter(section => !sectionHasSkillContent(section));
+	const skillSections = contribution.sectionEntries.filter(section => sectionHasSkillContent(section));
 	const blocks: Array<() => void> = [];
 
-	if (contribution.markdownEntries.length > 0) {
-		blocks.push(() => printTopicDocs(contribution.markdownEntries, options));
+	if (contribution.markdownEntries.length > 0 || docsSections.length > 0) {
+		blocks.push(() => printTopicDocs(contribution.markdownEntries, docsSections, options));
 	}
 	if (skillSections.length > 0) {
-		blocks.push(() => printTopicSkills(skillSections, options.sectionHeadingLevel));
-	}
-	if (regularSections.length > 0) {
-		blocks.push(() => printTopicSections(regularSections, options));
+		blocks.push(() => printTopicSkills(skillSections, options));
 	}
 
 	for (const [index, block] of blocks.entries()) {
@@ -326,8 +394,9 @@ function printContributionBlocksWithOptions(
 function printTopicContribution(
 	contribution: TopicContribution,
 	options: {
-		sectionHeadingLevel: 2 | 3;
-		entryHeadingLevel: 3 | 4;
+		sectionHeadingLevel: 2 | 3 | 4 | 5 | 6;
+		entryHeadingLevel: 3 | 4 | 5 | 6;
+		maxDepth: number;
 	},
 ): void {
 	printContributionHeader(contribution);
@@ -342,6 +411,7 @@ export function printTopicOverview(topic: MergedTopic, options: {
 	titlePrefix?: string;
 	sectionHeadingLevel?: 2 | 3;
 	entryHeadingLevel?: 3 | 4;
+	maxDepth?: number;
 } = {}): void {
 	const titleLevel = options.titleLevel ?? 1;
 	const titlePrefix = options.titlePrefix ?? "";
@@ -356,6 +426,7 @@ export function printTopicOverview(topic: MergedTopic, options: {
 		printTopicContribution(contribution, {
 			sectionHeadingLevel,
 			entryHeadingLevel,
+			maxDepth: options.maxDepth ?? ROOT_OVERVIEW_DEPTH,
 		});
 		if (index < topic.contributions.length - 1) {
 			printLine();

@@ -141,8 +141,11 @@ Global docs collection metadata is cached for 1 hour.
 - When the selector matches a parked collection name and not a topic name, it lists only the topics from that parked collection.
 - It is the main browse surface for grouped reusable knowledge.
 - It treats a topic as a recursive docs tree rooted at `docs/topics/<topic>/`.
+- Topic overviews render merged guide text before the topic heading.
 - Topic overviews render grouped `Docs` and `Skills` blocks.
+- Topic overviews merge same-topic contributions into one `Docs` block and one `Skills` block.
 - Topic overviews keep docs as docs, keep skills as skills, and use directories only for grouping and navigation.
+- Topic overviews group docs by absolute owning directory path and render compact file lists.
 - Topic overviews expand nested doc directories up to depth 2.
 - Exact paths such as `docs/guides` or `hig-doctor/skills/hig-components-content` can be focused directly.
 

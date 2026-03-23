@@ -273,7 +273,10 @@ test("docs park adds a named collection, refreshes the index, and exposes parked
 		});
 		expect(topicResult.exitCode).toBe(0);
 		expect(topicResult.stdout).toContain("# Topic: Infrastructure");
-		expect(topicResult.stdout).toContain(path.join(projectDir, "docs", "topics", "infra"));
+		expect(topicResult.stdout).toContain("Infra body.");
+		expect(topicResult.stdout.indexOf("Infra body.")).toBeLessThan(
+			topicResult.stdout.indexOf("# Topic: Infrastructure"),
+		);
 	});
 });
 

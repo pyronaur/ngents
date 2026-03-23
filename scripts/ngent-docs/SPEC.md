@@ -94,8 +94,10 @@ Current decisions:
 
 - A merged topic preserves separate contributions rather than flattening them
   into one synthetic directory.
-- Contribution guide body, docs, skills, and grouped paths are rendered contribution
-  by contribution.
+- Topic overview guide content is rendered in contribution order before the
+  topic heading.
+- Topic overview docs and skills are rendered as merged blocks while preserving
+  contribution priority order within those blocks.
 
 ### `MergedTopic`
 
@@ -294,13 +296,14 @@ Current decisions:
 Current decisions:
 
 - Topic overviews print grouped `Docs` and `Skills` headings.
+- Guide content from topic contributions renders before `# Topic: <title>`.
 - The root overview expands nested doc directories to depth 2 from the topic root.
-- Grouped docs print trailing-slash directory `Path:` lines.
+- Docs render as compact buckets grouped by absolute owning directory path.
+- Topic-root docs and nested docs use the same compact bucket format.
 - Direct skill directories can print the exact `SKILL.md` `Path:`.
 - Skill overview entries are compact and print `$<skill.name>` with an
   optional hint.
-- Grouped path metadata can include summary, `readWhen`, and parse error.
-- Grouped docs print direct Markdown docs as compact filename bullets.
+- Skill group metadata can include summary, `readWhen`, and parse error.
 - Mixed directories that contain nested skills are classified under `Skills` in
   the root overview.
 - Deeper nested content stays navigable through focused paths instead of

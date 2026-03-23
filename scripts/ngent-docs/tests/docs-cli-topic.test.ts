@@ -19,6 +19,10 @@ import {
 	writeText,
 } from "./helpers/docs-cli-fixture.ts";
 
+function countMatches(text: string, pattern: RegExp): number {
+	return Array.from(text.matchAll(pattern)).length;
+}
+
 function expectTopicIndex(stdout: string): void {
 	expect(stdout).toContain("Usage: docs topic [topic] [path]");
 	expect(stdout).toContain("qmd");
@@ -41,12 +45,23 @@ test("docs topic shows the merged topic index", async () => {
 test("docs topic merges local and global topic contributions", async () => {
 	await withDocsCliWorkspace("docs-topic-merged-", async ({ repoDir, homeDir, env }) => {
 		const result = await runDocsCli(["topic", "qmd"], { cwd: repoDir, env });
+		const normalizedStdout = normalizedPathForOutput(result.stdout);
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("# Topic: QMD");
-		expect(result.stdout).toContain(topicDocsPath(repoDir, "..", "qmd"));
-		expect(result.stdout).toContain(globalDocsPath(homeDir, "topics", "qmd"));
-		expect(result.stdout).toContain("Use the local QMD docs for repo-specific workflows.");
-		expect(result.stdout).toContain("Search docs quickly from anywhere.");
+		const topicHeadingIndex = result.stdout.indexOf("# Topic: QMD");
+		const localGuideIndex = result.stdout.indexOf("Use the local QMD docs for repo-specific workflows.");
+		const globalGuideIndex = result.stdout.indexOf("Search docs quickly from anywhere.");
+		expect(topicHeadingIndex).toBeGreaterThan(0);
+		expect(localGuideIndex).toBeGreaterThanOrEqual(0);
+		expect(globalGuideIndex).toBeGreaterThanOrEqual(0);
+		expect(localGuideIndex).toBeLessThan(topicHeadingIndex);
+		expect(globalGuideIndex).toBeLessThan(topicHeadingIndex);
+		expect(countMatches(result.stdout, /^## Docs$/gm)).toBe(1);
+		expect(normalizedStdout).toContain(
+			`### ${topicDocsPathForOutput(repoDir, "..", "qmd", "references")}`,
+		);
+		expect(normalizedStdout).toContain(
+			`### ${normalizedPathForOutput(globalDocsPath(homeDir, "topics", "qmd", "references"))}`,
+		);
 	});
 });
 
@@ -81,29 +96,38 @@ test("docs topic overview renders grouped docs and skills without a Subtrees blo
 			);
 
 			const result = await runDocsCli(["topic", TEST_TOPIC_NAME], { cwd: repoDir, env });
+			const normalizedStdout = normalizedPathForOutput(result.stdout);
 
 			expect(result.exitCode).toBe(0);
+			expect(
+				result.stdout.indexOf(
+					`Use \`docs topic ${TEST_TOPIC_NAME} <path>\` to focus one path inside the topic.`,
+				),
+			).toBeLessThan(result.stdout.indexOf(`# Topic: ${TEST_TOPIC_TITLE}`));
 			expect(hasHeading(result.stdout, 1, `Topic: ${TEST_TOPIC_TITLE}`)).toBe(true);
-			expect(result.stdout).toContain(topicDocsPathForOutput(normalizedRepoDir));
-			expect(result.stdout).toContain(topicDocsPathForOutput(normalizedRepoDir, "SOSUMI.md"));
 			expect(result.stdout).toContain("## Docs");
 			expect(result.stdout).toContain("## Skills");
 			expect(result.stdout).not.toContain("## Subtrees");
+			expect(countMatches(result.stdout, /^## Docs$/gm)).toBe(1);
+			expect(countMatches(result.stdout, /^## Skills$/gm)).toBe(1);
+			expect(normalizedStdout).toContain(`### ${topicDocsPathForOutput(normalizedRepoDir)}`);
 			expect(result.stdout).toContain(
-				`### docs\nPath: ${topicDocsPath(normalizedRepoDir, "docs")}/`,
+				"- SOSUMI.md - Sosumi CLI and MCP reference for fetching Apple Developer doc...",
+			);
+			expect(normalizedStdout).toContain(
+				`### ${topicDocsPathForOutput(normalizedRepoDir, "docs", "guides")}`,
 			);
 			expect(result.stdout).toContain(
-				`#### guides\nPath: ${topicDocsPath(normalizedRepoDir, "docs", "guides")}/`,
+				"- simulator.md - Boot and prepare the simulator for Apple tooling.",
 			);
-			expect(result.stdout).toContain("- simulator.md: Simulator Guide");
 			expect(result.stdout).not.toContain("ignored.md");
-			expect(result.stdout).toContain(
-				`### hig-doctor\nPath: ${topicDocsPath(normalizedRepoDir, "hig-doctor")}/`,
+			expect(normalizedStdout).toContain(
+				`### hig-doctor\nPath: ${topicDocsPathForOutput(normalizedRepoDir, "hig-doctor")}/`,
 			);
 			expect(result.stdout).toContain("$hig-components-content");
-			expect(result.stdout).toContain(
+			expect(normalizedStdout).toContain(
 				`### ios-debugger-agent\nPath: ${
-					topicDocsPath(normalizedRepoDir, "ios-debugger-agent", "SKILL.md")
+					topicDocsPathForOutput(normalizedRepoDir, "ios-debugger-agent", "SKILL.md")
 				}`,
 			);
 		},

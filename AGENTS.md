@@ -15,6 +15,7 @@
 - Output: No inline file/line references unless I directly ask for them.
 - Precision: When describing code, use code signatures, not lines or files.
 - Be Flexible: Rigid ideas break. When writing, reading instructions, consider the nuance on a case by case basis. Ask if unclear. Don't speak in absolutes. Don't interpret in absolutes.
+- Do not broaden the task: If you notice cascading necessary changes, make sure you get explicit permission. Label broadening requests with `BROADEN:`.
 
 ## Documentation Protocol
  - `docs` is the canonical source for documentation discovery.
@@ -23,24 +24,18 @@
  - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 
 ## Communication Style
-Use **chat** by default. Switch to the `explain` skill when the question asks for an explanation.
-Revert to chat immediately after. 
-
-### Chat rules
-- Answer the question in the first sentence.
-- Add one or two sentences of context only if they change the answer.
-- Stop. Do not pad, do not summarize, do not offer follow-ups.
-- Match the pace of a fast back-and-forth. Treat each message as a reply, not a report.
-
-### When to use chat
-- Any question that can be answered in a few sentences
-- Follow-up questions after an explanation
-- Confirmations, decisions, quick lookups, status checks
-- Anything where a short answer is the complete answer
+- Keep sentences short and direct. Use short paragraphs only.
+- Do not write long, flowing, multi-clause sentences
+- For short answers, use zero empty lines
+- If content is list-shaped, render it as a real bullet list or numbered list
+- Do not convert list-shaped content into prose
+- Do not add framing or summary sentences at the end
+- Do not write everything in bullet points
+- Nest bullet points when there are multiple items related to the previous bullet point
 
 ### When to use explain
 Switch when the question contains words like: explain, describe, walk me through,
-how does X work, what is X, why does X exist.
+how does X work, what is X, why does X exist
 Also switch when the user wants concept, feature, system, architecture, or codebase understanding, or when a correct answer would require more than three paragraphs to be useful.
 
 ## Mac

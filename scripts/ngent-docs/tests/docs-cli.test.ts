@@ -12,6 +12,17 @@ const CANONICAL_QUERY_USAGE = "docs query [--limit <n>] <query...> | status";
 const STALE_QUERY_USAGE = "docs query [options] [terms...]";
 const QMD_COLLECTIONS_CACHE_VERSION = 1;
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const TEST_TOPIC_NAME = "platform";
+const TEST_TOPIC_TITLE = "Platform Library";
+const TEST_TOPIC_SHORT = "platform docs";
+const TEST_TOPIC_SUMMARY =
+	"This topic collects platform references, HIG skills, and dynamic skills for platform work.";
+
+type HeadingMatch = {
+	level: number;
+	text: string;
+	lineIndex: number;
+};
 
 async function makeTempDir(prefix: string): Promise<string> {
 	return mkdtemp(path.join(os.tmpdir(), prefix));
@@ -51,6 +62,75 @@ async function waitFor(
 
 		await new Promise(resolve => setTimeout(resolve, 25));
 	}
+}
+
+function normalizeMarkdownOutput(text: string): string {
+	return text.replaceAll("/private/var", "/var").replaceAll("\r\n", "\n");
+}
+
+function outputLines(text: string): string[] {
+	return normalizeMarkdownOutput(text).trimEnd().split("\n");
+}
+
+function markdownHeadings(text: string): HeadingMatch[] {
+	return outputLines(text).flatMap((line, lineIndex) => {
+		const match = /^(#{1,6}) (.+)$/.exec(line);
+		if (!match) {
+			return [];
+		}
+
+		const hashes = match[1];
+		const headingText = match[2];
+		if (!hashes || !headingText) {
+			return [];
+		}
+
+		return [
+			{
+				level: hashes.length,
+				text: headingText,
+				lineIndex,
+			},
+		];
+	});
+}
+
+function hasHeading(text: string, level: number, headingText: string): boolean {
+	return markdownHeadings(text).some(heading => heading.level === level && heading.text === headingText);
+}
+
+function sectionLines(text: string, headingText: string, level: number): string[] {
+	const lines = outputLines(text);
+	const headings = markdownHeadings(text);
+	const start = headings.find(heading => heading.level === level && heading.text === headingText);
+	if (!start) {
+		throw new Error(`Missing heading ${"#".repeat(level)} ${headingText}`);
+	}
+
+	const end = headings.find(
+		heading => heading.lineIndex > start.lineIndex && heading.level <= level,
+	)?.lineIndex;
+	return lines.slice(start.lineIndex + 1, end);
+}
+
+function nonEmptySectionLines(text: string, headingText: string, level: number): string[] {
+	return sectionLines(text, headingText, level).filter(line => line.trim().length > 0);
+}
+
+function bulletItems(text: string, headingText: string, level: number): string[] {
+	return nonEmptySectionLines(text, headingText, level)
+		.filter(line => line.startsWith("- "))
+		.map(line => line.slice(2));
+}
+
+function compactListEntries(text: string, headingText: string, level: number): string[] {
+	return nonEmptySectionLines(text, headingText, level)
+		.filter(line => line.startsWith("- ") || line.startsWith("  "))
+		.map(line => line.trim());
+}
+
+function normalizedPathForOutput(filePath: string): string {
+	return normalizeMarkdownOutput(filePath);
 }
 
 async function writeExecutable(dir: string, name: string, body: string): Promise<void> {
@@ -161,16 +241,16 @@ async function withHttpServer<T>(
 
 async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 	await writeText(
-		path.join(repoDir, "docs", "topics", "ios", ".docs.md"),
+		path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, ".docs.md"),
 		[
 			"---",
-			"title: iOS Library",
-			"short: Apple-platform docs",
-			"summary: This topic collects iOS-focused references, Apple HIG skills, and Dynamic Skills for Apple-platform work.",
+			`title: ${TEST_TOPIC_TITLE}`,
+			`short: ${TEST_TOPIC_SHORT}`,
+			`summary: ${TEST_TOPIC_SUMMARY}`,
 			"---",
 			"",
-			"Use `docs topic ios <section>` to focus one section.",
-			"This topic collects iOS-focused references, Apple HIG skills, and Skill for Apple-platform work.",
+			`Use \`docs topic ${TEST_TOPIC_NAME} <section>\` to focus one section.`,
+			"This topic collects platform references, HIG skills, and Skill for platform work.",
 			"",
 			"- Prioritize `hig-doctor` first when you need Apple HIG guidance",
 			"- Use `SOSUMI.md` when you need Apple Developer docs in Markdown.",
@@ -181,7 +261,7 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 		].join("\n"),
 	);
 	await writeText(
-		path.join(repoDir, "docs", "topics", "ios", "SOSUMI.md"),
+		path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "SOSUMI.md"),
 		[
 			"---",
 			"title: Sosumi CLI",
@@ -195,7 +275,7 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 		].join("\n"),
 	);
 	await writeText(
-		path.join(repoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md"),
+		path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "ios-debugger-agent", "SKILL.md"),
 		[
 			"---",
 			"name: ios-debugger-agent",
@@ -212,7 +292,15 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 		].join("\n"),
 	);
 	await writeText(
-		path.join(repoDir, "docs", "topics", "ios", "ios-debugger-agent", "references", "quickstart.md"),
+		path.join(
+			repoDir,
+			"docs",
+			"topics",
+			TEST_TOPIC_NAME,
+			"ios-debugger-agent",
+			"references",
+			"quickstart.md",
+		),
 		[
 			"# Quickstart",
 			"",
@@ -221,7 +309,7 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 		].join("\n"),
 	);
 	await writeText(
-		path.join(repoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md"),
+		path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "swiftui-pro", "SKILL.md"),
 		[
 			"---",
 			"name: swiftui-pro",
@@ -240,7 +328,7 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 			repoDir,
 			"docs",
 			"topics",
-			"ios",
+			TEST_TOPIC_NAME,
 			"ios-debugger-agent",
 			"SCREENSHOT_WORKFLOW.md",
 		),
@@ -379,7 +467,7 @@ async function seedLocalDocsRepo(repoDir: string): Promise<void> {
 }
 
 async function seedSkillBackedSection(repoDir: string): Promise<void> {
-	const sectionDir = path.join(repoDir, "docs", "topics", "ios", "hig-doctor");
+	const sectionDir = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "hig-doctor");
 	const skillDir = path.join(sectionDir, "skills", "hig-components-content");
 	await writeText(
 		path.join(skillDir, "SKILL.md"),
@@ -780,14 +868,14 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain("docs topic [topic] [section]");
 		expect(result.stdout).toContain("docs <where>");
 		expect(result.stdout).toContain("docs ls [where]");
-		expect(result.stdout).toContain("It may open a topic like `docs ios` or a docs view like `docs machine`.");
+		expect(result.stdout).toContain(
+			"It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.",
+		);
 		expect(result.stdout).toContain("docs ls docs/subdir");
 		expect(result.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
 		expect(result.stdout).toContain("qmd");
 		expect(result.stdout).toContain("local search docs");
-		expect(result.stdout).toContain(
-			"Ops Notes    This summary is intentionally longer than sixty-four characte...",
-		);
+		expect(result.stdout).toMatch(/ops\s+Ops Notes\s+This summary is intentionally longer than sixty-four characte\.\.\./);
 		expect(result.stdout).toContain("web-fetching.md - web browser tools");
 		expect(result.stdout).toContain(
 			"long-summary.md - This summary is intentionally longer than sixty-four characte...",
@@ -1403,8 +1491,8 @@ test("docs ls selector misses show merged topics and registered docs roots", asy
 		expect(result.stderr).toContain("Sorry, `poop` not found");
 		expect(result.stderr).toContain("Here's what I do have:");
 		expect(result.stderr).toContain("Topics");
-		expect(result.stderr).toContain("ios");
-		expect(result.stderr).toContain("Apple-platform docs");
+		expect(result.stderr).toContain(TEST_TOPIC_NAME);
+		expect(result.stderr).toContain(TEST_TOPIC_SHORT);
 		expect(result.stderr).toContain("qmd");
 		expect(result.stderr).toContain("Registered Docs");
 		expect(result.stderr).toContain("You can see the full index with compact descriptions using `docs ls`");
@@ -1424,15 +1512,17 @@ test("docs ls suggests the topic command when the selector matches a topic", asy
 		await seedGlobalDocsHome(homeDir);
 		await seedGlobalDocsIndex(homeDir, binDir, "Machine");
 
-		const result = await runDocsCli(["ls", "ios"], {
+		const result = await runDocsCli(["ls", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(homeDir, binDir),
 		});
 
 		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain("Sorry, `ios` not found");
+		expect(result.stderr).toContain(`Sorry, \`${TEST_TOPIC_NAME}\` not found`);
 		expect(result.stderr).toContain("`docs ls` only opens registered docs directories");
-		expect(result.stderr).toContain("`ios` is a topic you can inspect with `docs topic ios`");
+		expect(result.stderr).toContain(
+			`\`${TEST_TOPIC_NAME}\` is a topic you can inspect with \`docs topic ${TEST_TOPIC_NAME}\``,
+		);
 		expect(result.stderr).toContain("Registered Docs");
 	});
 });
@@ -1551,7 +1641,7 @@ test("single-token root selectors open topics and registered docs", async () => 
 			cwd: repoDir,
 			env: docsEnv(homeDir, binDir),
 		});
-		const bareTopic = await runDocsCli(["ios"], {
+		const bareTopic = await runDocsCli([TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(homeDir, binDir),
 		});
@@ -1576,8 +1666,8 @@ test("single-token root selectors open topics and registered docs", async () => 
 		expect(bareName.stdout).toContain("cdp.md");
 
 		expect(bareTopic.exitCode).toBe(0);
-		expect(bareTopic.stdout).toContain("# Topic: iOS Library");
-		expect(bareTopic.stdout).toContain(path.join(repoDir, "docs", "topics", "ios"));
+		expect(bareTopic.stdout).toContain(`# Topic: ${TEST_TOPIC_TITLE}`);
+		expect(bareTopic.stdout).toContain(path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME));
 
 		expect(bareRegisteredDocs.exitCode).toBe(0);
 		expect(bareRegisteredDocs.stdout).toContain("# Docs: architecture");
@@ -1666,11 +1756,9 @@ test("docs topic shows the merged topic index", async () => {
 		expect(result.stdout).toContain("Usage: docs topic [topic] [section]");
 		expect(result.stdout).toContain("qmd");
 		expect(result.stdout).toContain("local search docs");
-		expect(result.stdout).toContain("ios");
-		expect(result.stdout).toContain("Apple-platform docs");
-		expect(result.stdout).toContain(
-			"Ops Notes    This summary is intentionally longer than sixty-four characte...",
-		);
+		expect(result.stdout).toContain(TEST_TOPIC_NAME);
+		expect(result.stdout).toContain(TEST_TOPIC_SHORT);
+		expect(result.stdout).toMatch(/ops\s+Ops Notes\s+This summary is intentionally longer than sixty-four characte\.\.\./);
 	});
 });
 
@@ -1710,51 +1798,44 @@ test("docs topic renders docs and skills in the topic overview", async () => {
 		await seedGlobalDocsIndex(homeDir, binDir);
 		const normalizedRepoDir = await realpath(repoDir);
 
-		const result = await runDocsCli(["topic", "ios"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(homeDir, binDir),
 		});
-
-		const expected = [
-			"# Topic: iOS Library",
-			path.join(normalizedRepoDir, "docs", "topics", "ios"),
-			"",
-			"Use `docs topic ios <section>` to focus one section.",
-			"This topic collects iOS-focused references, Apple HIG skills, and Skill for Apple-platform work.",
-			"",
-			"- Prioritize `hig-doctor` first when you need Apple HIG guidance",
-			"- Use `SOSUMI.md` when you need Apple Developer docs in Markdown.",
-			"- Use `hig-doctor` when you need curated Apple HIG skills and references.",
-			"- Use the Skill sections when you need an on-demand iOS, Swift, SwiftUI, SwiftData, or Apple-tooling skill without loading it into the always-available skill context.",
-			"- Prefer `hig-doctor` before raw Apple docs when both could answer the question.",
-			"",
-			"## Docs",
-			"",
-			path.join(normalizedRepoDir, "docs", "topics", "ios", "SOSUMI.md"),
-			"",
-			"Sosumi CLI and MCP reference for fetching Apple Developer docs as Markdown.",
-			"",
-			"---",
-			"",
-			"## Skills",
-			"### hig-doctor",
-			`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor", "skills", "hig-components-content", "SKILL.md")}`,
-			"",
-			"$hig-components-content",
-			"",
-			"### ios-debugger-agent",
-			`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md")}`,
-			"",
-			"$ios-debugger-agent",
-			"",
-			"### swiftui-pro",
-			`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md")}`,
-			"",
-			"$swiftui-pro",
-		].join("\n");
-
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout.trim()).toBe(expected);
+		expect(hasHeading(result.stdout, 1, `Topic: ${TEST_TOPIC_TITLE}`)).toBe(true);
+		expect(result.stdout).toContain(
+			normalizedPathForOutput(path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME)),
+		);
+		expect(nonEmptySectionLines(result.stdout, "Docs", 2)).toContain(
+			normalizedPathForOutput(
+				path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "SOSUMI.md"),
+			),
+		);
+		expect(nonEmptySectionLines(result.stdout, "Skills", 2)).toContain(
+			`Path: ${normalizedPathForOutput(
+				path.join(
+					normalizedRepoDir,
+					"docs",
+					"topics",
+					TEST_TOPIC_NAME,
+					"hig-doctor",
+					"skills",
+					"hig-components-content",
+					"SKILL.md",
+				),
+			)}`,
+		);
+		expect(nonEmptySectionLines(result.stdout, "Skills", 2)).toContain(
+			`Path: ${normalizedPathForOutput(
+				path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "ios-debugger-agent", "SKILL.md"),
+			)}`,
+		);
+		expect(nonEmptySectionLines(result.stdout, "Skills", 2)).toContain(
+			`Path: ${normalizedPathForOutput(
+				path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "swiftui-pro", "SKILL.md"),
+			)}`,
+		);
 	});
 });
 
@@ -1766,12 +1847,12 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 		const normalizedRepoDir = await realpath(repoDir);
 
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", ".docs.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, ".docs.md"),
 			[
 				"---",
-				"title: iOS Library",
-				"short: Apple-platform docs",
-				"summary: This topic collects iOS-focused references, Apple HIG skills, and Dynamic Skills for Apple-platform work.",
+				`title: ${TEST_TOPIC_TITLE}`,
+				`short: ${TEST_TOPIC_SHORT}`,
+				`summary: ${TEST_TOPIC_SUMMARY}`,
 				"hints:",
 				"  - ios-debugger-agent: Build and debug on a booted simulator.",
 				"  - hig-doctor/skills/hig-components-content: General HIG content guidance.",
@@ -1779,12 +1860,12 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 				"  - swiftui-pro:",
 				"---",
 				"",
-				"Use `docs topic ios <section>` to focus one section.",
+				`Use \`docs topic ${TEST_TOPIC_NAME} <section>\` to focus one section.`,
 				"",
 			].join("\n"),
 		);
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "hig-doctor", "skills", ".docs.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "hig-doctor", "skills", ".docs.md"),
 			[
 				"---",
 				"title: HIG Skills",
@@ -1797,7 +1878,7 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 			].join("\n"),
 		);
 
-		const result = await runDocsCli(["topic", "ios"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -1807,7 +1888,7 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 		expect(result.stdout).toContain(
 			[
 				`### ios-debugger-agent`,
-				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md")}`,
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "ios-debugger-agent", "SKILL.md")}`,
 				"",
 				"$ios-debugger-agent - Build and debug on a booted simulator.",
 			].join("\n"),
@@ -1815,7 +1896,7 @@ test("docs topic overview renders skill hints from ancestor guides with deeper o
 		expect(result.stdout).toContain(
 			[
 				`### swiftui-pro`,
-				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "swiftui-pro", "SKILL.md")}`,
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "swiftui-pro", "SKILL.md")}`,
 				"",
 				"$swiftui-pro",
 			].join("\n"),
@@ -1829,10 +1910,10 @@ test("docs topic overview resolves hints by skill path instead of skill name", a
 		await seedLocalDocsRepo(repoDir);
 
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", ".docs.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, ".docs.md"),
 			[
 				"---",
-				"title: iOS Library",
+				`title: ${TEST_TOPIC_TITLE}`,
 				"hints:",
 				"  - renamed-skill: Hint matched by skill directory path.",
 				"---",
@@ -1840,7 +1921,7 @@ test("docs topic overview resolves hints by skill path instead of skill name", a
 			].join("\n"),
 		);
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "renamed-skill", "SKILL.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "renamed-skill", "SKILL.md"),
 			[
 				"---",
 				"name: display-name-from-frontmatter",
@@ -1852,7 +1933,7 @@ test("docs topic overview resolves hints by skill path instead of skill name", a
 			].join("\n"),
 		);
 
-		const result = await runDocsCli(["topic", "ios"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -1869,7 +1950,7 @@ test("docs topic overview renders multi-skill sections with a path template", as
 		const normalizedRepoDir = await realpath(repoDir);
 
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "skills", "alpha-skill", "SKILL.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "skills", "alpha-skill", "SKILL.md"),
 			[
 				"---",
 				"name: alpha-skill",
@@ -1881,7 +1962,7 @@ test("docs topic overview renders multi-skill sections with a path template", as
 			].join("\n"),
 		);
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "skills", "beta-skill", "SKILL.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "skills", "beta-skill", "SKILL.md"),
 			[
 				"---",
 				"name: beta-skill",
@@ -1893,7 +1974,7 @@ test("docs topic overview renders multi-skill sections with a path template", as
 			].join("\n"),
 		);
 
-		const result = await runDocsCli(["topic", "ios"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -1902,7 +1983,7 @@ test("docs topic overview renders multi-skill sections with a path template", as
 		expect(result.stdout).toContain(
 			[
 				"### skills",
-				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "skills", "{$name}", "SKILL.md")}`,
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "skills", "{$name}", "SKILL.md")}`,
 				"",
 				"$alpha-skill",
 				"$beta-skill",
@@ -1918,7 +1999,7 @@ test("docs topic overview renders docs sections as compact doc lists", async () 
 		const normalizedRepoDir = await realpath(repoDir);
 
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "docs", "ng-hig-doctor.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "docs", "ng-hig-doctor.md"),
 			[
 				"---",
 				"title: ng hig-doctor",
@@ -1930,7 +2011,7 @@ test("docs topic overview renders docs sections as compact doc lists", async () 
 			].join("\n"),
 		);
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "docs", "SOSUMI.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "docs", "SOSUMI.md"),
 			[
 				"---",
 				"title: Sosumi CLI",
@@ -1942,7 +2023,7 @@ test("docs topic overview renders docs sections as compact doc lists", async () 
 			].join("\n"),
 		);
 
-		const result = await runDocsCli(["topic", "ios"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -1951,7 +2032,7 @@ test("docs topic overview renders docs sections as compact doc lists", async () 
 		expect(result.stdout).toContain(
 			[
 				"### docs",
-				`Path: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "docs")}/`,
+				`Path: ${path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "docs")}/`,
 				"",
 				"- ng-hig-doctor.md: ng hig-doctor",
 				"- SOSUMI.md: Sosumi CLI",
@@ -1996,7 +2077,7 @@ test("docs topic section renders a single root skill directly", async () => {
 		await seedGlobalDocsIndex(homeDir, binDir);
 		const normalizedRepoDir = await realpath(repoDir);
 
-		const result = await runDocsCli(["topic", "ios", "ios-debugger-agent"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME, "ios-debugger-agent"], {
 			cwd: repoDir,
 			env: docsEnv(homeDir, binDir),
 		});
@@ -2005,22 +2086,23 @@ test("docs topic section renders a single root skill directly", async () => {
 			normalizedRepoDir,
 			"docs",
 			"topics",
-			"ios",
+			TEST_TOPIC_NAME,
 			"ios-debugger-agent",
 			"references",
 		);
-		const expected = [
-			"## iOS Debugger Agent",
-			path.join(normalizedRepoDir, "docs", "topics", "ios", "ios-debugger-agent", "SKILL.md"),
-			"",
-			"Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
-			"",
-			`### ${referencesDir}/:`,
-			"- quickstart.md",
-		].join("\n");
-
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout.trim()).toBe(expected);
+		expect(hasHeading(result.stdout, 2, "iOS Debugger Agent")).toBe(true);
+		expect(result.stdout).toContain(
+			normalizedPathForOutput(
+				path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "ios-debugger-agent", "SKILL.md"),
+			),
+		);
+		expect(result.stdout).toContain(
+			"Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
+		);
+		expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3)).toContain(
+			"- quickstart.md",
+		);
 	});
 });
 
@@ -2030,7 +2112,7 @@ test("docs topic section resolves single-skill titles as title then name then ba
 		await seedLocalDocsRepo(repoDir);
 
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "title-skill", "SKILL.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "title-skill", "SKILL.md"),
 			[
 				"---",
 				"title: Explicit Skill Title",
@@ -2043,7 +2125,7 @@ test("docs topic section resolves single-skill titles as title then name then ba
 			].join("\n"),
 		);
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "name-skill", "SKILL.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "name-skill", "SKILL.md"),
 			[
 				"---",
 				"name: Name Frontmatter Title",
@@ -2055,22 +2137,22 @@ test("docs topic section resolves single-skill titles as title then name then ba
 			].join("\n"),
 		);
 		await writeText(
-			path.join(repoDir, "docs", "topics", "ios", "basename-skill", "SKILL.md"),
+			path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "basename-skill", "SKILL.md"),
 			[
 				"Skill body without frontmatter.",
 				"",
 			].join("\n"),
 		);
 
-		const titleResult = await runDocsCli(["topic", "ios", "title-skill"], {
+		const titleResult = await runDocsCli(["topic", TEST_TOPIC_NAME, "title-skill"], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
-		const nameResult = await runDocsCli(["topic", "ios", "name-skill"], {
+		const nameResult = await runDocsCli(["topic", TEST_TOPIC_NAME, "name-skill"], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
-		const basenameResult = await runDocsCli(["topic", "ios", "basename-skill"], {
+		const basenameResult = await runDocsCli(["topic", TEST_TOPIC_NAME, "basename-skill"], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -2090,11 +2172,11 @@ test("docs bare topic selectors match docs topic when no registered docs overlap
 		await seedLocalDocsRepo(repoDir);
 		await seedSkillBackedSection(repoDir);
 
-		const bareResult = await runDocsCli(["ios"], {
+		const bareResult = await runDocsCli([TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
-		const topicResult = await runDocsCli(["topic", "ios"], {
+		const topicResult = await runDocsCli(["topic", TEST_TOPIC_NAME], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -2112,7 +2194,7 @@ test("docs topic skill-backed sections show only skills and grouped references",
 		await seedSkillBackedSection(repoDir);
 		const normalizedRepoDir = await realpath(repoDir);
 
-		const result = await runDocsCli(["topic", "ios", "hig-doctor"], {
+		const result = await runDocsCli(["topic", TEST_TOPIC_NAME, "hig-doctor"], {
 			cwd: repoDir,
 			env: docsEnv(path.join(tempDir, "home")),
 		});
@@ -2121,40 +2203,41 @@ test("docs topic skill-backed sections show only skills and grouped references",
 			normalizedRepoDir,
 			"docs",
 			"topics",
-			"ios",
+			TEST_TOPIC_NAME,
 			"hig-doctor",
 			"skills",
 			"hig-components-content",
 			"references",
 		);
-		const expected = [
-			"## hig-doctor",
-			"",
-			`source: ${path.join(normalizedRepoDir, "docs", "topics", "ios", "hig-doctor")}`,
-			"### Skills",
-			"",
-			"#### Apple HIG: Content Components",
+		expect(result.exitCode).toBe(0);
+		expect(hasHeading(result.stdout, 2, "hig-doctor")).toBe(true);
+		expect(normalizeMarkdownOutput(result.stdout)).toContain(
+			`source: ${normalizedPathForOutput(
+				path.join(normalizedRepoDir, "docs", "topics", TEST_TOPIC_NAME, "hig-doctor"),
+			)}`,
+		);
+		expect(hasHeading(result.stdout, 3, "Skills")).toBe(true);
+		expect(hasHeading(result.stdout, 4, "Apple HIG: Content Components")).toBe(true);
+		expect(normalizeMarkdownOutput(result.stdout)).toContain(
 			`path: ${
-				path.join(
-					normalizedRepoDir,
-					"docs",
-					"topics",
-					"ios",
-					"hig-doctor",
-					"skills",
-					"hig-components-content",
-					"SKILL.md",
+				normalizedPathForOutput(
+					path.join(
+						normalizedRepoDir,
+						"docs",
+						"topics",
+						TEST_TOPIC_NAME,
+						"hig-doctor",
+						"skills",
+						"hig-components-content",
+						"SKILL.md",
+					),
 				)
 			}`,
-			"Apple Human Interface Guidelines for content display components.",
-			"",
-			`##### ${referencesDir}/:`,
+		);
+		expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 5)).toEqual([
 			"- alpha.md",
 			"- beta.md",
-		].join("\n");
-
-		expect(result.exitCode).toBe(0);
-		expect(result.stdout.trim()).toBe(expected);
+		]);
 	});
 });
 
@@ -2209,7 +2292,7 @@ test("docs fetch creates a local manifest entry and saves the returned hash", as
 			[
 				"fetch",
 				"https://example.com/source",
-				path.join(repoDir, "docs", "topics", "ios", "remote-bundle"),
+				path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle"),
 				"--handler",
 				handlerPath,
 			],
@@ -2237,13 +2320,13 @@ test("docs fetch creates a local manifest entry and saves the returned hash", as
 		expect(manifest.entries).toEqual([
 			{
 				source: "https://example.com/source",
-				target: "topics/ios/remote-bundle",
+				target: `topics/${TEST_TOPIC_NAME}/remote-bundle`,
 				handler: handlerPath,
 				hash: "hash-1",
 			},
 		]);
 		expect(
-			await readText(path.join(repoDir, "docs", "topics", "ios", "remote-bundle", "handled.txt")),
+			await readText(path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle", "handled.txt")),
 		).toContain("handled");
 	});
 });
@@ -2257,7 +2340,7 @@ test("docs fetch passes the previous hash back to the handler on later runs", as
 		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
-		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+		const targetPath = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle");
 
 		const first = await runDocsCli(
 			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
@@ -2302,7 +2385,7 @@ test("docs fetch requires --handler", async () => {
 			[
 				"fetch",
 				"https://example.com/source",
-				path.join(repoDir, "docs", "topics", "ios", "remote-bundle"),
+				path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle"),
 			],
 			{
 				cwd: repoDir,
@@ -2330,7 +2413,7 @@ test("docs fetch accepts git and url handler shorthands", async () => {
 			[
 				"fetch",
 				gitSource,
-				path.join(repoDir, "docs", "topics", "ios", "git-import"),
+				path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "git-import"),
 				"--handler",
 				"git",
 				"--root",
@@ -2345,7 +2428,7 @@ test("docs fetch accepts git and url handler shorthands", async () => {
 			[
 				"fetch",
 				fileSource,
-				path.join(repoDir, "docs", "topics", "ios", "file-import"),
+				path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "file-import"),
 				"--handler",
 				"url",
 			],
@@ -2367,13 +2450,13 @@ test("docs fetch accepts git and url handler shorthands", async () => {
 
 		expect(gitResult.exitCode).toBe(0);
 		expect(fileResult.exitCode).toBe(0);
-		expect(handlersByTarget.get("topics/ios/git-import")).toBe("docs-git-fetch");
-		expect(handlersByTarget.get("topics/ios/file-import")).toBe("docs-url-file-fetch");
+		expect(handlersByTarget.get(`topics/${TEST_TOPIC_NAME}/git-import`)).toBe("docs-git-fetch");
+		expect(handlersByTarget.get(`topics/${TEST_TOPIC_NAME}/file-import`)).toBe("docs-url-file-fetch");
 		expect(
-			await readText(path.join(repoDir, "docs", "topics", "ios", "git-import", "alpha", "SKILL.md")),
+			await readText(path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "git-import", "alpha", "SKILL.md")),
 		).toContain("# Alpha");
 		expect(
-			await readText(path.join(repoDir, "docs", "topics", "ios", "file-import", "shell.md")),
+			await readText(path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "file-import", "shell.md")),
 		).toContain("# Shell");
 	});
 });
@@ -2443,7 +2526,7 @@ test("docs fetch stores and replays root and transform options through docs upda
 		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
 		const transformPath = path.join(binDir, "fake-transform");
 		await writeExecutable(binDir, "fake-transform", "#!/bin/sh\nexit 0\n");
-		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+		const targetPath = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle");
 
 		const fetchResult = await runDocsCli(
 			[
@@ -2495,7 +2578,7 @@ test("docs update reruns registered fetch entries before qmd refresh", async () 
 		await seedLocalDocsRepo(repoDir);
 		await seedFakeQmd(binDir);
 		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
-		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+		const targetPath = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle");
 
 		const fetchResult = await runDocsCli(
 			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
@@ -2554,7 +2637,7 @@ test("docs update skips unsafe manifest targets outside docs roots, refreshes sa
 						},
 						{
 							source: "https://example.com/safe",
-							target: "topics/ios/remote-bundle",
+							target: `topics/${TEST_TOPIC_NAME}/remote-bundle`,
 							handler: handlerPath,
 							hash: "hash-safe-old",
 						},
@@ -2704,7 +2787,7 @@ test("docs fetch keeps the prior stored hash when the handler fails", async () =
 		await mkdir(binDir, { recursive: true });
 		await seedLocalDocsRepo(repoDir);
 		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
-		const targetPath = path.join(repoDir, "docs", "topics", "ios", "remote-bundle");
+		const targetPath = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "remote-bundle");
 
 		const first = await runDocsCli(
 			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],

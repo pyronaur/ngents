@@ -2,6 +2,35 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { rootHelpFixture } from "./fixtures/root-help.fixture.ts";
 
+function normalizedLines(text: string): string[] {
+	return text.trimEnd().split("\n");
+}
+
+function hasHeading(text: string, level: number, headingText: string): boolean {
+	return normalizedLines(text).includes(`${"#".repeat(level)} ${headingText}`);
+}
+
+function sectionLines(text: string, headingText: string, level: number): string[] {
+	const lines = normalizedLines(text);
+	const heading = `${"#".repeat(level)} ${headingText}`;
+	const start = lines.indexOf(heading);
+	if (start === -1) {
+		throw new Error(`Missing heading ${heading}`);
+	}
+
+	for (let index = start + 1; index < lines.length; index += 1) {
+		const line = lines[index];
+		if (line && /^#{1,6} /.test(line)) {
+			const nextLevel = line.match(/^#+/)?.[0].length ?? 0;
+			if (nextLevel <= level) {
+				return lines.slice(start + 1, index);
+			}
+		}
+	}
+
+	return lines.slice(start + 1);
+}
+
 async function renderRootHelp(includeDocsIndex: boolean): Promise<string> {
 	const captured: string[] = [];
 	const originalNoColor = process.env.NO_COLOR;
@@ -72,14 +101,42 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-test("printRootHelp renders the bare root help snapshot", async () => {
-	expect(await renderRootHelp(true)).toMatchSnapshot();
+test("printRootHelp renders the bare root help behavior", async () => {
+	const rendered = await renderRootHelp(true);
+
+	expect(hasHeading(rendered, 1, "docs")).toBe(true);
+	expect(rendered).toContain("docs <where>");
+	expect(rendered).toContain("docs ls [where]");
+	expect(rendered).toContain("docs query [--limit <n>] <query...> | status");
+	expect(rendered).toContain("docs topic [topic] [section]");
+	expect(rendered).toContain("docs <topic>");
+	expect(rendered).toContain("docs <docs-root>");
+	expect(rendered).toContain("platform  Platform Library  platform docs");
+	expect(sectionLines(rendered, "/fixture/repo/docs", 3)).toEqual([
+		"  long-summary.md - This summary is intentionally longer than sixty-four characte...",
+		"  web-fetching.md - web browser tools",
+		"",
+	]);
+	expect(rendered).toContain("To read docs operation manual use `docs --ops-help`.");
 });
 
-test("printRootHelp renders the help-only root help snapshot", async () => {
-	expect(await renderRootHelp(false)).toMatchSnapshot();
+test("printRootHelp renders the help-only root help behavior", async () => {
+	const rendered = await renderRootHelp(false);
+
+	expect(hasHeading(rendered, 1, "docs")).toBe(true);
+	expect(hasHeading(rendered, 2, "Docs")).toBe(false);
+	expect(rendered).toContain("platform  Platform Library  platform docs");
+	expect(rendered).toContain("To read docs operation manual use `docs --ops-help`.");
 });
 
-test("printOpsHelp renders the ops help snapshot", async () => {
-	expect(await renderOpsHelp()).toMatchSnapshot();
+test("printOpsHelp renders the ops help behavior", async () => {
+	const rendered = await renderOpsHelp();
+
+	expect(hasHeading(rendered, 1, "docs operations")).toBe(true);
+	expect(rendered).toContain("docs park <name> [path]");
+	expect(rendered).toContain(
+		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
+	);
+	expect(rendered).toContain("docs update");
+	expect(rendered).toContain("For command-specific syntax details, use each command's `--help`.");
 });

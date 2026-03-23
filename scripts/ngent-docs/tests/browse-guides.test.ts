@@ -6,24 +6,24 @@ describe("browse guides path helpers", () => {
 	test("treats normalized descendant paths consistently", () => {
 		expect(
 			isSameOrDescendantPath(
-				"C:/repo/docs/topics/ios",
-				"C:/repo/docs/topics/ios/skills/ios-debugger-agent",
+				"C:/repo/docs/topics/topic-a",
+				"C:/repo/docs/topics/topic-a/skills/example-skill",
 			),
 		).toBe(true);
-		expect(isSameOrDescendantPath("C:/repo/docs/topics/ios", "C:/repo/docs/topics/ops")).toBe(false);
+		expect(isSameOrDescendantPath("C:/repo/docs/topics/topic-a", "C:/repo/docs/topics/topic-b")).toBe(false);
 	});
 
 	test("collects guide directories from topic root to skill directory", () => {
 		expect(
 			guideDirectoriesForSkill(
-				"/repo/docs/topics/ios",
-				"/repo/docs/topics/ios/hig-doctor/skills/hig-patterns/SKILL.md",
+				"/repo/docs/topics/topic-a",
+				"/repo/docs/topics/topic-a/section-a/skills/example-skill/SKILL.md",
 			),
 		).toEqual([
-			"/repo/docs/topics/ios",
-			"/repo/docs/topics/ios/hig-doctor",
-			"/repo/docs/topics/ios/hig-doctor/skills",
-			"/repo/docs/topics/ios/hig-doctor/skills/hig-patterns",
+			"/repo/docs/topics/topic-a",
+			"/repo/docs/topics/topic-a/section-a",
+			"/repo/docs/topics/topic-a/section-a/skills",
+			"/repo/docs/topics/topic-a/section-a/skills/example-skill",
 		]);
 	});
 });

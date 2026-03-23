@@ -3,10 +3,10 @@ import type { MarkdownEntry, TopicIndexRow } from "../../src/runtime/browse-cont
 export const rootHelpFixture = {
 	topics: [
 		{
-			name: "ios",
-			title: "iOS Library",
-			short: "Apple-platform docs",
-			summary: "This topic collects iOS-focused references and Apple HIG skills.",
+			name: "platform",
+			title: "Platform Library",
+			short: "platform docs",
+			summary: "This topic collects platform references and HIG skills.",
 		},
 		{
 			name: "ops",

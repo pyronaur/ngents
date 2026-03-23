@@ -12,6 +12,11 @@ type CommandResult = {
 	stderr: string;
 };
 
+type HigDoctorHint = {
+	skill: string;
+	command: string;
+};
+
 async function makeTempDir(): Promise<string> {
 	return mkdtemp(path.join(process.env.TMPDIR ?? '/tmp', 'ngents-hig-doctor-'));
 }
@@ -56,6 +61,34 @@ async function runWrapperWithArgs(cwd: string, args: string[]): Promise<CommandR
 	]);
 
 	return { exitCode, stdout, stderr };
+}
+
+function parseConcernCount(stderr: string): number | null {
+	const match = /^(\d+) HIG concern\(s\) found\.$/m.exec(stderr);
+	if (!match) {
+		return null;
+	}
+
+	return Number(match[1]);
+}
+
+function parseHintLines(stderr: string): HigDoctorHint[] {
+	return stderr
+		.split('\n')
+		.flatMap(line => {
+			const match = /^Relevant HIG skill: (.+) — (.+)$/.exec(line.trim());
+			if (!match) {
+				return [];
+			}
+
+			const skill = match[1];
+			const command = match[2];
+			if (!skill || !command) {
+				return [];
+			}
+
+			return [{ skill, command }];
+		});
 }
 
 async function writeProblemProject(rootDir: string): Promise<void> {
@@ -178,8 +211,10 @@ test('missing config file leaves visible concerns in markdown output', async () 
 		expect(result.stdout).toContain('Sources/Sample.swift:6');
 		expect(result.stdout).toContain('Sources/Sample.swift:13');
 		expect(result.stdout).toContain('`.ignoresSafeArea()`\n\n- `Sources/Sample.swift:13`');
-		expect(result.stderr).toContain('2 HIG concern(s) found.');
-		expect(result.stderr).toContain('Relevant HIG skill: hig-foundations');
+		expect(parseConcernCount(result.stderr)).toBe(2);
+		expect(parseHintLines(result.stderr)).toEqual([
+			{ skill: 'hig-foundations', command: 'docs topic apple hig-doctor' },
+		]);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
@@ -381,8 +416,9 @@ test('visible concerns print docs hints on stderr', async () => {
 		await writeProblemProject(tempDir);
 		const result = await runWrapper(tempDir, 'Sources');
 		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain('docs topic ios hig-doctor');
-		expect(result.stderr).toContain('hig-foundations');
+		expect(parseHintLines(result.stderr)).toEqual([
+			{ skill: 'hig-foundations', command: 'docs topic apple hig-doctor' },
+		]);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

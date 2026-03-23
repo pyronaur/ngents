@@ -2,7 +2,7 @@
 	"entries": [
 		{
 			"source": "https://github.com/rudrankriyam/app-store-connect-cli-skills",
-			"target": "topics/ios/asc-cli",
+			"target": "topics/apple/asc-cli",
 			"handler": "docs-git-fetch",
 			"root": "skills",
 			"hash": "dfec44488a8f05f4cad63d38a438bbe0f5b0738e143ca2108ab7e7b22aee4ad0"

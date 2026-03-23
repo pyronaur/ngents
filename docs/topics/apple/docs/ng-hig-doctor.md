@@ -111,5 +111,5 @@ ng hig-doctor --help
 
 ## Related docs
 
-- Use `docs topic ios hig-doctor` for the upstream Apple HIG skill set and reference material.
+- Use `docs topic apple hig-doctor` for the upstream Apple HIG skill set and reference material.
 - Use `docs tools` for the shared command catalog entry.

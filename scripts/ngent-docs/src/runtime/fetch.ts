@@ -48,15 +48,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object";
 }
 
-function normalizeStoredCommand(command: string, projectDir: string): string {
+function normalizeStoredCommand(command: string, _projectDir: string): string {
 	const expandedCommand = expandHomePath(command);
+	if (path.isAbsolute(expandedCommand)) {
+		return normalizePath(expandedCommand);
+	}
 	if (
-		path.isAbsolute(expandedCommand) || expandedCommand.startsWith("./")
-		|| expandedCommand.startsWith("../") || expandedCommand.includes(path.posix.sep)
+		expandedCommand.startsWith("./") || expandedCommand.startsWith("../")
+		|| expandedCommand.includes(path.posix.sep)
 	) {
-		return normalizePath(path.resolve(projectDir, expandedCommand));
+		return expandedCommand.replaceAll("\\", path.posix.sep);
 	}
 	return command;
+}
+
+function resolveStoredCommand(command: string, docsRoot: string): string {
+	const expandedCommand = expandHomePath(command);
+	if (path.isAbsolute(expandedCommand)) {
+		return expandedCommand;
+	}
+	if (
+		expandedCommand.startsWith("./") || expandedCommand.startsWith("../")
+		|| expandedCommand.includes(path.posix.sep)
+	) {
+		return normalizePath(path.resolve(docsRoot, expandedCommand));
+	}
+	return expandedCommand;
 }
 
 function isBuiltinHandlerShorthand(
@@ -277,7 +294,7 @@ function toHandlerArgs(invocation: FetchHandlerInvocation): string[] {
 	];
 }
 
-function resolveHandlerCommand(handler: string): { command: string; args: string[] } {
+function resolveHandlerCommand(handler: string, docsRoot: string): { command: string; args: string[] } {
 	const builtinHandlerPath = isBuiltinHandlerName(handler)
 		? BUILTIN_HANDLER_PATHS[handler]
 		: undefined;
@@ -289,16 +306,17 @@ function resolveHandlerCommand(handler: string): { command: string; args: string
 	}
 
 	return {
-		command: expandHomePath(handler),
+		command: resolveStoredCommand(handler, docsRoot),
 		args: [],
 	};
 }
 
 async function runFetchHandler(invocation: {
 	handler: string;
+	docsRoot: string;
 	definition: FetchHandlerInvocation;
 }): Promise<string> {
-	const handlerCommand = resolveHandlerCommand(invocation.handler);
+	const handlerCommand = resolveHandlerCommand(invocation.handler, invocation.docsRoot);
 	const handlerArgs = [...handlerCommand.args, ...toHandlerArgs(invocation.definition)];
 
 	return new Promise((resolve, reject) => {
@@ -363,12 +381,15 @@ async function runFetchDefinition(
 ): Promise<FetchManifestEntry> {
 	const nextHash = await runFetchHandler({
 		handler: definition.entry.handler,
+		docsRoot: definition.docsRoot,
 		definition: {
 			source: definition.entry.source,
 			target: definition.absoluteTargetPath,
 			previousHash: definition.entry.hash,
 			root: definition.entry.root,
-			transform: definition.entry.transform,
+			transform: definition.entry.transform
+				? resolveStoredCommand(definition.entry.transform, definition.docsRoot)
+				: undefined,
 		},
 	});
 

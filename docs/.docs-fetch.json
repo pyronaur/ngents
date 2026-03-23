@@ -6,6 +6,34 @@
 			"handler": "docs-git-fetch",
 			"root": "skills",
 			"hash": "dfec44488a8f05f4cad63d38a438bbe0f5b0738e143ca2108ab7e7b22aee4ad0"
+		},
+		{
+			"source": "https://github.com/raintree-technology/hig-doctor",
+			"target": "topics/apple/hig-doctor",
+			"handler": "docs-git-fetch",
+			"transform": "../scripts/docs-drivers/hig-doctor-import.sh",
+			"hash": "0c91764677f7239f677e97f7a54d0a7702b20dc254f2315b6c7342072483946e"
+		},
+		{
+			"source": "https://github.com/mobile-dev-inc/maestro-docs",
+			"target": "topics/apple/skills/maestro/references",
+			"handler": "docs-git-fetch",
+			"transform": "../scripts/docs-drivers/maestro-import.sh",
+			"hash": "5c04082e566c39340661a3904c8a505919c41fa52f830da53f8f244f5430bd94"
+		},
+		{
+			"source": "https://github.com/TimBroddin/app-store-aso-skill",
+			"target": "topics/aso/aso-store-aso-skill",
+			"handler": "docs-git-fetch",
+			"transform": "../scripts/docs-drivers/aso-import.sh",
+			"hash": "49ba007d03ecc0f1684890e0a970265f4b143bd3dd23a86ac7a4a38a217b9084"
+		},
+		{
+			"source": "https://github.com/tobi/qmd.git",
+			"target": "topics/qmd",
+			"handler": "docs-git-fetch",
+			"transform": "../scripts/docs-drivers/qmd-import.sh",
+			"hash": "9d631923fc4ed584b4a7875f0c60b6c935333e97dc2f9b57ccafdf8144d68681"
 		}
 	]
 }

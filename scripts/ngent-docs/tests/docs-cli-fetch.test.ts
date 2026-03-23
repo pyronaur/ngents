@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { expect, test } from "vitest";
@@ -21,8 +21,10 @@ import {
 type FetchManifestEntry = {
 	handler: string;
 	hash: string;
+	root?: string;
 	source: string;
 	target: string;
+	transform?: string;
 };
 
 function readFetchManifestEntries(input: string): FetchManifestEntry[] {
@@ -45,9 +47,13 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 		const target = Reflect.get(entry, "target");
 		const handler = Reflect.get(entry, "handler");
 		const hash = Reflect.get(entry, "hash");
+		const root = Reflect.get(entry, "root");
+		const transform = Reflect.get(entry, "transform");
 		if (
 			typeof source !== "string" || typeof target !== "string" || typeof handler !== "string"
 			|| typeof hash !== "string"
+			|| (root !== undefined && typeof root !== "string")
+			|| (transform !== undefined && typeof transform !== "string")
 		) {
 			throw new Error("Expected typed fetch manifest entry");
 		}
@@ -57,6 +63,8 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 			target,
 			handler,
 			hash,
+			...(typeof root === "string" ? { root } : {}),
+			...(typeof transform === "string" ? { transform } : {}),
 		};
 	});
 }
@@ -529,6 +537,56 @@ test("docs update skips unsafe manifest targets that use backslash traversal", a
 		unsafeSource: "https://example.com/unsafe",
 		skipReason: "target must not contain '..'",
 	});
+});
+
+test("docs fetch preserves relative transform paths in the manifest and resolves them on update", async () => {
+	await withDocsCliWorkspace("docs-fetch-relative-transform-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const logFile = path.join(tempDir, "fetch.log");
+			await seedFakeQmd(binDir);
+			const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+			const transformPath = path.join(binDir, "fake-transform");
+			await writeExecutable(binDir, "fake-transform", "#!/bin/sh\nexit 0\n");
+			const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+			const relativeTransform = path.relative(path.join(repoDir, "docs"), transformPath);
+
+			const fetchResult = await runDocsCli(
+				[
+					"fetch",
+					"https://example.com/source",
+					targetPath,
+					"--handler",
+					handlerPath,
+					"--transform",
+					relativeTransform,
+				],
+				{
+					cwd: repoDir,
+					env: withEnv(env, {
+						DOCS_TEST_FETCH_HASH: "hash-1",
+						DOCS_TEST_FETCH_LOG: logFile,
+					}),
+				},
+			);
+			const manifestEntries = readFetchManifestEntries(
+				await readText(fetchManifestPath(repoDir)),
+			);
+			const updateResult = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_FETCH_HASH: "hash-2",
+					DOCS_TEST_FETCH_LOG: logFile,
+				}),
+			});
+
+			const logContents = await readText(logFile);
+			const resolvedTransformPath = await realpath(transformPath);
+
+			expect(fetchResult.exitCode).toBe(0);
+			expect(updateResult.exitCode).toBe(0);
+			expect(manifestEntries[0]?.transform).toBe(relativeTransform);
+			expect(logContents).toContain(`transform=${resolvedTransformPath}`);
+		});
 });
 
 test("docs update skips manifest entries targeting the docs root itself", async () => {

@@ -2,10 +2,6 @@
 
 set -euo pipefail
 
-SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_DIR="$SELF_DIR"
-REFERENCES_DIR="$TARGET_DIR/references"
-
 die() {
   printf 'error: %s\n' "$1" >&2
   exit 1
@@ -378,7 +374,7 @@ QMD is a local search engine for markdown notes, meeting transcripts, documentat
 - Read [sdk-and-integration.md](references/sdk-and-integration.md) for Bun/Node integrations.
 - Read [architecture-and-internals.md](references/architecture-and-internals.md) for scoring, storage, indexing, chunking, and internals.
 
-Upstream source checkout for regeneration: \`$SOURCE_ROOT\` at commit \`$revision\`.
+Upstream source repo for regeneration: \`$SOURCE_LABEL\` at commit \`$revision\`.
 EOF
 }
 
@@ -453,9 +449,14 @@ generate_architecture_and_internals() {
   append_section "$body_file" "$CLAUDE" "Architecture"
 }
 
-[[ $# -eq 1 ]] || die "usage: $0 /path/to/qmd"
+SOURCE_ROOT="${DOCS_FETCH_INPUT:-}"
+TARGET_DIR="${DOCS_FETCH_OUTPUT:-}"
+SOURCE_LABEL="${DOCS_FETCH_SOURCE:-$SOURCE_ROOT}"
+[[ -n "$SOURCE_ROOT" ]] || die "DOCS_FETCH_INPUT is required"
+[[ -n "$TARGET_DIR" ]] || die "DOCS_FETCH_OUTPUT is required"
 
-SOURCE_ROOT="$(cd "$1" && pwd)"
+SOURCE_ROOT="$(cd "$SOURCE_ROOT" && pwd)"
+REFERENCES_DIR="$TARGET_DIR/references"
 README="$SOURCE_ROOT/README.md"
 SYNTAX="$SOURCE_ROOT/docs/SYNTAX.md"
 CLAUDE="$SOURCE_ROOT/CLAUDE.md"

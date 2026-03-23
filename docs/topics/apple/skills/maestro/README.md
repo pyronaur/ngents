@@ -14,7 +14,6 @@ This directory vendors the official Maestro iOS platform docs plus the Maestro C
 - Published docs: <https://docs.maestro.dev>
 - Docs repo: <https://github.com/mobile-dev-inc/maestro-docs>
 - LLMS index: <https://docs.maestro.dev/llms.txt>
-- Pinned upstream commit for this import: `b8763944987d312b4cfe9ca9b5c3ecf756df3b77`
 
 ## Local layout
 
@@ -28,17 +27,3 @@ This directory vendors the official Maestro iOS platform docs plus the Maestro C
 - `references/cli-environment-variables.md`: CLI environment variables.
 - `references/cli-specify-and-start-devices.md`: iOS simulator/device targeting and `start-device` usage.
 - `references/api-reference/`: the upstream Maestro API reference relevant to iOS testing, including commands, selectors, and workspace configuration.
-
-## Refresh
-
-Run:
-
-```bash
-./import.sh
-```
-
-To refresh against the latest upstream default branch instead of the pinned commit:
-
-```bash
-UPSTREAM_REF=main ./import.sh
-```

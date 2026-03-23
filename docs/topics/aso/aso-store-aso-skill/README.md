@@ -28,9 +28,6 @@ This skill transforms Claude Code into an ASO expert that can:
 - Keywords (100 chars) - Hidden but indexed field
 - What's New (4,000 chars) - Update messaging
 
-### Automated Validation
-Python script validates all metadata against Apple's strict character limits with clear ✅/❌ indicators and remaining character counts.
-
 ### Comprehensive Knowledge Base
 47KB of ASO best practices including:
 - June 2025 screenshot caption OCR algorithm update
@@ -71,19 +68,6 @@ git clone https://github.com/timbroddin/app-store-aso-skill.git app-store-aso
    unzip app-store-aso.zip -d ~/.claude/skills/
    ```
 3. Restart Claude Code (if currently running)
-
-### Verify Installation
-
-The skill structure should look like:
-```
-~/.claude/skills/app-store-aso/
-├── SKILL.md                          # Main skill instructions
-├── README.md                         # This file
-├── scripts/
-│   └── validate_metadata.py         # Validation script
-└── references/
-    └── aso_learnings.md             # Comprehensive ASO knowledge base
-```
 
 ## 💡 Usage
 
@@ -137,22 +121,6 @@ Claude will provide:
    - Caption optimization for OCR indexing
    - Visual messaging hierarchy
 
-## 🛠️ Validation Script
-
-The included Python script can also be run manually:
-
-### Interactive Mode
-```bash
-python ~/.claude/skills/app-store-aso/scripts/validate_metadata.py
-```
-
-### Command-Line Mode
-```bash
-python ~/.claude/skills/app-store-aso/scripts/validate_metadata.py \
-  --app-name "My Amazing App" \
-  --subtitle "The Best App for Everything" \
-  --keywords "app,best,amazing,everything,awesome"
-```
 
 ## 📊 Apple App Store Character Limits
 

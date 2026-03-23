@@ -30,8 +30,8 @@ When a user requests ASO optimization or metadata review:
    - Ensure all metadata follows Apple's character limits
 
 4. **Validate Character Counts**
-   - Use `scripts/validate_metadata.py` to verify all metadata meets Apple's requirements
-   - Display validation results with character counts and limit compliance
+   - Check every metadata field against Apple's published limits
+   - Display character counts with pass/fail status
    - Flag any violations with specific corrections needed
 
 5. **Provide Screenshot Strategy**
@@ -51,24 +51,19 @@ When a user requests ASO optimization or metadata review:
 
 ## Metadata Validation Process
 
-After generating recommendations, always validate using the validation script:
+After generating recommendations, always validate the metadata against Apple's published limits.
 
-```bash
-python scripts/validate_metadata.py
-```
-
-The script will:
-1. Prompt for each metadata field
-2. Calculate character counts
-3. Check against Apple's limits
-4. Display results with ✅ (pass) or ❌ (fail) indicators
-5. Show exact character counts and remaining characters
+Validation should:
+1. Calculate character counts for each metadata field
+2. Check each field against Apple's limits
+3. Display results with ✅ (pass) or ❌ (fail) indicators
+4. Show exact character counts and remaining characters
 
 **Integration Pattern:**
 - Generate metadata recommendations
-- Run validation script with recommended content
-- Display validation results to user
-- Adjust any failing fields and re-validate
+- Check the recommended content against Apple's limits
+- Display validation results to the user
+- Adjust any failing fields and re-check
 
 ## Output Format
 
@@ -190,9 +185,6 @@ krankie instructions --format json
 4. **Trend analysis**: Use `krankie rankings history` to identify patterns
 
 ## Resources
-
-### scripts/validate_metadata.py
-Python script that validates App Store metadata against Apple's character limits. Provides interactive validation with clear pass/fail indicators.
 
 ### references/aso_learnings.md
 Comprehensive ASO knowledge base containing optimization strategies, competitive analysis frameworks, keyword research techniques, and proven best practices. Load this file to inform all ASO recommendations.

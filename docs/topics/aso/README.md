@@ -14,7 +14,6 @@ The upstream skill lives in `aso-store-aso-skill/` and is centered around three 
 
 - `aso-store-aso-skill/SKILL.md`: instructions and expected output shape.
 - `aso-store-aso-skill/references/aso_learnings.md`: upstream ASO reference material.
-- `aso-store-aso-skill/scripts/validate_metadata.py`: character-limit validator for App Store metadata.
 
 Use the skill when you want an agent to:
 
@@ -29,18 +28,14 @@ Practical workflow:
 1. Start with the local guide in `ASO.md` for your preferred framing and constraints.
 2. Pull in `aso-store-aso-skill/SKILL.md` when you want the upstream structured workflow.
 3. Use `aso-store-aso-skill/references/aso_learnings.md` for the upstream knowledge base.
-4. Run the validator after drafting metadata:
-
-```bash
-python aso-store-aso-skill/scripts/validate_metadata.py
-```
+4. Check the final metadata against Apple’s published field limits before using the draft.
 
 Example prompt pattern for an agent:
 
 ```text
 Use the ASO docs section guide at docs topic aso.
 Reference ASO.md first.
-Then use aso-store-aso-skill/SKILL.md and validate the final metadata with validate_metadata.py.
+Then use aso-store-aso-skill/SKILL.md and check the final metadata against Apple field limits.
 
 App: <name>
 Audience: <audience>
@@ -123,14 +118,13 @@ The two fit together well:
 
 1. Use Astro MCP via `mcporter` to gather ranking, competitor, and keyword data.
 2. Use `ASO.md` plus the upstream ASO skill to turn that data into metadata and screenshot recommendations.
-3. Run `validate_metadata.py` to confirm App Store length limits before using the draft.
+3. Check the draft against App Store field limits before using it.
 
 ## References
 
 - Local ASO guide: `ASO.md`
 - Upstream skill instructions: `aso-store-aso-skill/SKILL.md`
 - Upstream ASO reference: `aso-store-aso-skill/references/aso_learnings.md`
-- Metadata validator: `aso-store-aso-skill/scripts/validate_metadata.py`
 - app-store-aso-skill repo: <https://github.com/TimBroddin/app-store-aso-skill>
 - astro-mcp-server repo: <https://github.com/TimBroddin/astro-mcp-server>
 - mcporter repo: <https://github.com/steipete/mcporter>

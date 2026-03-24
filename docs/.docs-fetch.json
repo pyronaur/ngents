@@ -5,14 +5,14 @@
 			"target": "topics/apple/asc-cli",
 			"handler": "docs-git-fetch",
 			"root": "skills",
-			"hash": "dfec44488a8f05f4cad63d38a438bbe0f5b0738e143ca2108ab7e7b22aee4ad0"
+			"hash": "56bcbffb9a69adf4fd322187b7d1d324a24e99994a4983205589a6aab847f805"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",
 			"target": "topics/apple/hig-doctor",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/hig-doctor-import.sh",
-			"hash": "0c91764677f7239f677e97f7a54d0a7702b20dc254f2315b6c7342072483946e"
+			"hash": "c15c65fe7446e2ef3b114bd32e22812c750269ffb85fb953fa4f4b4d22f00bed"
 		},
 		{
 			"source": "https://github.com/mobile-dev-inc/maestro-docs",

@@ -111,6 +111,14 @@
 - Avoid loop-in-loop; extract helper function.
 - Avoid nesting deeper than 3 levels.
 - Keep files <500 LOC; split/refactor as needed.
+- Keep variable/method/function names short and consider context:
+	- No abbreviations beyond language convention standards (i,n,std,etc.)
+	- Proactively rename long variables to shorter names when possible.
+	- Examples ( Bad -> Good )
+		- `Ring.ringThickness` -> `Ring.thickness`
+		- `HTTP.makeHttpRequest` -> `HTTP.request`
+		- `HomeView.pendingDeleteHomeview` -> `HomeView.pendingDelete`
+		- `findContainingDocsRoot(directoryPath: string)` -> `findTargetRoot(directoryPath: string, target = 'docs')`
 
 ## Developer Protocol
 - No proactive future-proofing

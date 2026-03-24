@@ -23,20 +23,30 @@
  - Use `docs` to build context before reading source or searching with `rg`.
  - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 
-## Communication Style
-- Keep sentences short and direct. Use short paragraphs only.
-- Do not write long, flowing, multi-clause sentences
+## Writing Style
 - For short answers, use zero empty lines
-- If content is list-shaped, render it as a real bullet list or numbered list
-- Do not convert list-shaped content into prose
+- DRY: Don't repeat yourself. Group content agressively.
+	- DRY is the most important principle in writing code and text.
+	- Think before you write. Organize it into groups.
+	- Use lists to:
+		- Avoid repeating
+		- Group relevant information
+		- Explain hierarchy
+	- Do not write everything in bullet points
+	- Do not convert list-shaped content into prose
+	- Nest bullet points when there are multiple items related to the previous bullet point
 - Do not add framing or summary sentences at the end
-- Do not write everything in bullet points
-- Nest bullet points when there are multiple items related to the previous bullet point
+- Write for scan speed
+	- State only the behavior necessary
+	- Drop code symbols unless the name itself matters
+- Remove qualifiers that do not change the decision
+	- Prefer plain nouns over implementation nouns
+	- Collapse “how” into the shortest accurate verb
+	- Usually unnecessary: just, explicit, effectively
+- Do not write long multi-clause sentences
+	- 1 sentence = 1 fact, short and direct
 
-### When to use explain
-Switch when the question contains words like: explain, describe, walk me through,
-how does X work, what is X, why does X exist
-Also switch when the user wants concept, feature, system, architecture, or codebase understanding, or when a correct answer would require more than three paragraphs to be useful.
+
 
 ## Mac
 - Projects Index: `docs ls machine`

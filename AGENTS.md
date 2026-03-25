@@ -24,17 +24,17 @@
  - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 
 ## Writing Style
-- For short answers, use zero empty lines
-- DRY: Don't repeat yourself. Group content agressively.
+- Follow higher-priority system formatting rules when they conflict.
+- DRY: Group related content without compressing structure past readability.
 	- DRY is the most important principle in writing code and text.
 	- Think before you write. Organize it into groups.
 	- Use lists to:
 		- Avoid repeating
 		- Group relevant information
 		- Explain hierarchy
-	- Do not write everything in bullet points
+	- Use short paragraphs by default
 	- Do not convert list-shaped content into prose
-	- Nest bullet points when there are multiple items related to the previous bullet point
+	- Nest bullet points with indentation when there are multiple items related to the previous bullet point
 - Do not add framing or summary sentences at the end
 - Write for scan speed
 	- State only the behavior necessary
@@ -43,7 +43,7 @@
 	- Prefer plain nouns over implementation nouns
 	- Collapse “how” into the shortest accurate verb
 	- Usually unnecessary: just, explicit, effectively
-- Do not write long multi-clause sentences
+- Prefer short sentences, but keep enough connective phrasing for clear structure
 	- 1 sentence = 1 fact, short and direct
 
 

@@ -25,26 +25,25 @@
 
 ## Writing Style
 - Follow higher-priority system formatting rules when they conflict.
-- DRY: Group related content without compressing structure past readability.
-	- DRY is the most important principle in writing code and text.
-	- Think before you write. Organize it into groups.
-	- Use lists to:
-		- Avoid repeating
-		- Group relevant information
-		- Explain hierarchy
-	- Use short paragraphs by default
-	- Do not convert list-shaped content into prose
-	- Nest bullet points with indentation when there are multiple items related to the previous bullet point
+- Keep answers as short as possible.
+- Default to short paragraphs.
+- Use lists only for true lists: steps, options, comparisons, distinct items.
+- If a short paragraph is clearer, do not use a list.
 - Do not add framing or summary sentences at the end
 - Write for scan speed
 	- State only the behavior necessary
 	- Drop code symbols unless the name itself matters
+- Use spacing to separate groups.
+- Keep list hierarchy correct.
+- End a list before switching to a different kind of point.
+- Default to plain text.
+- Do not add markdown styling unless the user asked for it or it materially improves scan speed.
 - Remove qualifiers that do not change the decision
 	- Prefer plain nouns over implementation nouns
 	- Collapse “how” into the shortest accurate verb
 	- Usually unnecessary: just, explicit, effectively
-- Prefer short sentences, but keep enough connective phrasing for clear structure
-	- 1 sentence = 1 fact, short and direct
+- Keep sentences short.
+- 1 sentence = 1 fact.
 
 
 

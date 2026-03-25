@@ -1,13 +1,18 @@
 ---
-summary: Local map for the imported Maestro docs subset under the iOS topic.
+summary: Local map for the Maestro skill docs and the remaining imported platform and CLI references.
 read_when:
-  - Need to know whether Maestro publishes Markdown docs and where they come from.
-  - Need the local entrypoint for the imported Maestro docs subset.
+  - Need the local entrypoint for Maestro docs.
+  - Need to know which local Maestro docs path is canonical.
+  - Need the remaining imported platform or CLI references.
 ---
 
 # Maestro
 
-This directory vendors the official Maestro iOS platform docs plus the Maestro CLI reference that is relevant to iOS testing.
+This directory is the Maestro skill entrypoint.
+
+The canonical local official Maestro docs bundle lives under `docs topic apple testing/maestro`.
+
+This skill directory keeps only the remaining imported iOS platform and CLI references that are not part of that bundle.
 
 ## Source of truth
 
@@ -17,6 +22,7 @@ This directory vendors the official Maestro iOS platform docs plus the Maestro C
 
 ## Local layout
 
+- Canonical official docs bundle: `~/.n/home/docs/topics/apple/testing/maestro/`
 - `references/ios.md`: the upstream iOS platform doc.
 - `references/swiftui.md`: the upstream SwiftUI doc.
 - `references/uikit.md`: the upstream UIKit doc.
@@ -26,4 +32,3 @@ This directory vendors the official Maestro iOS platform docs plus the Maestro C
 - `references/cli-commands-and-options.md`: CLI flags and subcommands.
 - `references/cli-environment-variables.md`: CLI environment variables.
 - `references/cli-specify-and-start-devices.md`: iOS simulator/device targeting and `start-device` usage.
-- `references/api-reference/`: the upstream Maestro API reference relevant to iOS testing, including commands, selectors, and workspace configuration.

@@ -378,12 +378,21 @@ test("docs park rejects invalid docs roots before mutating qmd", async () => {
 	});
 });
 
-test("multi-token unknown commands return a usage failure", async () => {
-	const result = await runDocsCli(["wat", "now"]);
+test("multi-token unknown commands show recovery help with the proper commands", async () => {
+	const result = await runDocsCli(["maestro", "ios", "ui", "test", "screenshots", "runner"]);
 
 	expect(result.exitCode).toBe(2);
-	expect(result.stderr.toLowerCase()).toContain("unknown command");
-	expect(result.stderr).toContain("Usage: docs [options] [command]");
+	expect(result.stdout).toBe("");
+	expect(result.stderr).toContain(
+		"Use `docs query maestro ios ui test screenshots runner` to search by multiple terms.",
+	);
+	expect(result.stderr).toContain("`docs <where>` accepts one selector.");
+	expect(result.stderr).toContain("# docs");
+	expect(result.stderr).toContain("docs <where>");
+	expect(result.stderr).toContain("docs ls [where]");
+	expect(result.stderr).toContain("docs topic [topic] [path]");
+	expect(result.stderr).toContain("docs query [--limit <n>] <query...> | status");
+	expect(result.stderr).not.toContain("## Docs");
 });
 
 test("missing required arguments print one error line plus command usage", async () => {

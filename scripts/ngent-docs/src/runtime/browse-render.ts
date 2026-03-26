@@ -292,15 +292,26 @@ function printExpandedDocsIndex(
 	}
 }
 
+function renderRootHelp(
+	topics: TopicIndexRow[],
+	docs: MarkdownEntry[],
+	options: { includeDocsIndex: boolean },
+): string {
+	const rendered = rootHelpTemplate.renderRootHelpTemplate(
+		rootHelpTemplateContext(topics, docs, options),
+	);
+	return rendered
+		.split("\n")
+		.map(formatRootHelpLine)
+		.join("\n");
+}
+
 function printRootHelp(
 	topics: TopicIndexRow[],
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
 ): void {
-	const rendered = rootHelpTemplate.renderRootHelpTemplate(
-		rootHelpTemplateContext(topics, docs, options),
-	);
-	for (const line of rendered.split("\n")) {
+	for (const line of renderRootHelp(topics, docs, options).split("\n")) {
 		printLine(formatRootHelpLine(line));
 	}
 }
@@ -384,7 +395,9 @@ function printFocusedSectionBody(section: SectionEntry): void {
 		}
 	}
 
-	if ((section.skills.length > 0 || section.markdownEntries.length > 0) && section.children.length > 0) {
+	if (
+		(section.skills.length > 0 || section.markdownEntries.length > 0) && section.children.length > 0
+	) {
 		printLine();
 	}
 
@@ -394,7 +407,10 @@ function printFocusedSectionBody(section: SectionEntry): void {
 			printLine();
 		}
 	}
-	if (section.markdownEntries.length === 0 && section.skills.length === 0 && section.children.length === 0) {
+	if (
+		section.markdownEntries.length === 0 && section.skills.length === 0
+		&& section.children.length === 0
+	) {
 		printLine(pc.dim("[no section entries found]"));
 	}
 }
@@ -437,7 +453,10 @@ function printFocusedSubtree(section: SectionEntry, headingLevel: 2 | 3 | 4 | 5 
 		}
 	}
 
-	if (section.skills.length === 0 && section.markdownEntries.length === 0 && section.children.length === 0) {
+	if (
+		section.skills.length === 0 && section.markdownEntries.length === 0
+		&& section.children.length === 0
+	) {
 		printLine(pc.dim("[no section entries found]"));
 	}
 }
@@ -538,6 +557,7 @@ export default {
 	printOpsHelp,
 	printRootHelp,
 	printScopedTopicBrowser,
+	renderRootHelp,
 	renderRootSelectorNotFound,
 	renderSelectorNotFound,
 	printTopicBrowser,

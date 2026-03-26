@@ -148,6 +148,10 @@ Current decisions:
 - Bare `docs` renders browse-first root help and includes the docs index.
 - `docs --help`, `docs -h`, and `docs help` render the same browse-first help
   shape without the docs index.
+- Unknown multi-token root input stays a usage failure.
+- That recovery path explains that `docs <where>` accepts one selector,
+  suggests the exact `docs query <terms...>` rerun command, and appends the
+  same browse-first root help shape as `docs --help`.
 - Browse-first root help does not explain `park`, `fetch`, or `update` beyond a
   one-line pointer to `docs --ops-help`.
 - `docs --ops-help` renders the operations manual for `park`, `fetch`, and

@@ -10,7 +10,7 @@ import {
 	runDocsBrowseSelector,
 	runDocsParkedCollectionSelector,
 } from "../runtime/browse.ts";
-import { runDocsRootHelp } from "../runtime/help.ts";
+import { renderDocsRootHelp, runDocsRootHelp } from "../runtime/help.ts";
 import { readDocsTopicSelector } from "../runtime/topic.ts";
 import { registerCommand } from "./command-definition.ts";
 import type { CommandDefinition } from "./contracts.ts";
@@ -101,6 +101,37 @@ function isRootCommand(token: string): boolean {
 	return rootCommandNames().includes(token);
 }
 
+function isUnknownCommandError(error: CommanderError): boolean {
+	return error.code === "commander.unknownCommand"
+		|| error.message.startsWith("error: unknown command ");
+}
+
+async function readMultiTokenUnknownCommandRecovery(
+	error: CommanderError,
+	argv: string[],
+): Promise<string | null> {
+	const command = argv[0]?.trim();
+	if (!command || argv.length < 2) {
+		return null;
+	}
+	if (command.startsWith("-") || command === "help" || isRootCommand(command)) {
+		return null;
+	}
+	if (!isUnknownCommandError(error)) {
+		return null;
+	}
+
+	const rootHelp = await renderDocsRootHelp({
+		includeDocsIndex: false,
+	});
+	return [
+		error.message.trim(),
+		"`docs <where>` accepts one selector.",
+		`Use \`docs query ${argv.join(" ")}\` to search by multiple terms.`,
+		rootHelp,
+	].join("\n\n");
+}
+
 async function maybeRunRootSelectorFallback(argv: string[], projectDir: string): Promise<boolean> {
 	if (argv.length !== 1) {
 		return false;
@@ -146,12 +177,16 @@ async function maybeRunRootSelectorFallback(argv: string[], projectDir: string):
 	}
 }
 
-function handleParseError(error: unknown, argv: string[]): void {
+async function handleParseError(error: unknown, argv: string[]): Promise<void> {
 	if (!isCommanderError(error)) {
 		throw error;
 	}
 	if (isDisplayedOutputError(error)) {
 		return;
+	}
+	const recovery = await readMultiTokenUnknownCommandRecovery(error, argv);
+	if (recovery) {
+		throw usageError(recovery);
 	}
 	const usageDefinition = findUsageDefinition(argv);
 	throw usageError(`${toUsageMessage(error)}\n${toUsageLine(usageDefinition)}`);
@@ -197,7 +232,7 @@ async function runDocsCli(argv: string[], projectDir: string): Promise<void> {
 	try {
 		await parseProgram(program, argv);
 	} catch (error) {
-		handleParseError(error, argv);
+		await handleParseError(error, argv);
 	}
 }
 

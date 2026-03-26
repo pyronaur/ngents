@@ -98,6 +98,8 @@ Global docs collection metadata is cached for 1 hour.
 - `docs help <command>` prints Commander command usage.
 - `docs <command> --help` prints usage for that command.
 - `docs <where>` opens a topic, a registered docs root, or a browse selector when `<where>` is a single non-command token.
+- Unknown multi-token root input such as `docs maestro ios ui` stays a usage failure and does not auto-run `query`.
+- That recovery path explains that `docs <where>` accepts one selector, prints the exact `docs query <terms...>` command to rerun, and then prints the same browse-first root help shape as `docs --help`.
 - Successful docs browse views render with `Docs` titles.
 - Successful topic views render with `Topic:` titles.
 

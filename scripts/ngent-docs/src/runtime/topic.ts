@@ -15,6 +15,14 @@ function fail(message: string): never {
 	throw runtimeError(message);
 }
 
+function formatAvailableItems(label: string, items: string[]): string {
+	if (items.length === 0) {
+		return `${label}: [none]`;
+	}
+
+	return `${label}:\n${items.map(item => `- ${item}`).join("\n")}`;
+}
+
 function ensureDocsRoots(docsRoots: string[], currentDir: string): void {
 	if (docsRoots.length > 0) {
 		return;
@@ -30,8 +38,11 @@ async function readTopicOrFail(docsRoots: string[], requestedTopic: string): Pro
 	}
 
 	const index = await browseDiscovery.buildIndexData(docsRoots);
-	const availableTopics = index.topics.map(row => row.name).join(", ");
-	fail(`Unknown topic "${requestedTopic}". Available topics: ${availableTopics}`);
+	fail(
+		`Unknown topic "${requestedTopic}". ${
+			formatAvailableItems("Available topics", index.topics.map(row => row.name))
+		}`,
+	);
 }
 
 async function readTopicOrNull(
@@ -73,8 +84,8 @@ function sectionsOrFail(
 	}
 
 	fail(
-		`Unknown path "${requestedPath}" for topic "${requestedTopic}". Available: ${
-			availableSectionKeys(topic).join(", ")
+		`Unknown path "${requestedPath}" for topic "${requestedTopic}". ${
+			formatAvailableItems("Available", availableSectionKeys(topic))
 		}`,
 	);
 }

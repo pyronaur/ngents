@@ -245,6 +245,31 @@ test("docs topic focus keeps merged path views", async () => {
 	});
 });
 
+test("docs topic unknown path renders available paths as bullets", async () => {
+	await withDocsCliWorkspace(
+		"docs-topic-unknown-path-",
+		async ({ repoDir, env }) => {
+			await seedSkillBackedSection(repoDir);
+
+			const result = await runDocsCli(["topic", TEST_TOPIC_NAME, "missing"], {
+				cwd: repoDir,
+				env,
+			});
+
+			expect(result.exitCode).toBe(1);
+			expect(result.stderr).toContain(
+				`Unknown path "missing" for topic "${TEST_TOPIC_NAME}". Available:`,
+			);
+			expect(result.stderr).toContain("\n- hig-doctor\n");
+			expect(result.stderr).toContain("\n- hig-doctor/skills\n");
+			expect(result.stderr).toContain("\n- hig-doctor/skills/hig-components-content\n");
+			expect(result.stderr).toContain("\n- ios-debugger-agent\n");
+			expect(result.stderr).not.toContain("Available: SOSUMI.md,");
+		},
+		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
+	);
+});
+
 test("docs topic section renders a single root skill directly", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-skill-section-",

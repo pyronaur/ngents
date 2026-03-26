@@ -1,4 +1,3 @@
-import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "vitest";
 
@@ -11,7 +10,6 @@ import {
 	seedSkillBackedSection,
 	TEST_TOPIC_NAME,
 	TEST_TOPIC_SHORT,
-	TEST_TOPIC_SUMMARY,
 	TEST_TOPIC_TITLE,
 	topicDocsPath,
 	topicDocsPathForOutput,
@@ -34,6 +32,31 @@ function expectTopicIndex(stdout: string): void {
 	);
 }
 
+function expectHigComponentsSkill(
+	stdout: string,
+	options: {
+		normalizedRepoDir: string;
+		referencesDir: string;
+		headingLevel: number;
+	},
+): void {
+	expect(hasHeading(stdout, options.headingLevel, "Apple HIG: Content Components")).toBe(true);
+	expect(normalizedPathForOutput(stdout)).toContain(
+		topicDocsPathForOutput(
+			options.normalizedRepoDir,
+			"hig-doctor",
+			"skills",
+			"hig-components-content",
+			"SKILL.md",
+		),
+	);
+	expect(compactListEntries(stdout, `${normalizedPathForOutput(options.referencesDir)}/:`, 3))
+		.toEqual([
+			"- alpha.md",
+			"- beta.md",
+		]);
+}
+
 test("docs topic shows the merged topic index", async () => {
 	await withDocsCliWorkspace("docs-topic-index-", async ({ repoDir, env }) => {
 		const result = await runDocsCli(["topic"], { cwd: repoDir, env });
@@ -48,7 +71,9 @@ test("docs topic merges local and global topic contributions", async () => {
 		const normalizedStdout = normalizedPathForOutput(result.stdout);
 		expect(result.exitCode).toBe(0);
 		const topicHeadingIndex = result.stdout.indexOf("# Topic: QMD");
-		const localGuideIndex = result.stdout.indexOf("Use the local QMD docs for repo-specific workflows.");
+		const localGuideIndex = result.stdout.indexOf(
+			"Use the local QMD docs for repo-specific workflows.",
+		);
 		const globalGuideIndex = result.stdout.indexOf("Search docs quickly from anywhere.");
 		expect(topicHeadingIndex).toBeGreaterThan(0);
 		expect(localGuideIndex).toBeGreaterThanOrEqual(0);
@@ -261,21 +286,11 @@ test("docs topic focus resolves nested skill paths directly", async () => {
 			);
 
 			expect(result.exitCode).toBe(0);
-			expect(hasHeading(result.stdout, 2, "Apple HIG: Content Components")).toBe(true);
-			expect(result.stdout).toContain(
-				topicDocsPathForOutput(
-					normalizedRepoDir,
-					"hig-doctor",
-					"skills",
-					"hig-components-content",
-					"SKILL.md",
-				),
-			);
-			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3))
-				.toEqual([
-					"- alpha.md",
-					"- beta.md",
-				]);
+			expectHigComponentsSkill(result.stdout, {
+				normalizedRepoDir,
+				referencesDir,
+				headingLevel: 2,
+			});
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);
@@ -379,21 +394,11 @@ test("docs topic path focus keeps sibling docs outside nested skill paths", asyn
 			);
 			expect(result.stdout).toContain("### HIG Doctor Usage");
 			expect(hasHeading(result.stdout, 3, "skills")).toBe(true);
-			expect(hasHeading(result.stdout, 4, "Apple HIG: Content Components")).toBe(true);
-			expect(normalizedPathForOutput(result.stdout)).toContain(
-				topicDocsPathForOutput(
-					normalizedRepoDir,
-					"hig-doctor",
-					"skills",
-					"hig-components-content",
-					"SKILL.md",
-				),
-			);
-			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3))
-				.toEqual([
-					"- alpha.md",
-					"- beta.md",
-				]);
+			expectHigComponentsSkill(result.stdout, {
+				normalizedRepoDir,
+				referencesDir,
+				headingLevel: 4,
+			});
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);

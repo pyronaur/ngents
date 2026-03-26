@@ -18,24 +18,16 @@ import {
 import {
 	printScopedTopicBrowser,
 	printTopicBrowser,
-	renderTopicTableHeader,
-	rootHelpTopicLines,
 } from "./browse-topic-browser.ts";
 import { printTopicOverview } from "./browse-topic-overview.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
-import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
-import rootHelpTemplate, {
-	type OpsHelpTemplateContext,
-	type RootHelpDocsGroup,
-	type RootHelpTemplateContext,
-} from "./root-help-template.ts";
+import { groupedDocs } from "./docs-grouping.ts";
 
 const {
 	compactDescription,
 	errorText,
 	heading,
 	normalizeInlineText,
-	normalizePath,
 	printLine,
 } = browseContracts;
 
@@ -141,101 +133,6 @@ function renderRootSelectorNotFound(
 	});
 }
 
-function groupedDocs(docs: MarkdownEntry[]): Array<[string, MarkdownEntry[]]> {
-	const grouped = new Map<string, MarkdownEntry[]>();
-	for (const entry of docs) {
-		const directoryPath = normalizePath(path.dirname(entry.absolutePath));
-		const existing = grouped.get(directoryPath);
-		if (existing) {
-			existing.push(entry);
-			continue;
-		}
-
-		grouped.set(directoryPath, [entry]);
-	}
-
-	return Array.from(grouped.entries()).sort((left, right) => left[0].localeCompare(right[0]));
-}
-
-function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
-	return entries
-		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
-		.map(entry => {
-			const description = compactDescription(entry.short, entry.summary);
-			const fileName = path.basename(entry.absolutePath);
-			if (description === null) {
-				return `  ${fileName}`;
-			}
-
-			return `  ${fileName} - ${description}`;
-		});
-}
-
-function rootHelpDocsGroups(docs: MarkdownEntry[]): RootHelpDocsGroup[] {
-	return groupedDocs(docs).map(([directoryPath, entries]) => ({
-		directory_path: directoryPath,
-		entry_lines: rootHelpDocsEntryLines(entries),
-	}));
-}
-
-function rootHelpTemplateContext(
-	topics: TopicIndexRow[],
-	docs: MarkdownEntry[],
-	options: { includeDocsIndex: boolean },
-): RootHelpTemplateContext {
-	const docsGroups = rootHelpDocsGroups(docs);
-	return {
-		docs_groups: docsGroups,
-		ls_command: rootHelpCommandLines.ls,
-		ls_usage: rootHelpUsageLines.ls,
-		query_usage: rootHelpUsageLines.query,
-		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
-		topic_command: rootHelpCommandLines.topic,
-		topic_usage: rootHelpUsageLines.topic,
-		topic_lines: rootHelpTopicLines(topics),
-		topics_header: renderTopicTableHeader(topics),
-	};
-}
-
-function opsHelpTemplateContext(): OpsHelpTemplateContext {
-	return {
-		fetch_command: rootHelpCommandLines.fetch,
-		fetch_usage: rootHelpUsageLines.fetch,
-		park_command: rootHelpCommandLines.park,
-		park_usage: rootHelpUsageLines.park,
-		update_command: rootHelpCommandLines.update,
-		update_usage: rootHelpUsageLines.update,
-	};
-}
-
-function formatRootHelpLine(line: string): string {
-	if (!line.startsWith("#")) {
-		return line;
-	}
-
-	const headingMatch = /^(#{1,3}) (.+)$/.exec(line);
-	if (!headingMatch) {
-		return line;
-	}
-
-	const hashes = headingMatch[1];
-	const text = headingMatch[2];
-	if (hashes === undefined || text === undefined) {
-		return line;
-	}
-	if (hashes.length === 1) {
-		return heading(1, text);
-	}
-	if (hashes.length === 2) {
-		return heading(2, text);
-	}
-	if (hashes.length === 3) {
-		return heading(3, text);
-	}
-
-	return line;
-}
-
 function printExpandedDocDescription(entry: MarkdownEntry): void {
 	if (entry.readWhen.length > 0) {
 		for (const readWhen of entry.readWhen) {
@@ -292,38 +189,9 @@ function printExpandedDocsIndex(
 	}
 }
 
-function renderRootHelp(
-	topics: TopicIndexRow[],
-	docs: MarkdownEntry[],
-	options: { includeDocsIndex: boolean },
-): string {
-	const rendered = rootHelpTemplate.renderRootHelpTemplate(
-		rootHelpTemplateContext(topics, docs, options),
-	);
-	return rendered
-		.split("\n")
-		.map(formatRootHelpLine)
-		.join("\n");
-}
+type HeadingLevel = 2 | 3 | 4 | 5 | 6;
 
-function printRootHelp(
-	topics: TopicIndexRow[],
-	docs: MarkdownEntry[],
-	options: { includeDocsIndex: boolean },
-): void {
-	for (const line of renderRootHelp(topics, docs, options).split("\n")) {
-		printLine(formatRootHelpLine(line));
-	}
-}
-
-function printOpsHelp(): void {
-	const rendered = rootHelpTemplate.renderOpsHelpTemplate(opsHelpTemplateContext());
-	for (const line of rendered.split("\n")) {
-		printLine(formatRootHelpLine(line));
-	}
-}
-
-function printMarkdownDetails(entry: MarkdownEntry, level: 3 | 2): void {
+function printMarkdownDetails(entry: MarkdownEntry, level: HeadingLevel): void {
 	printLine(heading(level, entry.title ?? entry.relativePath));
 	printLine(`${pc.dim("path:")} ${pc.dim(entry.absolutePath)}`);
 
@@ -356,8 +224,17 @@ function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): strin
 	return path.basename(sectionKey);
 }
 
-function nextHeadingLevel(level: number): 2 | 3 | 4 | 5 | 6 {
-	return Math.min(6, level + 1) as 2 | 3 | 4 | 5 | 6;
+function nextHeadingLevel(level: HeadingLevel): HeadingLevel {
+	if (level === 2) {
+		return 3;
+	}
+	if (level === 3) {
+		return 4;
+	}
+	if (level === 4) {
+		return 5;
+	}
+	return 6;
 }
 
 function printGuideSectionMetadata(
@@ -554,10 +431,7 @@ export default {
 	printCombinedSelectorView,
 	printDocsBrowser,
 	printFocusedSection,
-	printOpsHelp,
-	printRootHelp,
 	printScopedTopicBrowser,
-	renderRootHelp,
 	renderRootSelectorNotFound,
 	renderSelectorNotFound,
 	printTopicBrowser,

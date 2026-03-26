@@ -10,6 +10,7 @@ import {
 	runDocsBrowseSelector,
 	runDocsParkedCollectionSelector,
 } from "../runtime/browse.ts";
+import helpRender from "../runtime/help-render.ts";
 import { renderDocsRootHelp, runDocsRootHelp } from "../runtime/help.ts";
 import { readDocsTopicSelector } from "../runtime/topic.ts";
 import { registerCommand } from "./command-definition.ts";
@@ -220,7 +221,7 @@ async function runDocsCli(argv: string[], projectDir: string): Promise<void> {
 		return;
 	}
 	if (helpRequest.kind === "ops") {
-		browseRender.printOpsHelp();
+		helpRender.printOpsHelp();
 		return;
 	}
 

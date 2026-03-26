@@ -294,7 +294,10 @@ function toHandlerArgs(invocation: FetchHandlerInvocation): string[] {
 	];
 }
 
-function resolveHandlerCommand(handler: string, docsRoot: string): { command: string; args: string[] } {
+function resolveHandlerCommand(
+	handler: string,
+	docsRoot: string,
+): { command: string; args: string[] } {
 	const builtinHandlerPath = isBuiltinHandlerName(handler)
 		? BUILTIN_HANDLER_PATHS[handler]
 		: undefined;

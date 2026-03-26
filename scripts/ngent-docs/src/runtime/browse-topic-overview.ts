@@ -163,10 +163,12 @@ function collectOverviewSkills(section: SectionEntry): SkillEntry[] {
 	return skills.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
-function printNodeMetadata(node: Pick<
-	SectionEntry,
-	"summary" | "short" | "readWhen" | "error"
->): boolean {
+function printNodeMetadata(
+	node: Pick<
+		SectionEntry,
+		"summary" | "short" | "readWhen" | "error"
+	>,
+): boolean {
 	const summary = normalizeInlineText(node.summary) ?? compactDescription(node.short, null);
 	const readWhen = node.readWhen.length > 0 ? `Read when: ${node.readWhen.join("; ")}` : null;
 	if (!summary && !readWhen && !node.error) {
@@ -236,8 +238,7 @@ function docBucketLine(entry: MarkdownEntry): string {
 function appendDocsBuckets(
 	buckets: DocsBucket[],
 	section: SectionEntry,
-	depth: number,
-	maxDepth: number,
+	options: { depth: number; maxDepth: number },
 ): void {
 	if (sectionHasSkillContent(section)) {
 		return;
@@ -250,12 +251,15 @@ function appendDocsBuckets(
 		});
 	}
 
-	if (depth >= maxDepth) {
+	if (options.depth >= options.maxDepth) {
 		return;
 	}
 
 	for (const child of section.children) {
-		appendDocsBuckets(buckets, child, depth + 1, maxDepth);
+		appendDocsBuckets(buckets, child, {
+			depth: options.depth + 1,
+			maxDepth: options.maxDepth,
+		});
 	}
 }
 
@@ -274,7 +278,7 @@ function collectDocsBuckets(
 		}
 
 		for (const section of contribution.sectionEntries) {
-			appendDocsBuckets(buckets, section, 1, maxDepth);
+			appendDocsBuckets(buckets, section, { depth: 1, maxDepth });
 		}
 	}
 
@@ -309,7 +313,9 @@ function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4 | 5 |
 	}
 
 	printLine(heading(headingLevel, section.key));
-	const pathLine = section.skills.length > 0 ? skillPathTemplate(section, skills) : sectionDirectoryPath(section);
+	const pathLine = section.skills.length > 0
+		? skillPathTemplate(section, skills)
+		: sectionDirectoryPath(section);
 	printPathLine(pathLine);
 	const printedMetadata = printNodeMetadata(section);
 	if (printedMetadata || skills.length > 0) {

@@ -32,6 +32,8 @@ const {
 	readGuideMetadata,
 } = browseGuides;
 
+type GuideMetadata = Awaited<ReturnType<typeof readGuideMetadata>>;
+
 async function lstatSafe(filePath: string): Promise<Awaited<ReturnType<typeof lstat>> | null> {
 	try {
 		return await lstat(filePath);
@@ -287,8 +289,32 @@ async function readSkillEntryAtRoot(
 	skill.absolutePath = normalizePath(skillFile);
 	skill.referencePaths = await extractReferencePaths(path.dirname(skillFile), content);
 	const skillDirectory = normalizePath(path.dirname(skillFile));
-	skill.hint = (await collectSkillHints(topicDir, skillFile, guideCache)).get(skillDirectory) ?? null;
+	skill.hint = (await collectSkillHints(topicDir, skillFile, guideCache)).get(skillDirectory)
+		?? null;
 	return skill;
+}
+
+function createSectionEntry(options: {
+	sectionKey: string;
+	absolutePath: string;
+	guide: GuideMetadata;
+	children: SectionEntry[];
+	skills: SkillEntry[];
+	markdownEntries: MarkdownEntry[];
+}): SectionEntry {
+	return {
+		key: options.sectionKey,
+		absolutePath: options.absolutePath,
+		title: options.guide.title ?? path.basename(options.sectionKey),
+		short: options.guide.short,
+		summary: options.guide.summary,
+		guideBody: options.guide.guideBody,
+		readWhen: options.guide.readWhen,
+		error: options.guide.error,
+		markdownEntries: options.markdownEntries,
+		skills: options.skills,
+		children: options.children,
+	};
 }
 
 async function readSectionEntry(
@@ -305,40 +331,32 @@ async function readSectionEntry(
 
 	const rootSkill = await readSkillEntryAtRoot(topicDir, absolutePath, guideCache);
 	if (rootSkill) {
-		return {
-			key: sectionKey,
+		return createSectionEntry({
+			sectionKey,
 			absolutePath,
-			title: guide.title ?? path.basename(sectionKey),
-			short: guide.short,
-			summary: guide.summary,
-			guideBody: guide.guideBody,
-			readWhen: guide.readWhen,
-			error: guide.error,
-			markdownEntries: [],
-			skills: [rootSkill],
+			guide,
 			children: [],
-		};
+			skills: [rootSkill],
+			markdownEntries: [],
+		});
 	}
 
 	const childKeys = await listVisibleDirectories(absolutePath);
 	const children: SectionEntry[] = [];
 	for (const childKey of childKeys) {
-		children.push(await readSectionEntry(topicDir, path.posix.join(sectionKey, childKey), guideCache));
+		children.push(
+			await readSectionEntry(topicDir, path.posix.join(sectionKey, childKey), guideCache),
+		);
 	}
 
-	return {
-		key: sectionKey,
+	return createSectionEntry({
+		sectionKey,
 		absolutePath,
-		title: guide.title ?? path.basename(sectionKey),
-		short: guide.short,
-		summary: guide.summary,
-		guideBody: guide.guideBody,
-		readWhen: guide.readWhen,
-		error: guide.error,
-		markdownEntries: await listMarkdownEntries(absolutePath),
-		skills: [],
+		guide,
 		children,
-	};
+		skills: [],
+		markdownEntries: await listMarkdownEntries(absolutePath),
+	});
 }
 
 async function readTopicContribution(

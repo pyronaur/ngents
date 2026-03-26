@@ -87,6 +87,29 @@ function withEnv(
 	};
 }
 
+async function prepareRelativeTransformFixture(
+	tempDir: string,
+	repoDir: string,
+	binDir: string,
+): Promise<{
+	handlerPath: string;
+	logFile: string;
+	targetPath: string;
+	transformPath: string;
+}> {
+	const logFile = path.join(tempDir, "fetch.log");
+	await seedFakeQmd(binDir);
+	const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+	const transformPath = path.join(binDir, "fake-transform");
+	await writeExecutable(binDir, "fake-transform", "#!/bin/sh\nexit 0\n");
+	return {
+		handlerPath,
+		logFile,
+		targetPath: fetchTargetPath(repoDir, "remote-bundle"),
+		transformPath,
+	};
+}
+
 async function expectSkippedFetchUpdate(
 	result: { exitCode: number | null; stdout: string; stderr: string },
 	logFile: string,
@@ -401,12 +424,12 @@ test("docs fetch rejects targeting the docs root itself", async () => {
 test("docs fetch stores and replays root and transform options through docs update", async () => {
 	await withDocsCliWorkspace("docs-fetch-options-replay-",
 		async ({ tempDir, repoDir, binDir, env }) => {
-			const logFile = path.join(tempDir, "fetch.log");
-			await seedFakeQmd(binDir);
-			const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
-			const transformPath = path.join(binDir, "fake-transform");
-			await writeExecutable(binDir, "fake-transform", "#!/bin/sh\nexit 0\n");
-			const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+			const { handlerPath, logFile, targetPath, transformPath } =
+				await prepareRelativeTransformFixture(
+					tempDir,
+					repoDir,
+					binDir,
+				);
 
 			const fetchResult = await runDocsCli(
 				[
@@ -542,12 +565,12 @@ test("docs update skips unsafe manifest targets that use backslash traversal", a
 test("docs fetch preserves relative transform paths in the manifest and resolves them on update", async () => {
 	await withDocsCliWorkspace("docs-fetch-relative-transform-",
 		async ({ tempDir, repoDir, binDir, env }) => {
-			const logFile = path.join(tempDir, "fetch.log");
-			await seedFakeQmd(binDir);
-			const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
-			const transformPath = path.join(binDir, "fake-transform");
-			await writeExecutable(binDir, "fake-transform", "#!/bin/sh\nexit 0\n");
-			const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+			const { handlerPath, logFile, targetPath, transformPath } =
+				await prepareRelativeTransformFixture(
+					tempDir,
+					repoDir,
+					binDir,
+				);
 			const relativeTransform = path.relative(path.join(repoDir, "docs"), transformPath);
 
 			const fetchResult = await runDocsCli(

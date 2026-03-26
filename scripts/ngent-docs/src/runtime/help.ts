@@ -1,7 +1,7 @@
 import browseContracts from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
-import browseRender from "./browse-render.ts";
 import { discoverDocsSources } from "./browse-sources.ts";
+import helpRender from "./help-render.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -13,14 +13,14 @@ async function readDocsRootHelpData() {
 
 export async function runDocsRootHelp(options: { includeDocsIndex: boolean }): Promise<void> {
 	const index = await readDocsRootHelpData();
-	browseRender.printRootHelp(index.topics, index.docs, {
+	helpRender.printRootHelp(index.topics, index.docs, {
 		includeDocsIndex: options.includeDocsIndex,
 	});
 }
 
 export async function renderDocsRootHelp(options: { includeDocsIndex: boolean }): Promise<string> {
 	const index = await readDocsRootHelpData();
-	return browseRender.renderRootHelp(index.topics, index.docs, {
+	return helpRender.renderRootHelp(index.topics, index.docs, {
 		includeDocsIndex: options.includeDocsIndex,
 	});
 }

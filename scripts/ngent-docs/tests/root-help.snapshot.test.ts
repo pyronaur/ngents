@@ -76,8 +76,8 @@ async function captureRenderedOutput(render: () => Promise<void>): Promise<strin
 
 async function renderRootHelp(includeDocsIndex: boolean): Promise<string> {
 	return captureRenderedOutput(async () => {
-		const browseRenderModule = await import("../src/runtime/browse-render.ts");
-		browseRenderModule.default.printRootHelp(rootHelpFixture.topics, rootHelpFixture.docs, {
+		const helpRenderModule = await import("../src/runtime/help-render.ts");
+		helpRenderModule.default.printRootHelp(rootHelpFixture.topics, rootHelpFixture.docs, {
 			includeDocsIndex,
 		});
 	});
@@ -85,8 +85,8 @@ async function renderRootHelp(includeDocsIndex: boolean): Promise<string> {
 
 async function renderOpsHelp(): Promise<string> {
 	return captureRenderedOutput(async () => {
-		const browseRenderModule = await import("../src/runtime/browse-render.ts");
-		browseRenderModule.default.printOpsHelp();
+		const helpRenderModule = await import("../src/runtime/help-render.ts");
+		helpRenderModule.default.printOpsHelp();
 	});
 }
 

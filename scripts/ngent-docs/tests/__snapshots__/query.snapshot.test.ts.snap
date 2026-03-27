@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`docs query no-results output matches the current output 1`] = `
+"Tip: Write anchored queries, not conversational ones: <product/library> <mechanism> <exact term if known>
+
+No results.
+"
+`;
+
+exports[`docs query results match the current output 1`] = `
+"Tip: Write anchored queries, not conversational ones: <product/library> <mechanism> <exact term if known>
+
+## Documentation Commands: 91%
+Need one place that explains which ngents script commands exist and how to run them.
+
+/fixture/home/.ngents/docs/ngents/docs.md:12-13
+> # docs query
+> Search docs quickly.
+
+
+## CDP: 72%
+Need to start, stop, or inspect the local Chrome CDP session.
+
+/fixture/home/.ngents/docs/browser/cdp.md:5-5
+> Use Chrome DevTools Protocol locally.
+"
+`;
+
+exports[`docs query status output matches the current output 1`] = `
+"# docs query status
+
+- Index: ngents-docs
+- Collections: ngents
+- Cache root: /fixture/home/.cache/qmd
+- Config root: /fixture/home/.config/qmd
+
+QMD Status
+index: ngents-docs
+"
+`;

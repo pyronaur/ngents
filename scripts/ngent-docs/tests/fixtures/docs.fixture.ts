@@ -1,20 +1,9 @@
 import type { MarkdownEntry, TopicIndexRow } from "../../src/runtime/browse-contracts.ts";
+import { platformTopicFixture, topicIndexRows } from "./topic.fixture.ts";
 
-export const rootHelpFixture = {
+export const docsRootHelpFixture = {
 	topics: [
-		{
-			name: "platform",
-			title: "Platform Library",
-			short: "platform docs",
-			summary: "This topic collects platform references and HIG skills.",
-		},
-		{
-			name: "ops",
-			title: "Ops Notes",
-			short: null,
-			summary:
-				"This summary is intentionally longer than sixty-four characters so compact views must truncate it.",
-		},
+		...topicIndexRows,
 		{
 			name: "qmd",
 			title: "QMD",
@@ -72,22 +61,41 @@ export const rootHelpFixture = {
 			summary: "Need to start, stop, or inspect the local Chrome CDP session.",
 			readWhen: [],
 		},
-		{
-			absolutePath: "/fixture/home/.ngents/docs/ngents/docs.md",
-			relativePath: "ngents/docs.md",
-			title: "Documentation Commands",
-			short: "command index",
-			summary:
-				"Need one place that explains which ngents script commands exist and how to run them.",
-			readWhen: [],
-		},
-		{
-			absolutePath: "/fixture/home/.ngents/docs/process/qa.md",
-			relativePath: "process/qa.md",
-			title: "QA Process",
-			short: "qa process notes",
-			summary: "Need a structured way to surface confusion instead of making assumptions.",
-			readWhen: [],
-		},
 	] satisfies MarkdownEntry[],
+	collectionSelector: {
+		selector: "machine",
+		topics: topicIndexRows,
+		docs: [
+			{
+				absolutePath: "/fixture/home/.ngents/docs/browser/cdp.md",
+				relativePath: "browser/cdp.md",
+				title: "CDP",
+				short: "Chrome CDP instructions",
+				summary: "Need to start, stop, or inspect the local Chrome CDP session.",
+				readWhen: [],
+			},
+		] satisfies MarkdownEntry[],
+	},
+	combinedSelector: {
+		selector: "platform",
+		topic: platformTopicFixture.topic,
+		docs: [
+			{
+				absolutePath: "/fixture/repo/docs/platform/local-browser.md",
+				relativePath: "platform/local-browser.md",
+				title: "Local Browser",
+				short: "local browser docs",
+				summary: "Repo-local platform browser notes.",
+				readWhen: [],
+			},
+			{
+				absolutePath: "/fixture/home/.ngents/docs/platform/cdp.md",
+				relativePath: "platform/cdp.md",
+				title: "CDP",
+				short: "Chrome CDP instructions",
+				summary: "Need to start, stop, or inspect the local Chrome CDP session.",
+				readWhen: [],
+			},
+		] satisfies MarkdownEntry[],
+	},
 };

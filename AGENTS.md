@@ -59,12 +59,14 @@
 
 ## Docs
 - Read & Maintain Docs
-- Before Code: run `docs`
-- Order: `docs` -> source -> execute. No deep search before docs scan.
+- Order: `docs` -> source -> execute.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
 - Add `read_when` hints on cross-cutting docs.
 - Add `short` summary for compact `docs` output
+- `docs ls [where]`
+- `docs <topic> [name]`
+- `docs query <query>`
 
 ## Critical Thinking
 - Fix root cause (not band-aid).

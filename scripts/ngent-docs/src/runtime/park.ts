@@ -3,7 +3,9 @@ import path from "node:path";
 
 import { runtimeError } from "../core/errors.ts";
 import browseContracts from "./browse-contracts.ts";
+import commandTemplate from "./command-template.ts";
 import { addQmdCollection, invalidateQmdCollectionsCache, listQmdCollectionsFresh } from "./qmd.ts";
+import templateOutput from "./template-output.ts";
 import { runDocsUpdate } from "./update.ts";
 
 const { EXCLUDED_DIRS, hasHiddenOrExcludedSegment, META_FILE, normalizePath, TOPICS_DIR } =
@@ -135,5 +137,8 @@ export async function runDocsPark(positionals: string[]): Promise<void> {
 	await addQmdCollection(collectionName, docsRoot);
 	await invalidateQmdCollectionsCache();
 	await runDocsUpdate();
-	console.log(`Parked "${collectionName}" at ${docsRoot}`);
+	templateOutput.printRenderedTemplate(commandTemplate.renderParkTemplate({
+		message_line: `Parked "${collectionName}" at ${docsRoot}`,
+		view: "success",
+	}));
 }

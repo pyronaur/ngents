@@ -1,5 +1,11 @@
 import path from "node:path";
 
+import commandTemplate, {
+	type TopicTemplateDocsBucket,
+	type TopicTemplateGuideBlock,
+	type TopicTemplateOverviewContext,
+	type TopicTemplateSkillSection,
+} from "./command-template.ts";
 import type {
 	MarkdownEntry,
 	MergedTopic,
@@ -14,8 +20,11 @@ const {
 	errorText,
 	heading,
 	normalizeInlineText,
-	printLine,
 } = browseContracts;
+
+function blockText(lines: string[]): string {
+	return lines.join("\n");
+}
 
 const ROOT_OVERVIEW_DEPTH = 2;
 
@@ -24,27 +33,12 @@ type DocsBucket = {
 	entries: MarkdownEntry[];
 };
 
-function printGuideBody(guideBody: string): void {
-	for (const line of guideBody.split("\n")) {
-		printLine(line);
-	}
-}
-
-function printTopicSkill(skill: SkillEntry): void {
+function printTopicSkillLine(skill: SkillEntry): string {
 	if (skill.hint) {
-		printLine(`$${skill.name} - ${skill.hint}`);
-		return;
+		return `$${skill.name} - ${skill.hint}`;
 	}
 
-	printLine(`$${skill.name}`);
-}
-
-function printPathLine(value: string | null): void {
-	if (!value) {
-		return;
-	}
-
-	printLine(`Path: ${value}`);
+	return `$${skill.name}`;
 }
 
 function relativePathParts(basePath: string, absolutePath: string): string[] {
@@ -163,61 +157,48 @@ function collectOverviewSkills(section: SectionEntry): SkillEntry[] {
 	return skills.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
-function printNodeMetadata(
-	node: Pick<
-		SectionEntry,
-		"summary" | "short" | "readWhen" | "error"
-	>,
-): boolean {
+function metadataLines(
+	node: Pick<SectionEntry, "summary" | "short" | "readWhen" | "error">,
+): string[] {
+	const lines: string[] = [];
 	const summary = normalizeInlineText(node.summary) ?? compactDescription(node.short, null);
 	const readWhen = node.readWhen.length > 0 ? `Read when: ${node.readWhen.join("; ")}` : null;
-	if (!summary && !readWhen && !node.error) {
-		return false;
-	}
-
-	printLine();
 	if (summary) {
-		printLine(summary);
+		lines.push(summary);
 	}
 	if (readWhen) {
-		printLine(readWhen);
+		lines.push(readWhen);
 	}
 	if (node.error) {
-		printLine(errorText(node.error));
+		lines.push(errorText(node.error));
 	}
-	return true;
+	return lines;
 }
 
 function hasContributionGuideContent(contribution: TopicContribution): boolean {
 	return Boolean(contribution.guideBody || contribution.error || contribution.readWhen.length > 0);
 }
 
-function printContributionGuideContent(contribution: TopicContribution): void {
+function guideBlockLines(contribution: TopicContribution): string[] {
+	const lines: string[] = [];
 	if (contribution.guideBody) {
-		printGuideBody(contribution.guideBody);
+		lines.push(...contribution.guideBody.split("\n"));
 	}
 	if (contribution.error) {
-		printLine(errorText(contribution.error));
+		lines.push(errorText(contribution.error));
 	}
 	if (contribution.readWhen.length > 0) {
-		printLine(`Read when: ${contribution.readWhen.join("; ")}`);
+		lines.push(`Read when: ${contribution.readWhen.join("; ")}`);
 	}
+	return lines;
 }
 
-function printMergedGuidePreamble(contributions: TopicContribution[]): boolean {
-	const guidedContributions = contributions.filter(hasContributionGuideContent);
-	if (guidedContributions.length === 0) {
-		return false;
-	}
-
-	for (const [index, contribution] of guidedContributions.entries()) {
-		if (index > 0) {
-			printLine();
-		}
-		printContributionGuideContent(contribution);
-	}
-
-	return true;
+function createGuideBlocks(contributions: TopicContribution[]): TopicTemplateGuideBlock[] {
+	return contributions
+		.filter(hasContributionGuideContent)
+		.map(contribution => ({
+			text: blockText(guideBlockLines(contribution)),
+		}));
 }
 
 function docBucketLine(entry: MarkdownEntry): string {
@@ -285,73 +266,64 @@ function collectDocsBuckets(
 	return buckets;
 }
 
-function printDocsBuckets(
-	buckets: DocsBucket[],
-	options: {
-		sectionHeadingLevel: 2 | 3 | 4 | 5 | 6;
-		bucketHeadingLevel: 3 | 4 | 5 | 6;
-	},
-): void {
-	printLine(heading(options.sectionHeadingLevel, "Docs"));
-	printLine();
-
-	for (const [bucketIndex, bucket] of buckets.entries()) {
-		printLine(heading(options.bucketHeadingLevel, bucket.directoryPath));
-		for (const entry of bucket.entries) {
-			printLine(docBucketLine(entry));
-		}
-		if (bucketIndex < buckets.length - 1) {
-			printLine();
-		}
-	}
+function createDocsBuckets(
+	contributions: TopicContribution[],
+	maxDepth: number,
+	bucketHeadingLevel: 3 | 4 | 5 | 6,
+): TopicTemplateDocsBucket[] {
+	return collectDocsBuckets(contributions, maxDepth).map(bucket => ({
+		text: blockText([
+			heading(bucketHeadingLevel, bucket.directoryPath),
+			...bucket.entries.map(entry => docBucketLine(entry)),
+		]),
+	}));
 }
 
-function printTopicSkillSection(section: SectionEntry, headingLevel: 3 | 4 | 5 | 6): void {
+function createSkillSection(
+	section: SectionEntry,
+	headingLevel: 3 | 4 | 5 | 6,
+): TopicTemplateSkillSection | null {
 	const skills = collectOverviewSkills(section);
 	if (skills.length === 0) {
-		return;
+		return null;
 	}
 
-	printLine(heading(headingLevel, section.key));
 	const pathLine = section.skills.length > 0
 		? skillPathTemplate(section, skills)
 		: sectionDirectoryPath(section);
-	printPathLine(pathLine);
-	const printedMetadata = printNodeMetadata(section);
-	if (printedMetadata || skills.length > 0) {
-		printLine();
+	const metadata = metadataLines(section);
+	const lines = [heading(headingLevel, section.key)];
+	if (pathLine) {
+		lines.push(`Path: ${pathLine}`);
 	}
-
-	for (const skill of skills) {
-		printTopicSkill(skill);
+	if (metadata.length > 0 || skills.length > 0) {
+		lines.push("");
 	}
+	lines.push(...metadata);
+	if (metadata.length > 0 && skills.length > 0) {
+		lines.push("");
+	}
+	lines.push(...skills.map(skill => printTopicSkillLine(skill)));
+	return {
+		text: blockText(lines),
+	};
 }
 
-function printTopicSkills(
-	sections: SectionEntry[],
-	options: {
-		sectionHeadingLevel: 2 | 3 | 4 | 5 | 6;
-		entryHeadingLevel: 3 | 4 | 5 | 6;
-	},
-): void {
-	printLine(heading(options.sectionHeadingLevel, "Skills"));
-	printLine();
-
-	for (const [index, section] of sections.entries()) {
-		printTopicSkillSection(section, options.entryHeadingLevel);
-		if (index < sections.length - 1) {
-			printLine();
-		}
-	}
-}
-
-function collectSkillSections(contributions: TopicContribution[]): SectionEntry[] {
-	const sections: SectionEntry[] = [];
+function createSkillSections(
+	contributions: TopicContribution[],
+	entryHeadingLevel: 3 | 4 | 5 | 6,
+): TopicTemplateSkillSection[] {
+	const sections: TopicTemplateSkillSection[] = [];
 
 	for (const contribution of contributions) {
 		for (const section of contribution.sectionEntries) {
-			if (sectionHasSkillContent(section)) {
-				sections.push(section);
+			if (!sectionHasSkillContent(section)) {
+				continue;
+			}
+
+			const skillSection = createSkillSection(section, entryHeadingLevel);
+			if (skillSection) {
+				sections.push(skillSection);
 			}
 		}
 	}
@@ -359,49 +331,47 @@ function collectSkillSections(contributions: TopicContribution[]): SectionEntry[
 	return sections;
 }
 
-export function printTopicOverview(topic: MergedTopic, options: {
-	titleLevel?: 1 | 2;
-	titlePrefix?: string;
-	sectionHeadingLevel?: 2 | 3;
-	entryHeadingLevel?: 3 | 4;
-	maxDepth?: number;
-} = {}): void {
+export function createTopicOverviewContext(
+	topic: MergedTopic,
+	options: {
+		titleLevel?: 1 | 2;
+		titlePrefix?: string;
+		sectionHeadingLevel?: 2 | 3;
+		entryHeadingLevel?: 3 | 4;
+		maxDepth?: number;
+	} = {},
+): TopicTemplateOverviewContext {
 	const titleLevel = options.titleLevel ?? 1;
 	const titlePrefix = options.titlePrefix ?? "";
 	const sectionHeadingLevel = options.sectionHeadingLevel ?? 2;
 	const entryHeadingLevel = options.entryHeadingLevel ?? 3;
 	const maxDepth = options.maxDepth ?? ROOT_OVERVIEW_DEPTH;
-	const docsBuckets = collectDocsBuckets(topic.contributions, maxDepth);
-	const skillSections = collectSkillSections(topic.contributions);
-	const printedGuide = printMergedGuidePreamble(topic.contributions);
 
-	if (printedGuide) {
-		printLine();
-	}
-
-	printLine(heading(titleLevel, `${titlePrefix}${topic.title}`));
-
-	if (docsBuckets.length === 0 && skillSections.length === 0) {
-		return;
-	}
-
-	printLine();
-
-	if (docsBuckets.length > 0) {
-		printDocsBuckets(docsBuckets, {
-			sectionHeadingLevel,
-			bucketHeadingLevel: entryHeadingLevel,
-		});
-	}
-
-	if (docsBuckets.length > 0 && skillSections.length > 0) {
-		printLine();
-	}
-
-	if (skillSections.length > 0) {
-		printTopicSkills(skillSections, {
-			sectionHeadingLevel,
-			entryHeadingLevel,
-		});
-	}
+	return {
+		docs_buckets: createDocsBuckets(topic.contributions, maxDepth, entryHeadingLevel),
+		docs_heading_line: heading(sectionHeadingLevel, "Docs"),
+		guide_blocks: createGuideBlocks(topic.contributions),
+		skill_sections: createSkillSections(topic.contributions, entryHeadingLevel),
+		skills_heading_line: heading(sectionHeadingLevel, "Skills"),
+		title_line: heading(titleLevel, `${titlePrefix}${topic.title}`),
+		view: "overview",
+	};
 }
+
+export function renderTopicOverview(
+	topic: MergedTopic,
+	options: {
+		titleLevel?: 1 | 2;
+		titlePrefix?: string;
+		sectionHeadingLevel?: 2 | 3;
+		entryHeadingLevel?: 3 | 4;
+		maxDepth?: number;
+	} = {},
+): string {
+	return commandTemplate.renderTopicTemplate(createTopicOverviewContext(topic, options));
+}
+
+export default {
+	createTopicOverviewContext,
+	renderTopicOverview,
+};

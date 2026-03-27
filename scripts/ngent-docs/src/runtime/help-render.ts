@@ -8,19 +8,20 @@ import {
 	renderTopicTableHeader,
 	rootHelpTopicLines,
 } from "./browse-topic-browser.ts";
+import commandTemplate, {
+	type DocsTemplateDocsGroup,
+	type DocsTemplateOpsHelpContext,
+	type DocsTemplateRootHelpContext,
+} from "./command-template.ts";
 import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
 import { groupedDocs } from "./docs-grouping.ts";
-import rootHelpTemplate, {
-	type OpsHelpTemplateContext,
-	type RootHelpDocsGroup,
-	type RootHelpTemplateContext,
-} from "./root-help-template.ts";
+import templateOutput from "./template-output.ts";
 
-const {
-	compactDescription,
-	heading,
-	printLine,
-} = browseContracts;
+const { compactDescription, heading } = browseContracts;
+
+function blockText(lines: string[]): string {
+	return lines.join("\n");
+}
 
 function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
 	return entries
@@ -36,10 +37,9 @@ function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
 		});
 }
 
-function rootHelpDocsGroups(docs: MarkdownEntry[]): RootHelpDocsGroup[] {
+function rootHelpDocsGroups(docs: MarkdownEntry[]): DocsTemplateDocsGroup[] {
 	return groupedDocs(docs).map(([directoryPath, entries]) => ({
-		directory_path: directoryPath,
-		entry_lines: rootHelpDocsEntryLines(entries),
+		text: blockText([heading(3, directoryPath), ...rootHelpDocsEntryLines(entries)]),
 	}));
 }
 
@@ -47,58 +47,43 @@ function rootHelpTemplateContext(
 	topics: TopicIndexRow[],
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
-): RootHelpTemplateContext {
+): DocsTemplateRootHelpContext {
 	const docsGroups = rootHelpDocsGroups(docs);
 	return {
+		browse_heading_line: heading(3, "Browse"),
+		docs_heading_line: heading(2, "Docs"),
 		docs_groups: docsGroups,
 		ls_command: rootHelpCommandLines.ls,
 		ls_usage: rootHelpUsageLines.ls,
+		overview_heading_line: heading(2, "Overview & Organization"),
+		query_heading_line: heading(3, "Query"),
 		query_usage: rootHelpUsageLines.query,
 		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
 		topic_command: rootHelpCommandLines.topic,
+		title_line: heading(1, "docs"),
+		topic_table: {
+			text: blockText([renderTopicTableHeader(topics), ...rootHelpTopicLines(topics)]),
+		},
+		topics_heading_line: heading(2, "Topics"),
 		topic_usage: rootHelpUsageLines.topic,
-		topic_lines: rootHelpTopicLines(topics),
-		topics_header: renderTopicTableHeader(topics),
+		view: "root_help",
 	};
 }
 
-function opsHelpTemplateContext(): OpsHelpTemplateContext {
+function opsHelpTemplateContext(): DocsTemplateOpsHelpContext {
 	return {
 		fetch_command: rootHelpCommandLines.fetch,
+		fetch_heading_line: heading(2, "Fetch"),
 		fetch_usage: rootHelpUsageLines.fetch,
 		park_command: rootHelpCommandLines.park,
+		park_heading_line: heading(2, "Parking"),
 		park_usage: rootHelpUsageLines.park,
+		title_line: heading(1, "docs operations"),
 		update_command: rootHelpCommandLines.update,
+		update_heading_line: heading(2, "Update"),
 		update_usage: rootHelpUsageLines.update,
+		view: "ops_help",
 	};
-}
-
-function formatRootHelpLine(line: string): string {
-	if (!line.startsWith("#")) {
-		return line;
-	}
-
-	const headingMatch = /^(#{1,3}) (.+)$/.exec(line);
-	if (!headingMatch) {
-		return line;
-	}
-
-	const hashes = headingMatch[1];
-	const text = headingMatch[2];
-	if (hashes === undefined || text === undefined) {
-		return line;
-	}
-	if (hashes.length === 1) {
-		return heading(1, text);
-	}
-	if (hashes.length === 2) {
-		return heading(2, text);
-	}
-	if (hashes.length === 3) {
-		return heading(3, text);
-	}
-
-	return line;
 }
 
 export function renderRootHelp(
@@ -106,13 +91,7 @@ export function renderRootHelp(
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
 ): string {
-	const rendered = rootHelpTemplate.renderRootHelpTemplate(
-		rootHelpTemplateContext(topics, docs, options),
-	);
-	return rendered
-		.split("\n")
-		.map(formatRootHelpLine)
-		.join("\n");
+	return commandTemplate.renderDocsTemplate(rootHelpTemplateContext(topics, docs, options));
 }
 
 export function printRootHelp(
@@ -120,20 +99,20 @@ export function printRootHelp(
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
 ): void {
-	for (const line of renderRootHelp(topics, docs, options).split("\n")) {
-		printLine(line);
-	}
+	templateOutput.printRenderedTemplate(renderRootHelp(topics, docs, options));
+}
+
+export function renderOpsHelp(): string {
+	return commandTemplate.renderDocsTemplate(opsHelpTemplateContext());
 }
 
 export function printOpsHelp(): void {
-	const rendered = rootHelpTemplate.renderOpsHelpTemplate(opsHelpTemplateContext());
-	for (const line of rendered.split("\n")) {
-		printLine(formatRootHelpLine(line));
-	}
+	templateOutput.printRenderedTemplate(renderOpsHelp());
 }
 
 export default {
 	printOpsHelp,
 	printRootHelp,
+	renderOpsHelp,
 	renderRootHelp,
 };

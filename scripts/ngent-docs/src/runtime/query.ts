@@ -4,7 +4,9 @@ import pc from "picocolors";
 
 import { runtimeError } from "../core/errors.ts";
 import { docsCommandUsage } from "../core/usage.ts";
+import commandTemplate from "./command-template.ts";
 import { CACHE_ROOT, CONFIG_ROOT, INDEX_NAME, listQmdCollections, runQmd } from "./qmd.ts";
+import templateOutput from "./template-output.ts";
 
 type SearchResult = {
 	docid?: string;
@@ -326,6 +328,10 @@ function formatHeading(title: string, score: string): string {
 	return pc.bold(`## ${title}: ${score}`);
 }
 
+function blockText(lines: string[]): string {
+	return lines.join("\n");
+}
+
 function formatQuotedSnippet(body: string | null): string | null {
 	if (!body) {
 		return null;
@@ -347,12 +353,11 @@ function isSearchResultArray(value: unknown): value is SearchResult[] {
 
 function printResult(
 	result: SearchResult,
-	index: number,
 	collectionRoots: Map<string, string>,
-): void {
+): { text: string } | null {
 	const filePath = typeof result.file === "string" ? result.file : null;
 	if (!filePath) {
-		return;
+		return null;
 	}
 
 	const parsedPath = parseVirtualPath(filePath);
@@ -363,34 +368,29 @@ function printResult(
 	const snippet = cleanSnippet(result.snippet);
 	const overview = pickOverview(filePath, result.context, collectionRoots);
 	const quotedSnippet = formatQuotedSnippet(snippet.body);
-
-	if (index > 0) {
-		console.log("");
-		console.log("");
-	}
-	console.log(formatHeading(title, scoreLabel(result.score)));
+	const lines = [formatHeading(title, scoreLabel(result.score))];
 	if (overview) {
-		console.log(overview);
-		console.log("");
+		lines.push(overview);
+		lines.push("");
 	}
-	console.log(formatPathWithAnchor(filePath, snippet.anchor, collectionRoots));
+	lines.push(formatPathWithAnchor(filePath, snippet.anchor, collectionRoots));
 	if (quotedSnippet) {
-		console.log(quotedSnippet);
+		lines.push(...quotedSnippet.split("\n"));
 	}
+	return {
+		text: blockText(lines),
+	};
 }
 
 function printResults(results: SearchResult[], collectionRoots: Map<string, string>): void {
-	console.log(pc.gray(DEFAULT_TIP));
-	console.log("");
-
-	if (results.length === 0) {
-		console.log("No results.");
-		return;
-	}
-
-	for (const [index, result] of results.entries()) {
-		printResult(result, index, collectionRoots);
-	}
+	const resultBlocks = results
+		.map(result => printResult(result, collectionRoots))
+		.filter(result => result !== null);
+	templateOutput.printRenderedTemplate(commandTemplate.renderQueryTemplate({
+		result_blocks: resultBlocks,
+		tip_line: pc.gray(DEFAULT_TIP),
+		view: "results",
+	}));
 }
 
 async function runStatus(commandLabel: string): Promise<void> {
@@ -400,15 +400,19 @@ async function runStatus(commandLabel: string): Promise<void> {
 	}
 	const collections = await listQmdCollections();
 	const collectionNames = collections.map(collection => collection.name).join(", ") || "-";
-
-	console.log(`# ${commandLabel} status`);
-	console.log("");
-	console.log(`- Index: ${INDEX_NAME}`);
-	console.log(`- Collections: ${collectionNames}`);
-	console.log(`- Cache root: ${CACHE_ROOT}`);
-	console.log(`- Config root: ${CONFIG_ROOT}`);
-	console.log("");
-	process.stdout.write(result.stdout);
+	templateOutput.printRenderedTemplate(commandTemplate.renderQueryTemplate({
+		lines: [
+			`# ${commandLabel} status`,
+			"",
+			`- Index: ${INDEX_NAME}`,
+			`- Collections: ${collectionNames}`,
+			`- Cache root: ${CACHE_ROOT}`,
+			`- Config root: ${CONFIG_ROOT}`,
+			"",
+			...result.stdout.replace(/\n+$/, "").split("\n").filter(line => line.length > 0),
+		],
+		view: "status",
+	}));
 }
 
 async function loadCollectionRoots(): Promise<Map<string, string>> {

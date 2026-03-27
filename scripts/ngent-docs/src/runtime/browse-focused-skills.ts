@@ -1,10 +1,14 @@
-import pc from "picocolors";
-
+import {
+	type TopicTemplateCompactSkillContext,
+	type TopicTemplateFocusedSkillEntry,
+	type TopicTemplateFocusedSkillsBlock,
+	type TopicTemplateReferenceGroup,
+} from "./command-template.ts";
 import type { SectionEntry } from "./browse-contracts.ts";
 import browseContracts from "./browse-contracts.ts";
 import { groupedSkillReferenceNames } from "./browse-skill-references.ts";
 
-const { errorText, heading, normalizeInlineText, printLine } = browseContracts;
+const { errorText, heading, normalizeInlineText } = browseContracts;
 
 function skillDisplayLabel(section: SectionEntry): string {
 	const [skill] = section.skills;
@@ -19,80 +23,31 @@ function rootSkillRelativePath(section: SectionEntry): string {
 	return `${section.key}/SKILL.md`;
 }
 
-function printSkillDescriptionAndReferences(
-	section: SectionEntry,
-	options: {
-		pathLabel: boolean;
-		referenceHeadingPrefix: "###" | "#####";
-		blankLineAfterPath: boolean;
-	},
-): void {
-	const [skill] = section.skills;
-	if (!skill) {
-		return;
-	}
-
-	const referenceGroups = groupedSkillReferenceNames(skill);
-	if (options.pathLabel) {
-		printLine(`${pc.dim("path:")} ${pc.dim(skill.absolutePath)}`);
-		return printSkillDescriptionAndReferencesBody(
-			descriptionAndReferenceState(skill, referenceGroups),
-			options,
-		);
-	}
-	printLine(skill.absolutePath);
-	return printSkillDescriptionAndReferencesBody(
-		descriptionAndReferenceState(skill, referenceGroups),
-		options,
-	);
-}
-
-function descriptionAndReferenceState(
+function referenceGroups(
 	skill: SectionEntry["skills"][number],
-	referenceGroups: ReturnType<typeof groupedSkillReferenceNames>,
-): {
-	description: string | null;
-	referenceGroups: ReturnType<typeof groupedSkillReferenceNames>;
-	skill: SectionEntry["skills"][number];
-} {
-	return {
-		description: normalizeInlineText(skill.description),
-		referenceGroups,
-		skill,
-	};
+	headingPrefix: "###" | "#####",
+): TopicTemplateReferenceGroup[] {
+	return groupedSkillReferenceNames(skill).map(([directoryPath, fileNames]) => ({
+		heading_line: `${headingPrefix} ${directoryPath}/:`,
+		item_lines: fileNames.map(fileName => `- ${fileName}`),
+	}));
 }
 
-function printSkillDescriptionAndReferencesBody(
-	state: {
-		description: string | null;
-		referenceGroups: ReturnType<typeof groupedSkillReferenceNames>;
-		skill: SectionEntry["skills"][number];
-	},
-	options: {
-		pathLabel: boolean;
-		referenceHeadingPrefix: "###" | "#####";
-		blankLineAfterPath: boolean;
-	},
-): void {
-	const { description, referenceGroups, skill } = state;
-	if (options.blankLineAfterPath && (description || skill.error || referenceGroups.length > 0)) {
-		printLine();
-	}
-	if (description) {
-		printLine(description);
-	}
-	if (skill.error) {
-		printLine(errorText(skill.error));
-	}
-	for (const [index, [directoryPath, fileNames]] of referenceGroups.entries()) {
-		if (index > 0 || description || skill.error) {
-			printLine();
-		}
-		printLine(`${options.referenceHeadingPrefix} ${directoryPath}/:`);
-		for (const fileName of fileNames) {
-			printLine(`- ${fileName}`);
-		}
-	}
+function descriptionLine(skill: SectionEntry["skills"][number]): string | null {
+	return normalizeInlineText(skill.description);
+}
+
+function createFocusedSkillEntry(
+	skill: SectionEntry["skills"][number],
+	entryHeadingPrefix: "####" | "#####",
+): TopicTemplateFocusedSkillEntry {
+	return {
+		description_line: descriptionLine(skill),
+		error_line: skill.error ? errorText(skill.error) : null,
+		heading_line: `${entryHeadingPrefix} ${skill.title ?? skill.name}`,
+		path_line: `path: ${skill.absolutePath}`,
+		reference_groups: referenceGroups(skill, "#####"),
+	};
 }
 
 export function isCompactFocusedSkillSection(section: SectionEntry): boolean {
@@ -108,43 +63,45 @@ export function isCompactFocusedSkillSection(section: SectionEntry): boolean {
 	return skill.relativePath === rootSkillRelativePath(section);
 }
 
-export function printCompactFocusedSkillSection(
+export function createCompactFocusedSkillContext(
 	section: SectionEntry,
 	options: { headingLevel?: 1 | 2 | 3 | 4 | 5 | 6 } = {},
-): void {
-	printLine(heading(options.headingLevel ?? 2, skillDisplayLabel(section)));
-	printSkillDescriptionAndReferences(section, {
-		pathLabel: false,
-		referenceHeadingPrefix: "###",
-		blankLineAfterPath: true,
-	});
+): TopicTemplateCompactSkillContext {
+	const [skill] = section.skills;
+	if (!skill) {
+		throw new Error("Compact focused skill section requires one skill");
+	}
+
+	return {
+		description_line: descriptionLine(skill),
+		heading_line: heading(options.headingLevel ?? 2, skillDisplayLabel(section)),
+		kind: "compact_skill",
+		path_line: skill.absolutePath,
+		reference_groups: referenceGroups(skill, "###"),
+	};
 }
 
-export function printFocusedSkillsBlock(
+export function createFocusedSkillsBlock(
 	section: SectionEntry,
 	options: {
 		blockHeadingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
 		entryHeadingPrefix?: "####" | "#####";
 	} = {},
-): void {
+): TopicTemplateFocusedSkillsBlock | null {
 	if (section.skills.length === 0) {
-		return;
+		return null;
 	}
 
-	printLine(heading(options.blockHeadingLevel ?? 3, "Skills"));
-	printLine();
-
-	for (const [index, skill] of section.skills.entries()) {
-		printLine(`${options.entryHeadingPrefix ?? "####"} ${skill.title ?? skill.name}`);
-		printSkillDescriptionAndReferences(
-			{
-				...section,
-				skills: [skill],
-			},
-			{ pathLabel: true, referenceHeadingPrefix: "#####", blankLineAfterPath: false },
-		);
-		if (index < section.skills.length - 1) {
-			printLine();
-		}
-	}
+	return {
+		entries: section.skills.map(skill =>
+			createFocusedSkillEntry(skill, options.entryHeadingPrefix ?? "####")
+		),
+		heading_line: heading(options.blockHeadingLevel ?? 3, "Skills"),
+	};
 }
+
+export default {
+	createCompactFocusedSkillContext,
+	createFocusedSkillsBlock,
+	isCompactFocusedSkillSection,
+};

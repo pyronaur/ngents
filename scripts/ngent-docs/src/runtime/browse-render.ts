@@ -10,32 +10,29 @@ import browseContracts, {
 	type SectionEntry,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
+import commandTemplate, {
+	type DocsTemplateDocsGroup,
+	type LsTemplateContext,
+} from "./command-template.ts";
+import { createFocusedContext } from "./browse-focused-sections.ts";
 import {
-	isCompactFocusedSkillSection,
-	printCompactFocusedSkillSection,
-	printFocusedSkillsBlock,
-} from "./browse-focused-skills.ts";
-import {
-	printScopedTopicBrowser,
-	printTopicBrowser,
+	renderTopicTableHeader,
+	rootHelpTopicLines,
 } from "./browse-topic-browser.ts";
-import { printTopicOverview } from "./browse-topic-overview.ts";
+import {
+	createTopicOverviewContext,
+	renderTopicOverview,
+} from "./browse-topic-overview.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
 import { groupedDocs } from "./docs-grouping.ts";
+import templateOutput from "./template-output.ts";
 
 const {
 	compactDescription,
 	errorText,
 	heading,
 	normalizeInlineText,
-	printLine,
 } = browseContracts;
-
-function printGuideBody(guideBody: string): void {
-	for (const line of guideBody.split("\n")) {
-		printLine(line);
-	}
-}
 
 function renderBlock(
 	renderLines: (pushLine: (text?: string, indent?: number) => void) => void,
@@ -44,6 +41,10 @@ function renderBlock(
 	renderLines((text = "", indent = 0) => {
 		lines.push(`${" ".repeat(indent)}${text}`);
 	});
+	return lines.join("\n");
+}
+
+function blockText(lines: string[]): string {
 	return lines.join("\n");
 }
 
@@ -133,229 +134,86 @@ function renderRootSelectorNotFound(
 	});
 }
 
-function printExpandedDocDescription(entry: MarkdownEntry): void {
+function expandedDocDescriptionLines(entry: MarkdownEntry): string[] {
+	const lines: string[] = [];
+
 	if (entry.readWhen.length > 0) {
 		for (const readWhen of entry.readWhen) {
-			printLine(pc.gray(readWhen), 3);
-		}
-		return;
-	}
-
-	const summary = normalizeInlineText(entry.summary);
-	if (summary) {
-		printLine(pc.gray(summary), 3);
-	}
-}
-
-function printExpandedDocsIndex(
-	docs: MarkdownEntry[],
-	options: {
-		title: string;
-		titleLevel: 1 | 2;
-		groupHeadingLevel: 2 | 3;
-		topicHint?: string;
-	},
-): void {
-	printLine(heading(options.titleLevel, options.title));
-	if (options.topicHint) {
-		printLine(`Topic available: docs topic ${options.topicHint}`);
-	}
-	if (docs.length === 0) {
-		printLine();
-		printLine("- [no docs found]");
-		return;
-	}
-
-	printLine();
-	for (const [groupIndex, [directoryPath, entries]] of groupedDocs(docs).entries()) {
-		printLine(heading(options.groupHeadingLevel, directoryPath));
-		for (
-			const [entryIndex, entry] of entries
-				.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
-				.entries()
-		) {
-			printLine(`- ${path.basename(entry.absolutePath)}`, 1);
-			printExpandedDocDescription(entry);
-			if (entry.error) {
-				printLine(errorText(entry.error), 3);
-			}
-			if (entryIndex < entries.length - 1) {
-				printLine();
-			}
-		}
-		if (groupIndex < groupedDocs(docs).length - 1) {
-			printLine();
+			lines.push(`   ${pc.gray(readWhen)}`);
 		}
 	}
-}
-
-type HeadingLevel = 2 | 3 | 4 | 5 | 6;
-
-function printMarkdownDetails(entry: MarkdownEntry, level: HeadingLevel): void {
-	printLine(heading(level, entry.title ?? entry.relativePath));
-	printLine(`${pc.dim("path:")} ${pc.dim(entry.absolutePath)}`);
-
-	const summary = normalizeInlineText(entry.summary) ?? compactDescription(entry.short, null);
-	if (summary) {
-		printLine(summary);
+	if (entry.readWhen.length === 0) {
+		const summary = normalizeInlineText(entry.summary);
+		if (summary) {
+			lines.push(`   ${pc.gray(summary)}`);
+		}
 	}
-	if (entry.readWhen.length > 0) {
-		printLine(`${pc.dim("Read when:")} ${entry.readWhen.join("; ")}`);
-	}
+
 	if (entry.error) {
-		printLine(errorText(entry.error));
+		lines.push(`   ${errorText(entry.error)}`);
 	}
+
+	return lines;
 }
 
-function printTopicView(topic: MergedTopic): void {
-	printTopicOverview(topic, {
-		titlePrefix: "Topic: ",
+function docsBrowserGroups(
+	docs: MarkdownEntry[],
+	groupHeadingLevel: 2 | 3,
+): LsTemplateContext["docs_groups"] {
+	return groupedDocs(docs).map(([directoryPath, entries]) => {
+		const lines = [heading(groupHeadingLevel, directoryPath)];
+		const sortedEntries = entries.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath));
+		for (const [index, entry] of sortedEntries.entries()) {
+			lines.push(` - ${path.basename(entry.absolutePath)}`);
+			lines.push(...expandedDocDescriptionLines(entry));
+			if (index < sortedEntries.length - 1) {
+				lines.push("");
+			}
+		}
+		return { text: blockText(lines) };
 	});
 }
 
-function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): string {
-	for (const section of sections) {
-		const title = section.title.trim();
-		if (title.length > 0) {
-			return title;
-		}
-	}
-
-	return path.basename(sectionKey);
-}
-
-function nextHeadingLevel(level: HeadingLevel): HeadingLevel {
-	if (level === 2) {
-		return 3;
-	}
-	if (level === 3) {
-		return 4;
-	}
-	if (level === 4) {
-		return 5;
-	}
-	return 6;
-}
-
-function printGuideSectionMetadata(
-	guideBody: string | null,
-	error: string | undefined,
-	readWhen: string[],
-): void {
-	if (guideBody) {
-		printGuideBody(guideBody);
-	}
-	if (error) {
-		printLine(errorText(error));
-	}
-	if (readWhen.length > 0) {
-		printLine(`${pc.dim("Read when:")} ${readWhen.join("; ")}`);
-	}
-	if (guideBody || error || readWhen.length > 0) {
-		printLine();
-	}
-}
-
-function printFocusedSectionBody(section: SectionEntry): void {
-	printLine(`${pc.dim("source:")} ${pc.dim(section.absolutePath)}`);
-	printGuideSectionMetadata(section.guideBody, section.error, section.readWhen);
-
-	printFocusedSkillsBlock(section);
-	if (section.skills.length > 0 && section.markdownEntries.length > 0) {
-		printLine();
-	}
-
-	for (const [index, entry] of section.markdownEntries.entries()) {
-		printMarkdownDetails(entry, 3);
-		if (index < section.markdownEntries.length - 1) {
-			printLine();
-		}
-	}
-
-	if (
-		(section.skills.length > 0 || section.markdownEntries.length > 0) && section.children.length > 0
-	) {
-		printLine();
-	}
-
-	for (const [index, child] of section.children.entries()) {
-		printFocusedSubtree(child, 3);
-		if (index < section.children.length - 1) {
-			printLine();
-		}
-	}
-	if (
-		section.markdownEntries.length === 0 && section.skills.length === 0
-		&& section.children.length === 0
-	) {
-		printLine(pc.dim("[no section entries found]"));
-	}
-}
-
-function printFocusedSubtree(section: SectionEntry, headingLevel: 2 | 3 | 4 | 5 | 6): void {
-	if (isCompactFocusedSkillSection(section)) {
-		printCompactFocusedSkillSection(section, { headingLevel });
-		return;
-	}
-
-	printLine(heading(headingLevel, sharedSectionTitle(section.key, [section])));
-	printLine(`${pc.dim("path:")} ${pc.dim(section.absolutePath)}/`);
-	printGuideSectionMetadata(section.guideBody, section.error, section.readWhen);
-
-	if (section.skills.length > 0) {
-		printFocusedSkillsBlock(section, {
-			blockHeadingLevel: nextHeadingLevel(headingLevel),
-			entryHeadingPrefix: "#####",
+function docsGroupEntryLines(entries: MarkdownEntry[]): string[] {
+	return entries
+		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
+		.flatMap(entry => {
+			const lines = [` - ${path.basename(entry.absolutePath)}`];
+			lines.push(...expandedDocDescriptionLines(entry));
+			return lines;
 		});
-		if (section.markdownEntries.length > 0 || section.children.length > 0) {
-			printLine();
-		}
-	}
-
-	for (const [index, entry] of section.markdownEntries.entries()) {
-		printMarkdownDetails(entry, nextHeadingLevel(headingLevel));
-		if (index < section.markdownEntries.length - 1) {
-			printLine();
-		}
-	}
-
-	if (section.markdownEntries.length > 0 && section.children.length > 0) {
-		printLine();
-	}
-
-	for (const [index, child] of section.children.entries()) {
-		printFocusedSubtree(child, nextHeadingLevel(headingLevel));
-		if (index < section.children.length - 1) {
-			printLine();
-		}
-	}
-
-	if (
-		section.skills.length === 0 && section.markdownEntries.length === 0
-		&& section.children.length === 0
-	) {
-		printLine(pc.dim("[no section entries found]"));
-	}
 }
 
-function printFocusedSection(sectionView: { key: string; sections: SectionEntry[] }): void {
-	if (sectionView.sections.length === 1) {
-		const [section] = sectionView.sections;
-		if (section && isCompactFocusedSkillSection(section)) {
-			printCompactFocusedSkillSection(section);
-			return;
-		}
-	}
+function docsTemplateGroups(
+	docs: MarkdownEntry[],
+	groupHeadingLevel: 2 | 3,
+): DocsTemplateDocsGroup[] {
+	return groupedDocs(docs).map(([directoryPath, entries]) => ({
+		text: blockText([heading(groupHeadingLevel, directoryPath), ...docsGroupEntryLines(entries)]),
+	}));
+}
 
-	printLine(heading(2, sharedSectionTitle(sectionView.key, sectionView.sections)));
-	printLine();
+function topicTable(topics: TopicIndexRow[]) {
+	return {
+		text: blockText([renderTopicTableHeader(topics), ...rootHelpTopicLines(topics)]),
+	};
+}
 
-	for (const [index, section] of sectionView.sections.entries()) {
-		printFocusedSectionBody(section);
-		if (index < sectionView.sections.length - 1) {
-			printLine();
-		}
-	}
+function renderDocsBrowser(
+	docs: MarkdownEntry[],
+	options: {
+		title?: string;
+		titleLevel?: 1 | 2;
+		groupHeadingLevel?: 2 | 3;
+		topicHint?: string;
+	} = {},
+): string {
+	return commandTemplate.renderLsTemplate({
+		docs_groups: docsBrowserGroups(docs, options.groupHeadingLevel ?? 2),
+		title_line: heading(options.titleLevel ?? 1, options.title ?? "Docs"),
+		topic_hint_line: options.topicHint ? `Topic available: docs topic ${options.topicHint}` : null,
+		view: "browser",
+	});
 }
 
 function printDocsBrowser(
@@ -367,34 +225,46 @@ function printDocsBrowser(
 		topicHint?: string;
 	} = {},
 ): void {
-	printExpandedDocsIndex(docs, {
-		title: options.title ?? "Docs",
-		titleLevel: options.titleLevel ?? 1,
-		groupHeadingLevel: options.groupHeadingLevel ?? 2,
-		topicHint: options.topicHint,
-	});
+	templateOutput.printRenderedTemplate(renderDocsBrowser(docs, options));
 }
 
-function printCombinedSelectorView(
-	selector: string,
-	topic: MergedTopic,
-	docs: MarkdownEntry[],
+function printTopicBrowser(topics: TopicIndexRow[]): void {
+	templateOutput.printRenderedTemplate(commandTemplate.renderTopicTemplate({
+		examples: [
+			"docs topic foo - view foo about/index first",
+			"docs topic foo bar/baz - focus one path inside the topic",
+		],
+		title_line: heading(2, "Topics"),
+		topic_table: topicTable(topics),
+		usage_line: "Usage: docs topic [topic] [path]",
+		view: "browser",
+	}));
+}
+
+function printScopedTopicBrowser(
+	topics: TopicIndexRow[],
+	options: {
+		title: string;
+		titleLevel?: 1 | 2;
+	},
 ): void {
-	printLine(heading(1, `Docs: ${selector}`));
-	printLine();
-	printTopicOverview(topic, {
-		titleLevel: 2,
-		titlePrefix: "Topic: ",
-		sectionHeadingLevel: 3,
-		entryHeadingLevel: 4,
-	});
-	printLine();
-	printLine();
-	printExpandedDocsIndex(docs, {
-		title: `Docs: ${selector}`,
-		titleLevel: 2,
-		groupHeadingLevel: 3,
-	});
+	templateOutput.printRenderedTemplate(commandTemplate.renderTopicTemplate({
+		title_line: heading(options.titleLevel ?? 1, options.title),
+		topic_table: topicTable(topics),
+		view: "scoped_browser",
+	}));
+}
+
+function printTopicView(topic: MergedTopic): void {
+	templateOutput.printRenderedTemplate(
+		renderTopicOverview(topic, {
+			titlePrefix: "Topic: ",
+		}),
+	);
+}
+
+function printFocusedSection(sectionView: { key: string; sections: SectionEntry[] }): void {
+	templateOutput.printRenderedTemplate(commandTemplate.renderTopicTemplate(createFocusedContext(sectionView)));
 }
 
 function printCollectionSelectorView(
@@ -402,27 +272,37 @@ function printCollectionSelectorView(
 	topics: TopicIndexRow[],
 	docs: MarkdownEntry[],
 ): void {
-	printLine(heading(1, `Docs: ${selector}`));
+	templateOutput.printRenderedTemplate(commandTemplate.renderDocsTemplate({
+		docs_groups: docsTemplateGroups(docs, 3),
+		docs_title_line: heading(2, `Docs: ${selector}`),
+		title_line: heading(1, `Docs: ${selector}`),
+		topics: topics.length > 0
+			? {
+				text: blockText([renderTopicTableHeader(topics), ...rootHelpTopicLines(topics)]),
+				title_line: heading(2, `Topics: ${selector}`),
+			}
+			: null,
+		view: "collection_selector",
+	}));
+}
 
-	if (topics.length > 0) {
-		printLine();
-		printScopedTopicBrowser(topics, {
-			title: `Topics: ${selector}`,
+function printCombinedSelectorView(
+	selector: string,
+	topic: MergedTopic,
+	docs: MarkdownEntry[],
+): void {
+	templateOutput.printRenderedTemplate(commandTemplate.renderDocsTemplate({
+		docs_groups: docsTemplateGroups(docs, 3),
+		docs_title_line: heading(2, `Docs: ${selector}`),
+		title_line: heading(1, `Docs: ${selector}`),
+		topic_view: createTopicOverviewContext(topic, {
+			entryHeadingLevel: 4,
+			sectionHeadingLevel: 3,
 			titleLevel: 2,
-		});
-	}
-
-	if (docs.length > 0 || topics.length === 0) {
-		if (topics.length > 0) {
-			printLine();
-			printLine();
-		}
-		printExpandedDocsIndex(docs, {
-			title: `Docs: ${selector}`,
-			titleLevel: 2,
-			groupHeadingLevel: 3,
-		});
-	}
+			titlePrefix: "Topic: ",
+		}),
+		view: "combined_selector",
+	}));
 }
 
 export default {
@@ -432,8 +312,9 @@ export default {
 	printDocsBrowser,
 	printFocusedSection,
 	printScopedTopicBrowser,
-	renderRootSelectorNotFound,
-	renderSelectorNotFound,
 	printTopicBrowser,
 	printTopicView,
+	renderDocsBrowser,
+	renderRootSelectorNotFound,
+	renderSelectorNotFound,
 };

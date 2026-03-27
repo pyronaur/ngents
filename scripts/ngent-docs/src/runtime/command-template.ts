@@ -12,12 +12,43 @@ type RenderOptions = {
 	templateName?: string;
 };
 
+const DOCS_SCREEN_TEMPLATE = {
+	collection_selector: "screens/docs-collection-selector.md",
+	combined_selector: "screens/docs-combined-selector.md",
+	ops_help: "screens/docs-ops-help.md",
+	root_help: "screens/docs-root-help.md",
+} as const;
+
+const TOPIC_SCREEN_TEMPLATE = {
+	browser: "screens/topic-browser.md",
+	focused: "screens/topic-focused.md",
+	overview: "screens/topic-overview.md",
+	scoped_browser: "screens/topic-scoped-browser.md",
+} as const;
+
+const QUERY_SCREEN_TEMPLATE = {
+	results: "screens/query-results.md",
+	status: "screens/query-status.md",
+} as const;
+
 export type DocsTemplateDocsGroup = {
-	text: string;
+	entry_lines: string[];
+	heading_line: string;
 };
 
 export type DocsTemplateTopicTable = {
-	text: string;
+	header_line: string;
+	row_lines: string[];
+};
+
+export type DocsTemplateExpandedDocsEntry = {
+	detail_lines: string[];
+	file_line: string;
+};
+
+export type DocsTemplateExpandedDocsGroup = {
+	entries: DocsTemplateExpandedDocsEntry[];
+	heading_line: string;
 };
 
 export type DocsTemplateRootHelpContext = {
@@ -54,26 +85,20 @@ export type DocsTemplateOpsHelpContext = {
 
 export type DocsTemplateCollectionSelectorContext = {
 	view: "collection_selector";
-	docs_groups: DocsTemplateDocsGroup[];
+	docs_groups: DocsTemplateExpandedDocsGroup[];
 	docs_title_line: string;
 	title_line: string;
 	topics: {
-		text: string;
 		title_line: string;
+		topic_table: DocsTemplateTopicTable;
 	} | null;
 };
 
 export type TopicTemplateGuideBlock = {
-	text: string;
+	lines: string[];
 };
 
-export type TopicTemplateDocsBucket = {
-	text: string;
-};
-
-export type TopicTemplateSkillEntry = {
-	line: string;
-};
+export type TopicTemplateDocsBucket = DocsTemplateDocsGroup;
 
 export type TopicTemplateSkillSection = {
 	text: string;
@@ -91,7 +116,7 @@ export type TopicTemplateOverviewContext = {
 
 export type DocsTemplateCombinedSelectorContext = {
 	view: "combined_selector";
-	docs_groups: DocsTemplateDocsGroup[];
+	docs_groups: DocsTemplateExpandedDocsGroup[];
 	docs_title_line: string;
 	title_line: string;
 	topic_view: TopicTemplateOverviewContext;
@@ -105,9 +130,7 @@ export type DocsTemplateContext =
 
 export type LsTemplateContext = {
 	view: "browser";
-	docs_groups: Array<{
-		text: string;
-	}>;
+	docs_groups: DocsTemplateExpandedDocsGroup[];
 	title_line: string;
 	topic_hint_line: string | null;
 };
@@ -190,8 +213,11 @@ export type TopicTemplateContext =
 
 export type QueryTemplateResultsContext = {
 	view: "results";
-	result_blocks: Array<{
-		text: string;
+	results: Array<{
+		heading_line: string;
+		overview_line: string | null;
+		path_line: string;
+		snippet_lines: string[];
 	}>;
 	tip_line: string;
 };
@@ -250,35 +276,35 @@ export function renderDocsTemplate(
 	context: DocsTemplateContext,
 	options: RenderOptions = {},
 ): string {
-	return renderTemplate(context, "docs.md", options);
+	return renderTemplate(context, DOCS_SCREEN_TEMPLATE[context.view], options);
 }
 
 export function renderLsTemplate(
 	context: LsTemplateContext,
 	options: RenderOptions = {},
 ): string {
-	return renderTemplate(context, "ls.md", options);
+	return renderTemplate(context, "screens/ls-browser.md", options);
 }
 
 export function renderTopicTemplate(
 	context: TopicTemplateContext,
 	options: RenderOptions = {},
 ): string {
-	return renderTemplate(context, "topic.md", options);
+	return renderTemplate(context, TOPIC_SCREEN_TEMPLATE[context.view], options);
 }
 
 export function renderQueryTemplate(
 	context: QueryTemplateContext,
 	options: RenderOptions = {},
 ): string {
-	return renderTemplate(context, "query.md", options);
+	return renderTemplate(context, QUERY_SCREEN_TEMPLATE[context.view], options);
 }
 
 export function renderParkTemplate(
 	context: ParkTemplateContext,
 	options: RenderOptions = {},
 ): string {
-	return renderTemplate(context, "park.md", options);
+	return renderTemplate(context, "screens/park-success.md", options);
 }
 
 export default {

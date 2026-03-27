@@ -4,7 +4,7 @@ import pc from "picocolors";
 
 import { runtimeError } from "../core/errors.ts";
 import { docsCommandUsage } from "../core/usage.ts";
-import commandTemplate from "./command-template.ts";
+import commandTemplate, { type QueryTemplateResultsContext } from "./command-template.ts";
 import { CACHE_ROOT, CONFIG_ROOT, INDEX_NAME, listQmdCollections, runQmd } from "./qmd.ts";
 import templateOutput from "./template-output.ts";
 
@@ -328,10 +328,6 @@ function formatHeading(title: string, score: string): string {
 	return pc.bold(`## ${title}: ${score}`);
 }
 
-function blockText(lines: string[]): string {
-	return lines.join("\n");
-}
-
 function formatQuotedSnippet(body: string | null): string | null {
 	if (!body) {
 		return null;
@@ -354,7 +350,7 @@ function isSearchResultArray(value: unknown): value is SearchResult[] {
 function printResult(
 	result: SearchResult,
 	collectionRoots: Map<string, string>,
-): { text: string } | null {
+): QueryTemplateResultsContext["results"][number] | null {
 	const filePath = typeof result.file === "string" ? result.file : null;
 	if (!filePath) {
 		return null;
@@ -367,18 +363,11 @@ function printResult(
 		: path.basename(relativePath);
 	const snippet = cleanSnippet(result.snippet);
 	const overview = pickOverview(filePath, result.context, collectionRoots);
-	const quotedSnippet = formatQuotedSnippet(snippet.body);
-	const lines = [formatHeading(title, scoreLabel(result.score))];
-	if (overview) {
-		lines.push(overview);
-		lines.push("");
-	}
-	lines.push(formatPathWithAnchor(filePath, snippet.anchor, collectionRoots));
-	if (quotedSnippet) {
-		lines.push(...quotedSnippet.split("\n"));
-	}
 	return {
-		text: blockText(lines),
+		heading_line: formatHeading(title, scoreLabel(result.score)),
+		overview_line: overview,
+		path_line: formatPathWithAnchor(filePath, snippet.anchor, collectionRoots),
+		snippet_lines: formatQuotedSnippet(snippet.body)?.split("\n") ?? [],
 	};
 }
 
@@ -387,7 +376,7 @@ function printResults(results: SearchResult[], collectionRoots: Map<string, stri
 		.map(result => printResult(result, collectionRoots))
 		.filter(result => result !== null);
 	templateOutput.printRenderedTemplate(commandTemplate.renderQueryTemplate({
-		result_blocks: resultBlocks,
+		results: resultBlocks,
 		tip_line: pc.gray(DEFAULT_TIP),
 		view: "results",
 	}));

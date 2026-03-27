@@ -19,10 +19,6 @@ import templateOutput from "./template-output.ts";
 
 const { compactDescription, heading } = browseContracts;
 
-function blockText(lines: string[]): string {
-	return lines.join("\n");
-}
-
 function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
 	return entries
 		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
@@ -39,7 +35,8 @@ function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
 
 function rootHelpDocsGroups(docs: MarkdownEntry[]): DocsTemplateDocsGroup[] {
 	return groupedDocs(docs).map(([directoryPath, entries]) => ({
-		text: blockText([heading(3, directoryPath), ...rootHelpDocsEntryLines(entries)]),
+		entry_lines: rootHelpDocsEntryLines(entries),
+		heading_line: heading(3, directoryPath),
 	}));
 }
 
@@ -62,7 +59,8 @@ function rootHelpTemplateContext(
 		topic_command: rootHelpCommandLines.topic,
 		title_line: heading(1, "docs"),
 		topic_table: {
-			text: blockText([renderTopicTableHeader(topics), ...rootHelpTopicLines(topics)]),
+			header_line: renderTopicTableHeader(topics),
+			row_lines: rootHelpTopicLines(topics),
 		},
 		topics_heading_line: heading(2, "Topics"),
 		topic_usage: rootHelpUsageLines.topic,

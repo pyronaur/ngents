@@ -11,7 +11,7 @@ import browseContracts, {
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
 import commandTemplate, {
-	type DocsTemplateDocsGroup,
+	type DocsTemplateExpandedDocsGroup,
 	type LsTemplateContext,
 } from "./command-template.ts";
 import { createFocusedContext } from "./browse-focused-sections.ts";
@@ -41,10 +41,6 @@ function renderBlock(
 	renderLines((text = "", indent = 0) => {
 		lines.push(`${" ".repeat(indent)}${text}`);
 	});
-	return lines.join("\n");
-}
-
-function blockText(lines: string[]): string {
 	return lines.join("\n");
 }
 
@@ -160,42 +156,36 @@ function docsBrowserGroups(
 	docs: MarkdownEntry[],
 	groupHeadingLevel: 2 | 3,
 ): LsTemplateContext["docs_groups"] {
-	return groupedDocs(docs).map(([directoryPath, entries]) => {
-		const lines = [heading(groupHeadingLevel, directoryPath)];
-		const sortedEntries = entries.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath));
-		for (const [index, entry] of sortedEntries.entries()) {
-			lines.push(` - ${path.basename(entry.absolutePath)}`);
-			lines.push(...expandedDocDescriptionLines(entry));
-			if (index < sortedEntries.length - 1) {
-				lines.push("");
-			}
-		}
-		return { text: blockText(lines) };
-	});
-}
-
-function docsGroupEntryLines(entries: MarkdownEntry[]): string[] {
-	return entries
-		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
-		.flatMap(entry => {
-			const lines = [` - ${path.basename(entry.absolutePath)}`];
-			lines.push(...expandedDocDescriptionLines(entry));
-			return lines;
-		});
+	return groupedDocs(docs).map(([directoryPath, entries]) => ({
+		entries: entries
+			.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
+			.map(entry => ({
+				detail_lines: expandedDocDescriptionLines(entry),
+				file_line: ` - ${path.basename(entry.absolutePath)}`,
+			})),
+		heading_line: heading(groupHeadingLevel, directoryPath),
+	}));
 }
 
 function docsTemplateGroups(
 	docs: MarkdownEntry[],
 	groupHeadingLevel: 2 | 3,
-): DocsTemplateDocsGroup[] {
+): DocsTemplateExpandedDocsGroup[] {
 	return groupedDocs(docs).map(([directoryPath, entries]) => ({
-		text: blockText([heading(groupHeadingLevel, directoryPath), ...docsGroupEntryLines(entries)]),
+		entries: entries
+			.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
+			.map(entry => ({
+				detail_lines: expandedDocDescriptionLines(entry),
+				file_line: ` - ${path.basename(entry.absolutePath)}`,
+			})),
+		heading_line: heading(groupHeadingLevel, directoryPath),
 	}));
 }
 
 function topicTable(topics: TopicIndexRow[]) {
 	return {
-		text: blockText([renderTopicTableHeader(topics), ...rootHelpTopicLines(topics)]),
+		header_line: renderTopicTableHeader(topics),
+		row_lines: rootHelpTopicLines(topics),
 	};
 }
 
@@ -278,8 +268,8 @@ function printCollectionSelectorView(
 		title_line: heading(1, `Docs: ${selector}`),
 		topics: topics.length > 0
 			? {
-				text: blockText([renderTopicTableHeader(topics), ...rootHelpTopicLines(topics)]),
 				title_line: heading(2, `Topics: ${selector}`),
+				topic_table: topicTable(topics),
 			}
 			: null,
 		view: "collection_selector",

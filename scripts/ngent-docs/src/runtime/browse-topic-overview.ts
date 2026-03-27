@@ -22,10 +22,6 @@ const {
 	normalizeInlineText,
 } = browseContracts;
 
-function blockText(lines: string[]): string {
-	return lines.join("\n");
-}
-
 const ROOT_OVERVIEW_DEPTH = 2;
 
 type DocsBucket = {
@@ -197,7 +193,7 @@ function createGuideBlocks(contributions: TopicContribution[]): TopicTemplateGui
 	return contributions
 		.filter(hasContributionGuideContent)
 		.map(contribution => ({
-			text: blockText(guideBlockLines(contribution)),
+			lines: guideBlockLines(contribution),
 		}));
 }
 
@@ -272,10 +268,8 @@ function createDocsBuckets(
 	bucketHeadingLevel: 3 | 4 | 5 | 6,
 ): TopicTemplateDocsBucket[] {
 	return collectDocsBuckets(contributions, maxDepth).map(bucket => ({
-		text: blockText([
-			heading(bucketHeadingLevel, bucket.directoryPath),
-			...bucket.entries.map(entry => docBucketLine(entry)),
-		]),
+		entry_lines: bucket.entries.map(entry => docBucketLine(entry)),
+		heading_line: heading(bucketHeadingLevel, bucket.directoryPath),
 	}));
 }
 
@@ -288,9 +282,7 @@ function createSkillSection(
 		return null;
 	}
 
-	const pathLine = section.skills.length > 0
-		? skillPathTemplate(section, skills)
-		: sectionDirectoryPath(section);
+	const pathLine = skillPathTemplate(section, skills) ?? sectionDirectoryPath(section);
 	const metadata = metadataLines(section);
 	const lines = [heading(headingLevel, section.key)];
 	if (pathLine) {
@@ -305,7 +297,7 @@ function createSkillSection(
 	}
 	lines.push(...skills.map(skill => printTopicSkillLine(skill)));
 	return {
-		text: blockText(lines),
+		text: lines.join("\n"),
 	};
 }
 

@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`compact docs group partial matches the current output 1`] = `
+"### /fixture/docs/architecture
+  main.md - read this first
+  reference.md - deeper material"
+`;
+
+exports[`expanded docs group partial matches the current output in spaced mode 1`] = `
+"## /fixture/docs/architecture
+ - main.md
+   First summary line.
+
+ - reference.md
+   Second summary line."
+`;
+
+exports[`expanded docs group partial matches the current output in tight mode 1`] = `
+"### /fixture/docs/architecture
+ - main.md
+   First summary line. - reference.md
+   Second summary line.
+   Follow-up note."
+`;
+
+exports[`topic table partial matches the current output 1`] = `
+"TOPIC     TITLE             DESCRIPTION
+platform  Platform Library  platform docs
+ops       Ops Notes         broader operational references"
+`;

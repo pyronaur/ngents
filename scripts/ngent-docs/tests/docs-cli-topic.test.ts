@@ -147,7 +147,15 @@ test("docs topic overview renders grouped docs and skills without a Subtrees blo
 			);
 			expect(result.stdout).not.toContain("ignored.md");
 			expect(normalizedStdout).toContain(
-				`### hig-doctor\nPath: ${topicDocsPathForOutput(normalizedRepoDir, "hig-doctor")}/`,
+				`### hig-doctor\nPath: ${
+					topicDocsPathForOutput(
+						normalizedRepoDir,
+						"hig-doctor",
+						"skills",
+						"hig-components-content",
+						"SKILL.md",
+					)
+				}`,
 			);
 			expect(result.stdout).toContain("$hig-components-content");
 			expect(normalizedStdout).toContain(

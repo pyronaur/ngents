@@ -46,12 +46,12 @@ Use `{{ topic_command }} <name>` to expand available docs for topic.
 `{{ topic_command }} foo` - view foo about/index first
 `{{ topic_command }} foo bar` - learn about bar section
 
-{% if topic_table.text == "" %}- [no topics found]{% else %}{{ topic_table.text }}{% endif %}
+{% render partials/topic-table.md, topic_table: topic_table %}
 
 {% if show_docs_index %}{{ docs_heading_line }}
 
-{% for docs_group in docs_groups %}{{ docs_group.text }}{% unless forloop.last %}
+{% for docs_group in docs_groups %}{% unless forloop.first %}
 
-{% endunless %}{% endfor %}
+{% endunless %}{%- render partials/compact-docs-group.md, group: docs_group -%}{% endfor %}
 
 {% endif %}To read docs operation manual use `docs --ops-help`.

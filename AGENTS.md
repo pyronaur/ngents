@@ -81,8 +81,8 @@
 
 ## Build / Test
 - Before handoff: run full gate (lint/typecheck/tests/docs).
-- Tests target the outermost interaction surface (outside-in, black-box). Do not add tests for internal functions, private methods, or implementation details.
-- Keep it observable (logs, panes, tails, MCP/browser tools).
+- Tests target the interaction surface. Do not add tests for internal functions, private methods, or implementation details.
+- Keep it observable.
 - Release: use repo-local checklist if present; if missing, write a minimal checklist before shipping.
 
 ## Git

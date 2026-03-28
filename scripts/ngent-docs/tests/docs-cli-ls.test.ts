@@ -189,14 +189,14 @@ test("docs ls resolves parked global docs roots by case-insensitive name", async
 	await withDocsCliWorkspace(
 		"docs-ls-parked-name-",
 		async ({ repoDir, homeDir, env }) => {
-			const result = await runDocsCli(["ls", "machine"], { cwd: repoDir, env });
+			const result = await runDocsCli(["ls", "local"], { cwd: repoDir, env });
 
 			expect(result.exitCode).toBe(0);
 			expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 			expect(result.stdout).toContain("cdp.md");
 			expect(result.stdout).not.toContain(path.join(repoDir, "docs"));
 		},
-		{ collectionName: "Machine" },
+		{ collectionName: "Local" },
 	);
 });
 
@@ -325,7 +325,7 @@ test("single-token root selectors open topics and registered docs", async () => 
 	await withDocsCliWorkspace(
 		"docs-root-selector-fallback-",
 		async ({ tempDir, repoDir, homeDir, env }) => {
-			const bareName = await runDocsCli(["machine"], { cwd: repoDir, env });
+			const bareName = await runDocsCli(["local"], { cwd: repoDir, env });
 			const bareTopic = await runDocsCli([TEST_TOPIC_NAME], { cwd: repoDir, env });
 			const bareRegisteredDocs = await runDocsCli(["architecture"], { cwd: repoDir, env });
 			const bareWorkspace = await runDocsCli([path.join(repoDir)], { cwd: tempDir, env });
@@ -335,8 +335,8 @@ test("single-token root selectors open topics and registered docs", async () => 
 			});
 
 			expect(bareName.exitCode).toBe(0);
-			expect(bareName.stdout).toContain("# Docs: machine");
-			expect(bareName.stdout).toContain("## Topics: machine");
+			expect(bareName.stdout).toContain("# Docs: local");
+			expect(bareName.stdout).toContain("## Topics: local");
 			expect(bareName.stdout).toContain("qmd");
 			expect(bareName.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 			expect(bareName.stdout).toContain("cdp.md");
@@ -360,7 +360,7 @@ test("single-token root selectors open topics and registered docs", async () => 
 			expect(bareDocsPath.stdout).toContain(`${path.join(repoDir, "docs")}/`);
 			expect(bareDocsPath.stdout).toContain("web-fetching.md");
 		},
-		{ collectionName: "Machine" },
+		{ collectionName: "Local" },
 	);
 });
 
@@ -368,15 +368,15 @@ test("docs topic opens parked collection topic indexes without docs", async () =
 	await withDocsCliWorkspace(
 		"docs-topic-parked-collection-",
 		async ({ repoDir, homeDir, env }) => {
-			const result = await runDocsCli(["topic", "machine"], { cwd: repoDir, env });
+			const result = await runDocsCli(["topic", "local"], { cwd: repoDir, env });
 
 			expect(result.exitCode).toBe(0);
-			expect(result.stdout).toContain("# Topics: machine");
+			expect(result.stdout).toContain("# Topics: local");
 			expect(result.stdout).toContain("qmd");
 			expect(result.stdout).not.toContain(path.join(homeDir, ".ngents", "docs", "browser"));
 			expect(result.stdout).not.toContain("cdp.md");
 		},
-		{ collectionName: "Machine" },
+		{ collectionName: "Local" },
 	);
 });
 

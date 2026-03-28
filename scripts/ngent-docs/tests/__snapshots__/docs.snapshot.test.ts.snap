@@ -81,16 +81,16 @@ $workflow-agent - Workflow-first checks.
 `;
 
 exports[`docs parked collection selector view matches the current output 1`] = `
-"# Docs: machine
+"# Docs: local
 
-## Topics: machine
+## Topics: local
 
 TOPIC     TITLE             DESCRIPTION
 platform  Platform Library  platform docs
 ops       Ops Notes         This summary is intentionally longer than sixty-four characte...
 
 
-## Docs: machine
+## Docs: local
 
 ### /fixture/home/.ngents/docs/browser/
  - cdp.md

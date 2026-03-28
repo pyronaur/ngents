@@ -153,9 +153,9 @@ Global docs collection metadata is cached for 1 hour.
 
 ### Selector scope examples
 
-- `docs machine` shows the parked `machine` collection topics and docs together.
-- `docs ls machine` shows only the parked `machine` collection docs.
-- `docs topic machine` shows only the parked `machine` collection topics.
+- `docs local` shows the parked `local` collection topics and docs together.
+- `docs ls local` shows only the parked `local` collection docs.
+- `docs topic local` shows only the parked `local` collection topics.
 - `docs browser` shows the `browser` topic and matching `docs/browser` docs together.
 - `docs ls browser` shows only matching `docs/browser` docs.
 - `docs topic browser` shows only the `browser` topic.
@@ -270,7 +270,7 @@ docs ls .
 docs ls architecture
 docs ls ~/work/foo
 docs ls ~/work/foo/docs
-docs ls machine
+docs ls local
 docs park nconf
 docs park ngents ~/.ngents
 docs park nconf ~/.nconf

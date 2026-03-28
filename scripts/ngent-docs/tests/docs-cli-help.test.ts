@@ -366,5 +366,5 @@ test("docs reference doc uses the canonical query signature", async () => {
 	expect(contents).toContain("workspace paths that contain `docs/`");
 	expect(contents).toContain("Parked names match case-insensitively.");
 	expect(contents).toContain("docs ls ~/work/foo");
-	expect(contents).toContain("docs ls machine");
+	expect(contents).toContain("docs ls local");
 });

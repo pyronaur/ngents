@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`docs park success output matches the current output 1`] = `
-"Parked "machine" at /fixture/repo/docs/
+"Parked "local" at /fixture/repo/docs/
 "
 `;

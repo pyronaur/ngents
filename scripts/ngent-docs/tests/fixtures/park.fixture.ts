@@ -1,4 +1,4 @@
 export const parkFixture = {
-	collectionName: "machine",
+	collectionName: "local",
 	docsRoot: "/fixture/home/.ngents/docs",
 };

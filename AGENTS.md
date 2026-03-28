@@ -1,8 +1,4 @@
-# AGENTS.md
-- ngents is a set of tools, docs, instructions, protocols to improve your workflow.
-- `~/.ngents/AGENTS.md` is symlinked to `~/.agents.md/AGENTS.md`.
-- Instructions portable across machines.
-
+# Main
 ## Agent Protocol
 - Context: Prioritize `docs` for fast access to repo/shared combined docs, notes, skills.
 - MCP: If a skill or command references an MCP you do not have wired up, use `mcporter` first; it is the universal on-demand MCP path and avoids persistent config/context pollution.
@@ -11,7 +7,7 @@
 - Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 - Guardrails: use `trash` for deletes.
 - Process: streamlined step by step processes we follow in docs/process
-- Output: Precise & Concise. Fact check yourself before you speak.
+- Output: Fact check yourself before you speak.
 - Output: No inline file/line references unless I directly ask for them.
 - Precision: When describing code, use code signatures, not lines or files.
 - Be Flexible: Rigid ideas break. When writing, reading instructions, consider the nuance on a case by case basis. Ask if unclear. Don't speak in absolutes. Don't interpret in absolutes.
@@ -24,8 +20,8 @@
  - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 
 
-## Mac
-- Projects Index: `docs ls machine`
+## Machine
+- Local Setup: `docs ls local`
 - iOS projects: `~/Projects/iOS`
 - Shell/config: `~/.nconf/AGENTS.md`
 

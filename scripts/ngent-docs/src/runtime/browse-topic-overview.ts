@@ -1,11 +1,5 @@
 import path from "node:path";
 
-import commandTemplate, {
-	type TopicTemplateDocsBucket,
-	type TopicTemplateGuideBlock,
-	type TopicTemplateOverviewContext,
-	type TopicTemplateSkillSection,
-} from "./command-template.ts";
 import type {
 	MarkdownEntry,
 	MergedTopic,
@@ -14,6 +8,12 @@ import type {
 	TopicContribution,
 } from "./browse-contracts.ts";
 import browseContracts from "./browse-contracts.ts";
+import commandTemplate, {
+	type TopicTemplateDocsBucket,
+	type TopicTemplateGuideBlock,
+	type TopicTemplateOverviewContext,
+	type TopicTemplateSkillSection,
+} from "./command-template.ts";
 
 const {
 	compactDescription,

@@ -25,9 +25,11 @@ function expectDocsLsSelectorMiss(
 	expect(result.stderr).toContain("Topics");
 	expect(result.stderr).toContain("Registered Docs");
 	expect(result.stderr).toContain(`architecture: ${architecturePath}`);
+	expect(result.stderr).toContain("global/architecture");
 	expect(result.stderr).toContain(
 		`browser: ${path.join(homeDir, ".ngents", "docs", "browser")}/`,
 	);
+	expect(result.stderr).toContain("global/browser");
 }
 
 async function runDocsLsSelectorMiss(
@@ -64,7 +66,7 @@ test("docs ls merges local and global docs by default", async () => {
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# Docs");
-		expect(result.stdout).not.toContain("Usage: docs ls [where]");
+		expect(result.stdout).not.toContain("Usage: docs ls [where...]");
 		expect(result.stdout).toContain(`${path.join(repoDir, "docs")}/`);
 		expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 		expect(result.stdout).toContain("web-fetching.md");
@@ -200,6 +202,67 @@ test("docs ls resolves parked global docs roots by case-insensitive name", async
 	);
 });
 
+test("qualified parked collection selectors scope docs browse and root fallback", async () => {
+	await withDocsCliWorkspace(
+		"docs-ls-qualified-selector-",
+		async ({ repoDir, homeDir, env }) => {
+			await writeText(
+				path.join(repoDir, "docs", "setup", "local-only.md"),
+				["# Local Only", "", "Local setup docs.", ""].join("\n"),
+			);
+			await writeText(
+				path.join(homeDir, ".ngents", "docs", "setup", "global-only.md"),
+				["# Global Only", "", "Global setup docs.", ""].join("\n"),
+			);
+			await writeText(
+				path.join(homeDir, ".ngents", "docs", "setup", "secrets", "secret.md"),
+				["# Secret", "", "Collection-scoped docs.", ""].join("\n"),
+			);
+
+			const mergedLs = await runDocsCli(["ls", "setup"], { cwd: repoDir, env });
+			const mergedRoot = await runDocsCli(["setup"], { cwd: repoDir, env });
+			const qualifiedLs = await runDocsCli(["ls", "local/setup"], { cwd: repoDir, env });
+			const qualifiedSplit = await runDocsCli(["ls", "local", "setup"], { cwd: repoDir, env });
+			const qualifiedNested = await runDocsCli(["ls", "local", "setup", "secrets"], {
+				cwd: repoDir,
+				env,
+			});
+			const qualifiedCase = await runDocsCli(["ls", "Local/setup"], { cwd: repoDir, env });
+			const qualifiedRoot = await runDocsCli(["local/setup"], { cwd: repoDir, env });
+
+			expect(mergedLs.exitCode).toBe(0);
+			expect(mergedRoot.exitCode).toBe(0);
+			expect(mergedLs.stdout.trim()).toBe(mergedRoot.stdout.trim());
+			expect(mergedLs.stdout).toContain(path.join(repoDir, "docs", "setup"));
+			expect(mergedLs.stdout).toContain(path.join(homeDir, ".ngents", "docs", "setup"));
+			expect(mergedLs.stdout).toContain("local-only.md");
+			expect(mergedLs.stdout).toContain("global-only.md");
+
+			expect(qualifiedLs.exitCode).toBe(0);
+			expect(qualifiedSplit.exitCode).toBe(0);
+			expect(qualifiedCase.exitCode).toBe(0);
+			expect(qualifiedRoot.exitCode).toBe(0);
+			expect(qualifiedLs.stdout.trim()).toBe(qualifiedSplit.stdout.trim());
+			expect(qualifiedLs.stdout.trim()).toBe(qualifiedRoot.stdout.trim());
+			expect(qualifiedLs.stdout).toContain(path.join(homeDir, ".ngents", "docs", "setup"));
+			expect(qualifiedLs.stdout).toContain("global-only.md");
+			expect(qualifiedLs.stdout).not.toContain(path.join(repoDir, "docs", "setup"));
+			expect(qualifiedLs.stdout).not.toContain("local-only.md");
+
+			expect(qualifiedNested.exitCode).toBe(0);
+			expect(qualifiedNested.stdout).toContain(
+				path.join(homeDir, ".ngents", "docs", "setup", "secrets"),
+			);
+			expect(qualifiedNested.stdout).toContain("secret.md");
+			expect(qualifiedNested.stdout).not.toContain("global-only.md");
+
+			expect(qualifiedCase.stdout).toContain(path.join(homeDir, ".ngents", "docs", "setup"));
+			expect(qualifiedCase.stdout).toContain("global-only.md");
+		},
+		{ collectionName: "Local" },
+	);
+});
+
 test("docs ls rejects non-docs paths with suggestions", async () => {
 	await withDocsCliWorkspace("docs-ls-invalid-path-", async ({ tempDir, homeDir, env }) => {
 		const miscDir = path.join(homeDir, "misc");
@@ -307,7 +370,9 @@ test("docs browser shows both the topic and registered docs when names overlap",
 			expect(docsOnlyResult.stdout).toContain("# Docs: browser");
 			expect(docsOnlyResult.stdout).toContain("Topic available: docs topic browser");
 			expect(docsOnlyResult.stdout).toContain(`${path.join(repoDir, "docs", "browser")}/`);
-			expect(docsOnlyResult.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "browser")}/`);
+			expect(docsOnlyResult.stdout).toContain(
+				`${path.join(homeDir, ".ngents", "docs", "browser")}/`,
+			);
 			expect(docsOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "topics", "browser"));
 
 			expect(topicOnlyResult.exitCode).toBe(0);

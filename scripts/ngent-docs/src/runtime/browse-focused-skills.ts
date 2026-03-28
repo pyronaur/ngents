@@ -5,7 +5,9 @@ function rootSkillRelativePath(section: SectionEntry): string {
 }
 
 export function isCompactFocusedSkillSection(section: SectionEntry): boolean {
-	if (section.children.length > 0 || section.markdownEntries.length > 0 || section.skills.length !== 1) {
+	if (
+		section.children.length > 0 || section.markdownEntries.length > 0 || section.skills.length !== 1
+	) {
 		return false;
 	}
 

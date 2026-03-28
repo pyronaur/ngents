@@ -23,7 +23,7 @@ const docsContext: DocsTemplateContext = {
 	docs_groups: [],
 	docs_heading_line: "## Docs",
 	ls_command: "docs ls",
-	ls_usage: "docs ls [where]",
+	ls_usage: "docs ls [where...]",
 	overview_heading_line: "## Overview",
 	query_heading_line: "### Query",
 	query_usage: "docs query [--limit <n>] <query...> | status",

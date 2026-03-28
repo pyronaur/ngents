@@ -68,7 +68,7 @@ docs --help
 docs --ops-help
 docs help
 docs <where>
-docs ls [where]
+docs ls [where...]
 docs topic [topic] [path]
 docs query [--limit <n>] <query...> | status
 docs park <name> [path]
@@ -110,12 +110,14 @@ Global docs collection metadata is cached for 1 hour.
 `ls` browses docs only.
 
 - It merges local and global docs by default.
-- It accepts `.`, `global`, `./docs/...`, `docs/...`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
+- It accepts `.`, `global`, `./docs/...`, `docs/...`, `<parked-collection>/<docs-root[/subpath]>`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
 - It also accepts an exact top-level registered docs name such as `architecture`.
+- When `ls` receives multiple selector args, it joins them with `/` before resolution.
 - `.` means project docs only.
 - `global` means parked global docs roots.
 - `./docs/...` means one project-local docs subtree.
 - `docs/...` means matching local and global docs subtrees.
+- `<parked-collection>/<docs-root[/subpath]>` means one parked collection docs subtree.
 - Absolute paths and `~/...` paths can point at a docs directory, a docs subtree, or a workspace directory that contains `docs/`.
 - Parked names match case-insensitively.
 - It prints expanded doc descriptions.
@@ -126,12 +128,13 @@ Global docs collection metadata is cached for 1 hour.
 
 `docs <where>` resolves a single non-command token in a more helpful order.
 
-- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, explicit docs paths, and workspace paths that contain `docs/`.
+- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, `<parked-collection>/<docs-root[/subpath]>` selectors, explicit docs paths, and workspace paths that contain `docs/`.
 - Root command names still win, so `docs topic` and `docs query` keep their command behavior.
 - Parked collection names win before topics.
 - Bare parked collection selectors show that collection's topics and docs together.
 - When an exact topic name and an exact registered docs name overlap, it renders the topic first and the matching docs subtree after it.
 - Registered docs names reuse the same merged subtree behavior as `docs ls docs/<name>`.
+- Qualified parked-collection selectors are docs-only and do not render topic views.
 - When the token is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
 
 ### `topic`
@@ -155,6 +158,8 @@ Global docs collection metadata is cached for 1 hour.
 
 - `docs local` shows the parked `local` collection topics and docs together.
 - `docs ls local` shows only the parked `local` collection docs.
+- `docs local/setup` shows only the `setup` subtree from the parked `local` collection.
+- `docs ls local setup` is equivalent to `docs ls local/setup`.
 - `docs topic local` shows only the parked `local` collection topics.
 - `docs browser` shows the `browser` topic and matching `docs/browser` docs together.
 - `docs ls browser` shows only matching `docs/browser` docs.
@@ -164,7 +169,9 @@ Global docs collection metadata is cached for 1 hour.
 
 - `docs <topic>`
 - `docs <docs-root>`
+- `docs local/setup`
 - `docs ls .`
+- `docs ls local setup`
 - `docs ls docs/subdir`
 
 ### `query`
@@ -263,10 +270,12 @@ docs
 docs --ops-help
 docs <topic>
 docs architecture
+docs local/setup
 docs <docs-root>
 docs ~/work/foo
 docs ls
 docs ls .
+docs ls local setup
 docs ls architecture
 docs ls ~/work/foo
 docs ls ~/work/foo/docs

@@ -19,8 +19,12 @@ test("screen templates use the topic table partial", () => {
 test("screen templates use docs group partials", () => {
 	expect(readTemplate("screens/docs-root-help.md")).toContain("partials/compact-docs-group.md");
 	expect(readTemplate("screens/topic-overview.md")).toContain("partials/compact-docs-group.md");
-	expect(readTemplate("screens/docs-collection-selector.md")).toContain("partials/expanded-docs-group.md");
-	expect(readTemplate("screens/docs-combined-selector.md")).toContain("partials/expanded-docs-group.md");
+	expect(readTemplate("screens/docs-collection-selector.md")).toContain(
+		"partials/expanded-docs-group.md",
+	);
+	expect(readTemplate("screens/docs-combined-selector.md")).toContain(
+		"partials/expanded-docs-group.md",
+	);
 	expect(readTemplate("screens/ls-browser.md")).toContain("partials/expanded-docs-group.md");
 });
 

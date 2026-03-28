@@ -389,7 +389,7 @@ test("multi-token unknown commands show recovery help with the proper commands",
 	expect(result.stderr).toContain("`docs <where>` accepts one selector.");
 	expect(result.stderr).toContain("# docs");
 	expect(result.stderr).toContain("docs <where>");
-	expect(result.stderr).toContain("docs ls [where]");
+	expect(result.stderr).toContain("docs ls [where...]");
 	expect(result.stderr).toContain("docs topic [topic] [path]");
 	expect(result.stderr).toContain("docs query [--limit <n>] <query...> | status");
 	expect(result.stderr).not.toContain("## Docs");

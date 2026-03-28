@@ -16,20 +16,23 @@ docs <where>
 `docs <where>` accepts one non-command selector.
 It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.
 
-`{{ ls_command }} [where]` browses docs only.
+`{{ ls_command }} [where...]` browses docs only.
 
-`[where]` may be:
+`[where...]` may be:
 - `.`
 - `global`
 - `docs/subdir` or `./docs/subdir`
 - a registered docs root like `browser`
+- a parked collection selector like `local/setup`
 - a workspace path like `~/work/foo`
 - an explicit docs path like `~/work/foo/docs`
 
 Examples
 docs <topic>
 docs <docs-root>
+docs local/setup
 {{ ls_command }} .
+{{ ls_command }} local setup
 {{ ls_command }} docs/subdir
 
 {{ query_heading_line }}

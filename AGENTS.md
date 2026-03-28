@@ -21,7 +21,7 @@
 
 
 ## Machine
-- Local Setup: `docs ls local`
+- Local Setup: `docs ls local/setup`
 - iOS projects: `~/Projects/iOS`
 - Shell/config: `~/.nconf/AGENTS.md`
 

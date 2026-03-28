@@ -11,8 +11,8 @@ export const lsCommand = defineCommand({
 	description: "Browse local and global docs directories.",
 	usage: docsCommandUsage.ls,
 	configure: (command) => {
-		command.argument("[where]",
-			"Optional docs selector, path, or parked name: `.`, `global`, `./docs/...`, `docs/...`, `~/work/foo`, or `local`.");
+		command.argument("[where...]",
+			"Optional docs selector segments, path, or parked name: `.`, `global`, `./docs/...`, `docs/...`, `local/setup`, `~/work/foo`, or `local`.");
 	},
 	optionsSchema: lsOptionsSchema,
 	run: async ({ args }) => {

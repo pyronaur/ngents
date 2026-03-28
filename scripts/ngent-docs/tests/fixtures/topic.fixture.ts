@@ -50,8 +50,7 @@ const globalGuidesSection: SectionEntry = {
 
 const contentCardsSkillSection: SectionEntry = {
 	key: "pattern-library/skills/content-cards",
-	absolutePath:
-		"/fixture/repo/docs/topics/platform/pattern-library/skills/content-cards",
+	absolutePath: "/fixture/repo/docs/topics/platform/pattern-library/skills/content-cards",
 	title: "content-cards",
 	short: null,
 	summary: "Structured review skill.",

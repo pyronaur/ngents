@@ -245,7 +245,9 @@ test("docs topic focus keeps merged path views", async () => {
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("## References");
-		expect(result.stdout).toContain(`${path.join(repoDir, "docs", "topics", "qmd", "references")}/`);
+		expect(result.stdout).toContain(
+			`${path.join(repoDir, "docs", "topics", "qmd", "references")}/`,
+		);
 		expect(result.stdout).toContain(`${globalDocsPath(homeDir, "topics", "qmd", "references")}/`);
 		expect(result.stdout).toContain("Start with the local notes.");
 		expect(result.stdout).toContain("Use these upstream references.");
@@ -282,7 +284,7 @@ test("docs topic unknown path renders available paths as bullets", async () => {
 test("docs topic section renders a single root skill directly", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-skill-section-",
-	async ({ repoDir, env, normalizedRepoDir }) => {
+		async ({ repoDir, env, normalizedRepoDir }) => {
 			const result = await runDocsCli(["topic", TEST_TOPIC_NAME, "ios-debugger-agent"], {
 				cwd: repoDir,
 				env,

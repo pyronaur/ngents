@@ -3,6 +3,7 @@ import path from "node:path";
 
 import browseContracts, {
 	type BrowseInventory,
+	type DocsSources,
 	type IndexData,
 	type MarkdownEntry,
 	type MergedTopic,
@@ -419,29 +420,36 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 	};
 }
 
-async function buildBrowseInventory(docsRoots: string[]): Promise<BrowseInventory> {
-	const index = await buildIndexData(docsRoots);
+async function buildBrowseInventory(sources: DocsSources): Promise<BrowseInventory> {
+	const index = await buildIndexData(sources.mergedDocsRoots);
 	const registeredDocsMap = new Map<string, RegisteredDocsRow>();
-
-	for (const docsRoot of docsRoots) {
+	const collectionNameByRoot = new Map(
+		sources.globalDocsCollections.map(collection => [collection.docsRoot, collection.name]),
+	);
+	for (const docsRoot of sources.mergedDocsRoots) {
 		for (const directoryName of await listTopLevelDirectories(docsRoot)) {
 			const directoryPath = normalizePath(path.join(docsRoot, directoryName));
 			const existing = registeredDocsMap.get(directoryName);
+			const collectionName = collectionNameByRoot.get(docsRoot) ?? null;
+			const qualifiedName = collectionName ? `${collectionName}/${directoryName}` : null;
 			if (!existing) {
 				registeredDocsMap.set(directoryName, {
 					name: directoryName,
 					absolutePaths: [directoryPath],
+					qualifiedNames: qualifiedName ? [qualifiedName] : [],
 				});
 				continue;
 			}
-
 			if (!existing.absolutePaths.includes(directoryPath)) {
 				existing.absolutePaths.push(directoryPath);
 				existing.absolutePaths.sort((left, right) => left.localeCompare(right));
 			}
+			if (qualifiedName && !existing.qualifiedNames.includes(qualifiedName)) {
+				existing.qualifiedNames.push(qualifiedName);
+				existing.qualifiedNames.sort((left, right) => left.localeCompare(right));
+			}
 		}
 	}
-
 	return {
 		topics: index.topics,
 		registeredDocs: Array.from(registeredDocsMap.values()).sort((a, b) =>

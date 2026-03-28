@@ -86,6 +86,7 @@ export type TopicIndexRow = {
 export type RegisteredDocsRow = {
 	name: string;
 	absolutePaths: string[];
+	qualifiedNames: string[];
 };
 
 export type BrowseInventory = {

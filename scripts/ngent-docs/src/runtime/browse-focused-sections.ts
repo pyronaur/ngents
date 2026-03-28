@@ -5,9 +5,9 @@ import browseContracts, {
 	type SectionEntry,
 	type SkillEntry,
 } from "./browse-contracts.ts";
+import { isCompactFocusedSkillSection } from "./browse-focused-skills.ts";
 import type { TopicTemplateFocusedContext } from "./command-template.ts";
 import { groupedDocs } from "./docs-grouping.ts";
-import { isCompactFocusedSkillSection } from "./browse-focused-skills.ts";
 
 const { compactDescription, directoryDisplayPath, errorText, heading, normalizeInlineText } =
 	browseContracts;

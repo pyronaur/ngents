@@ -440,7 +440,13 @@ function parseMarkdownEntry(
 ): Pick<MarkdownEntry, "title" | "short" | "summary" | "readWhen" | "error"> {
 	const frontMatter = parseFrontMatter(content);
 	if (frontMatter.error) {
-		return { title: markdownBasename(relativePath), short: null, summary: null, readWhen: [], error: frontMatter.error };
+		return {
+			title: markdownBasename(relativePath),
+			short: null,
+			summary: null,
+			readWhen: [],
+			error: frontMatter.error,
+		};
 	}
 	return {
 		title: titleField(frontMatter.values)

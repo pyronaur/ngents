@@ -13,6 +13,7 @@ import {
 	resolveGlobalDocsDirectoryByName,
 	resolveLocalDocsDirectory,
 	resolveMergedDocsDirectories,
+	resolveQualifiedDocsDirectory,
 	resolveRegisteredDocsDirectoriesByName,
 } from "./browse-sources.ts";
 
@@ -62,6 +63,16 @@ async function docsEntriesUnderMany(directoryPaths: string[]) {
 	};
 }
 
+async function docsBrowseViewForDirectory(
+	directoryPath: string,
+	where: string,
+): Promise<DocsBrowseView> {
+	return {
+		...(await docsEntriesUnder(directoryPath)),
+		title: docsTitle(where),
+	} satisfies DocsBrowseView;
+}
+
 function docsTitle(where: string | null): string {
 	if (!where) {
 		return "Docs";
@@ -75,6 +86,22 @@ async function topicHintForSelector(
 ): Promise<string | undefined> {
 	const topic = await browseDiscovery.readMergedTopic(docsRoots, selector);
 	return topic?.name;
+}
+
+async function resolveDirectDocsDirectory(
+	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
+	where: string,
+): Promise<string | null> {
+	if (isDocsFilesystemSelector(where)) {
+		return resolveFilesystemDocsDirectory(sources, where);
+	}
+
+	const qualifiedDirectoryPath = await resolveQualifiedDocsDirectory(sources, where);
+	if (qualifiedDirectoryPath) {
+		return qualifiedDirectoryPath;
+	}
+
+	return resolveGlobalDocsDirectoryByName(sources, where);
 }
 
 async function docsEntriesForWhere(
@@ -112,20 +139,9 @@ async function docsEntriesForWhere(
 		} satisfies DocsBrowseView;
 	}
 
-	if (isDocsFilesystemSelector(where)) {
-		const directoryPath = await resolveFilesystemDocsDirectory(sources, where);
-		return {
-			...(await docsEntriesUnder(directoryPath)),
-			title: docsTitle(where),
-		} satisfies DocsBrowseView;
-	}
-
-	const globalDirectoryPath = resolveGlobalDocsDirectoryByName(sources, where);
-	if (globalDirectoryPath) {
-		return {
-			...(await docsEntriesUnder(globalDirectoryPath)),
-			title: docsTitle(where),
-		} satisfies DocsBrowseView;
+	const directDirectoryPath = await resolveDirectDocsDirectory(sources, where);
+	if (directDirectoryPath) {
+		return docsBrowseViewForDirectory(directDirectoryPath, where);
 	}
 
 	const registeredDirectories = await resolveRegisteredDocsDirectoriesByName(sources, where);
@@ -146,7 +162,7 @@ async function docsEntriesForWhere(
 
 async function browseInventoryForCurrentDir(currentDir: string) {
 	const sources = await discoverDocsSources(currentDir);
-	return browseDiscovery.buildBrowseInventory(sources.mergedDocsRoots);
+	return browseDiscovery.buildBrowseInventory(sources);
 }
 
 function matchingTopicName(
@@ -230,12 +246,11 @@ export async function readParkedCollectionSelector(
 }
 
 export async function runDocsLs(positionals: string[]): Promise<void> {
-	if (positionals.length > 1) {
-		fail("Usage: docs ls [where]");
-	}
-
 	const currentDir = normalizePath(process.cwd());
-	const where = positionals[0]?.trim() || null;
+	const where = positionals
+		.map(part => part.trim())
+		.filter(part => part.length > 0)
+		.join("/") || null;
 	if (!where) {
 		const { docs, title, topicHint } = await docsEntriesForWhere(currentDir, where);
 		browseRender.printDocsBrowser(docs, {

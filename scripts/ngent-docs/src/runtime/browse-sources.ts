@@ -73,6 +73,20 @@ function normalizeCollection(collection: QmdCollection): { docsRoot: string; nam
 	};
 }
 
+function resolveGlobalDocsCollection(
+	sources: DocsSources,
+	selector: string,
+): { docsRoot: string; name: string } | null {
+	const normalizedSelector = selector.trim();
+	if (normalizedSelector.length === 0) {
+		return null;
+	}
+
+	return sources.globalDocsCollections.find(collection =>
+		collection.name.localeCompare(normalizedSelector, undefined, { sensitivity: "accent" }) === 0
+	) ?? null;
+}
+
 function docsRelativeSelector(selector: string): string {
 	const normalizedSelector = selector.replaceAll("\\", path.posix.sep);
 	const relativeSelector = path.posix.relative(
@@ -84,6 +98,13 @@ function docsRelativeSelector(selector: string): string {
 
 function isBareSelectorName(selector: string): boolean {
 	return selector.length > 0 && !selector.includes("/") && !selector.includes("\\");
+}
+
+function selectorSegments(selector: string): string[] {
+	return selector.replaceAll("\\", path.posix.sep)
+		.split(path.posix.sep)
+		.map(segment => segment.trim())
+		.filter(segment => segment.length > 0);
 }
 
 class BrowseSelectorNotFoundError extends Error {
@@ -171,15 +192,7 @@ export function resolveGlobalDocsDirectoryByName(
 	sources: DocsSources,
 	selector: string,
 ): string | null {
-	const normalizedSelector = selector.trim();
-	if (normalizedSelector.length === 0) {
-		return null;
-	}
-
-	const collection = sources.globalDocsCollections.find(collection =>
-		collection.name.localeCompare(normalizedSelector, undefined, { sensitivity: "accent" }) === 0
-	);
-	return collection?.docsRoot ?? null;
+	return resolveGlobalDocsCollection(sources, selector)?.docsRoot ?? null;
 }
 
 export async function resolveRegisteredDocsDirectoriesByName(
@@ -220,6 +233,32 @@ export async function resolveLocalDocsDirectory(
 				suggestionLine(defaultSuggestions(sources))
 			}`,
 		);
+	}
+
+	return directoryPath;
+}
+
+export async function resolveQualifiedDocsDirectory(
+	sources: DocsSources,
+	selector: string,
+): Promise<string | null> {
+	const segments = selectorSegments(selector);
+	if (segments.length < 2) {
+		return null;
+	}
+
+	const collection = resolveGlobalDocsCollection(sources, segments[0] ?? "");
+	if (!collection) {
+		return null;
+	}
+
+	const relativeSelector = segments.slice(1).join(path.posix.sep);
+	const directoryPath = normalizePath(path.resolve(collection.docsRoot, relativeSelector));
+	if (!isWithinDocsRoots(directoryPath, [collection.docsRoot])) {
+		throw runtimeError(`Docs directory is outside docs roots: ${selector}`);
+	}
+	if (!(await isDirectory(directoryPath))) {
+		throw new BrowseSelectorNotFoundError(selector);
 	}
 
 	return directoryPath;

@@ -66,7 +66,7 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).not.toContain("docs park <name> [path]");
 		expect(result.stdout).toContain("docs topic [topic] [path]");
 		expect(result.stdout).toContain("docs <where>");
-		expect(result.stdout).toContain("docs ls [where]");
+		expect(result.stdout).toContain("docs ls [where...]");
 		expect(result.stdout).toContain(
 			"It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.",
 		);

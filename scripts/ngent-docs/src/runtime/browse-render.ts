@@ -10,10 +10,6 @@ import browseContracts, {
 	type SectionEntry,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
-import commandTemplate, {
-	type DocsTemplateExpandedDocsGroup,
-	type LsTemplateContext,
-} from "./command-template.ts";
 import { createFocusedContext } from "./browse-focused-sections.ts";
 import {
 	renderTopicTableHeader,
@@ -24,6 +20,10 @@ import {
 	renderTopicOverview,
 } from "./browse-topic-overview.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
+import commandTemplate, {
+	type DocsTemplateExpandedDocsGroup,
+	type LsTemplateContext,
+} from "./command-template.ts";
 import { groupedDocs } from "./docs-grouping.ts";
 import templateOutput from "./template-output.ts";
 
@@ -56,9 +56,14 @@ function renderInventoryTopicLines(topics: TopicIndexRow[]): string[] {
 }
 
 function renderRegisteredDocsLines(registeredDocs: RegisteredDocsRow[]): string[] {
-	return registeredDocs.map(directory =>
-		`- ${directory.name}: ${directory.absolutePaths.map(directoryDisplayPath).join(", ")}`
-	);
+	return registeredDocs.map(directory => {
+		const aliases = directory.qualifiedNames.length > 0
+			? ` (aliases: ${directory.qualifiedNames.join(", ")})`
+			: "";
+		return `- ${directory.name}: ${
+			directory.absolutePaths.map(directoryDisplayPath).join(", ")
+		}${aliases}`;
+	});
 }
 
 function pushBrowseInventory(
@@ -255,7 +260,9 @@ function printTopicView(topic: MergedTopic): void {
 }
 
 function printFocusedSection(sectionView: { key: string; sections: SectionEntry[] }): void {
-	templateOutput.printRenderedTemplate(commandTemplate.renderTopicTemplate(createFocusedContext(sectionView)));
+	templateOutput.printRenderedTemplate(
+		commandTemplate.renderTopicTemplate(createFocusedContext(sectionView)),
+	);
 }
 
 function printCollectionSelectorView(

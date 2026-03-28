@@ -93,7 +93,7 @@ $workflow-agent - Workflow-first checks.
 `;
 
 exports[`docs topic parked collection browser matches the current output 1`] = `
-"# Topics: local
+"# Topics: machine
 
 TOPIC     TITLE             DESCRIPTION
 platform  Platform Library  platform docs

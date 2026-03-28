@@ -396,12 +396,10 @@ function parseGuideBody(content: string): string | null {
 
 		rendered.push(trimmed);
 	}
-
 	const normalized = rendered.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 	if (normalized.length === 0) {
 		return null;
 	}
-
 	return normalized;
 }
 
@@ -410,7 +408,6 @@ function parseGuideSummary(content: string): string | null {
 	if (!guideBody) {
 		return null;
 	}
-
 	for (const paragraph of guideBody.split("\n\n")) {
 		const normalized = paragraph.replace(/\s+/g, " ").trim();
 		if (normalized.length === 0 || normalized.startsWith("- ")) {
@@ -422,25 +419,36 @@ function parseGuideSummary(content: string): string | null {
 	return null;
 }
 
+function parseMarkdownTitle(content: string): string | null {
+	const lines = contentWithoutFrontMatter(content).split("\n");
+	for (const rawLine of lines) {
+		const trimmed = rawLine.trim();
+		if (!trimmed.startsWith("#")) {
+			continue;
+		}
+		const title = trimmed.replace(/^#+\s*/, "").trim();
+		if (title.length > 0) {
+			return title;
+		}
+	}
+	return null;
+}
+
 function parseMarkdownEntry(
 	content: string,
 	relativePath: string,
 ): Pick<MarkdownEntry, "title" | "short" | "summary" | "readWhen" | "error"> {
 	const frontMatter = parseFrontMatter(content);
 	if (frontMatter.error) {
-		return {
-			title: markdownBasename(relativePath),
-			short: null,
-			summary: null,
-			readWhen: [],
-			error: frontMatter.error,
-		};
+		return { title: markdownBasename(relativePath), short: null, summary: null, readWhen: [], error: frontMatter.error };
 	}
-
 	return {
-		title: titleField(frontMatter.values) ?? markdownBasename(relativePath),
+		title: titleField(frontMatter.values)
+			?? parseMarkdownTitle(content)
+			?? markdownBasename(relativePath),
 		short: stringField(frontMatter.values, "short"),
-		summary: stringField(frontMatter.values, "summary"),
+		summary: stringField(frontMatter.values, "summary")
+			?? stringField(frontMatter.values, "description"),
 		readWhen: stringArrayField(frontMatter.values, "read_when"),
 	};
 }

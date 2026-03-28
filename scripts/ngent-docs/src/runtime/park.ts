@@ -8,8 +8,14 @@ import { addQmdCollection, invalidateQmdCollectionsCache, listQmdCollectionsFres
 import templateOutput from "./template-output.ts";
 import { runDocsUpdate } from "./update.ts";
 
-const { EXCLUDED_DIRS, hasHiddenOrExcludedSegment, META_FILE, normalizePath, TOPICS_DIR } =
-	browseContracts;
+const {
+	EXCLUDED_DIRS,
+	directoryDisplayPath,
+	hasHiddenOrExcludedSegment,
+	META_FILE,
+	normalizePath,
+	TOPICS_DIR,
+} = browseContracts;
 
 function fail(message: string): never {
 	throw runtimeError(message);
@@ -119,7 +125,7 @@ export async function runDocsPark(positionals: string[]): Promise<void> {
 	const pathArg = positionals[1]?.trim() || ".";
 	const docsRoot = await resolveDocsRoot(pathArg);
 	if (!(await isDocsRoot(docsRoot))) {
-		fail(`Not a docs root: ${docsRoot}`);
+		fail(`Not a docs root: ${directoryDisplayPath(docsRoot)}`);
 	}
 
 	const collections = await listQmdCollectionsFresh();
@@ -131,14 +137,14 @@ export async function runDocsPark(positionals: string[]): Promise<void> {
 	const docsRootPath = path.resolve(docsRoot);
 	const pathMatch = collections.find(collection => path.resolve(collection.path) === docsRootPath);
 	if (pathMatch) {
-		fail(`Docs root already parked as "${pathMatch.name}": ${docsRoot}`);
+		fail(`Docs root already parked as "${pathMatch.name}": ${directoryDisplayPath(docsRoot)}`);
 	}
 
 	await addQmdCollection(collectionName, docsRoot);
 	await invalidateQmdCollectionsCache();
 	await runDocsUpdate();
 	templateOutput.printRenderedTemplate(commandTemplate.renderParkTemplate({
-		message_line: `Parked "${collectionName}" at ${docsRoot}`,
+		message_line: `Parked "${collectionName}" at ${directoryDisplayPath(docsRoot)}`,
 		view: "success",
 	}));
 }

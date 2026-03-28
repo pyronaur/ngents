@@ -6,7 +6,7 @@ import browseContracts, { type DocsSources } from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import { isQmdRequiredError, listQmdCollections, type QmdCollection } from "./qmd.ts";
 
-const { normalizePath } = browseContracts;
+const { directoryDisplayPath, normalizePath } = browseContracts;
 
 async function isDirectory(directoryPath: string): Promise<boolean> {
 	try {
@@ -161,7 +161,7 @@ export async function resolveFilesystemDocsDirectory(
 	}
 
 	throw runtimeError(
-		`Not a docs directory: ${directoryPath}\n${
+		`Not a docs directory: ${directoryDisplayPath(directoryPath)}\n${
 			suggestionLine([`docs ls ${nestedDocsRoot}`, ...defaultSuggestions(sources)])
 		}`,
 	);

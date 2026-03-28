@@ -3,22 +3,22 @@
 exports[`docs ls default browser matches the current output 1`] = `
 "# Docs
 
-## /fixture/home/.ngents/docs/architecture
+## /fixture/home/.ngents/docs/architecture/
  - global-only.md
    Global architecture-only notes.
 
-## /fixture/home/.ngents/docs/browser
+## /fixture/home/.ngents/docs/browser/
  - cdp.md
    Need to start, stop, or inspect the local Chrome CDP session.
 
-## /fixture/repo/docs
+## /fixture/repo/docs/
  - long-summary.md
    This summary is intentionally longer than sixty-four characters so compact views must truncate it.
 
  - web-fetching.md
    Need to fetch web content for research.
 
-## /fixture/repo/docs/architecture
+## /fixture/repo/docs/architecture/
  - local-only.md
    Local architecture-only notes.
 
@@ -31,11 +31,11 @@ exports[`docs ls selector browser matches the current output 1`] = `
 "# Docs: architecture
 Topic available: docs topic architecture
 
-## /fixture/home/.ngents/docs/architecture
+## /fixture/home/.ngents/docs/architecture/
  - global-only.md
    Global architecture-only notes.
 
-## /fixture/repo/docs/architecture
+## /fixture/repo/docs/architecture/
  - local-only.md
    Local architecture-only notes.
 

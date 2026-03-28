@@ -121,6 +121,15 @@ function normalizePath(value: string): string {
 	return toDisplayPath(path.resolve(value));
 }
 
+function directoryDisplayPath(value: string): string {
+	const normalized = toDisplayPath(value);
+	if (normalized === POSIX_SEP || normalized.endsWith(POSIX_SEP)) {
+		return normalized;
+	}
+
+	return `${normalized}${POSIX_SEP}`;
+}
+
 function compactStrings(values: unknown[]): string[] {
 	const result: string[] = [];
 	for (const value of values) {
@@ -233,6 +242,7 @@ export default {
 	TOPICS_DIR,
 	compactStrings,
 	compactDescription,
+	directoryDisplayPath,
 	errorText,
 	hasHiddenOrExcludedSegment,
 	heading,

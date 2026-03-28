@@ -17,6 +17,7 @@ import browseContracts from "./browse-contracts.ts";
 
 const {
 	compactDescription,
+	directoryDisplayPath,
 	errorText,
 	heading,
 	normalizeInlineText,
@@ -269,7 +270,7 @@ function createDocsBuckets(
 ): TopicTemplateDocsBucket[] {
 	return collectDocsBuckets(contributions, maxDepth).map(bucket => ({
 		entry_lines: bucket.entries.map(entry => docBucketLine(entry)),
-		heading_line: heading(bucketHeadingLevel, bucket.directoryPath),
+		heading_line: heading(bucketHeadingLevel, directoryDisplayPath(bucket.directoryPath)),
 	}));
 }
 

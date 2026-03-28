@@ -41,16 +41,16 @@ Read when: Need reusable machine docs.
 
 ### Docs
 
-#### /fixture/repo/docs/topics/platform
+#### /fixture/repo/docs/topics/platform/
 - overview.md - entry point
 
-#### /fixture/repo/docs/topics/platform/docs/guides
+#### /fixture/repo/docs/topics/platform/docs/guides/
 - session.md - local workspace setup
 
-#### /fixture/home/.ngents/docs/topics/platform
+#### /fixture/home/.ngents/docs/topics/platform/
 - overview.md - Global overview notes.
 
-#### /fixture/home/.ngents/docs/topics/platform/docs/guides
+#### /fixture/home/.ngents/docs/topics/platform/docs/guides/
 - shared.md - Shared workspace guidance.
 
 ### Skills
@@ -70,11 +70,11 @@ $workflow-agent - Workflow-first checks.
 
 ## Docs: platform
 
-### /fixture/home/.ngents/docs/platform
+### /fixture/home/.ngents/docs/platform/
  - cdp.md
    Need to start, stop, or inspect the local Chrome CDP session.
 
-### /fixture/repo/docs/platform
+### /fixture/repo/docs/platform/
  - local-browser.md
    Repo-local platform browser notes.
 "
@@ -92,7 +92,7 @@ ops       Ops Notes         This summary is intentionally longer than sixty-four
 
 ## Docs: machine
 
-### /fixture/home/.ngents/docs/browser
+### /fixture/home/.ngents/docs/browser/
  - cdp.md
    Need to start, stop, or inspect the local Chrome CDP session.
 "
@@ -154,17 +154,17 @@ qmd       QMD               local search docs
 
 ## Docs
 
-### /fixture/home/.ngents/docs/architecture
+### /fixture/home/.ngents/docs/architecture/
   global-only.md - global architecture notes
 
-### /fixture/home/.ngents/docs/browser
+### /fixture/home/.ngents/docs/browser/
   cdp.md - Chrome CDP instructions
 
-### /fixture/repo/docs
+### /fixture/repo/docs/
   long-summary.md - This summary is intentionally longer than sixty-four characte...
   web-fetching.md - web browser tools
 
-### /fixture/repo/docs/architecture
+### /fixture/repo/docs/architecture/
   local-only.md - local architecture notes
   main.md - read this first
 

@@ -29,6 +29,7 @@ import templateOutput from "./template-output.ts";
 
 const {
 	compactDescription,
+	directoryDisplayPath,
 	errorText,
 	heading,
 	normalizeInlineText,
@@ -56,7 +57,7 @@ function renderInventoryTopicLines(topics: TopicIndexRow[]): string[] {
 
 function renderRegisteredDocsLines(registeredDocs: RegisteredDocsRow[]): string[] {
 	return registeredDocs.map(directory =>
-		`- ${directory.name}: ${directory.absolutePaths.join(", ")}`
+		`- ${directory.name}: ${directory.absolutePaths.map(directoryDisplayPath).join(", ")}`
 	);
 }
 
@@ -163,7 +164,7 @@ function docsBrowserGroups(
 				detail_lines: expandedDocDescriptionLines(entry),
 				file_line: ` - ${path.basename(entry.absolutePath)}`,
 			})),
-		heading_line: heading(groupHeadingLevel, directoryPath),
+		heading_line: heading(groupHeadingLevel, directoryDisplayPath(directoryPath)),
 	}));
 }
 
@@ -178,7 +179,7 @@ function docsTemplateGroups(
 				detail_lines: expandedDocDescriptionLines(entry),
 				file_line: ` - ${path.basename(entry.absolutePath)}`,
 			})),
-		heading_line: heading(groupHeadingLevel, directoryPath),
+		heading_line: heading(groupHeadingLevel, directoryDisplayPath(directoryPath)),
 	}));
 }
 

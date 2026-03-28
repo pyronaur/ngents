@@ -81,8 +81,10 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain(
 			"long-summary.md - This summary is intentionally longer than sixty-four characte...",
 		);
-		expect(normalizedStdout).toContain(`### ${path.join(repoDir, "docs")}`);
-		expect(normalizedStdout).toContain(`### ${path.join(homeDir, ".ngents", "docs", "browser")}`);
+		expect(normalizedStdout).toContain(`### ${path.join(repoDir, "docs")}/`);
+		expect(normalizedStdout).toContain(
+			`### ${path.join(homeDir, ".ngents", "docs", "browser")}/`,
+		);
 		expect(result.stdout).toContain("cdp.md - Chrome CDP instructions");
 		expect(result.stdout).not.toContain(
 			"This is the long architecture summary that should stay out of compact listings.",

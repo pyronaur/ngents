@@ -254,7 +254,7 @@ test("docs park adds a named collection, refreshes the index, and exposes parked
 		});
 
 		expect(parkResult.exitCode).toBe(0);
-		expect(parkResult.stdout).toContain(`Parked "nconf" at ${path.join(projectDir, "docs")}`);
+		expect(parkResult.stdout).toContain(`Parked "nconf" at ${path.join(projectDir, "docs")}/`);
 		const logContents = await readFile(logFile, "utf8");
 		expect(logContents).toContain(
 			`--index ngents-docs collection add ${path.join(projectDir, "docs")} --name nconf`,
@@ -266,7 +266,7 @@ test("docs park adds a named collection, refreshes the index, and exposes parked
 			env,
 		});
 		expect(lsResult.exitCode).toBe(0);
-		expect(lsResult.stdout).toContain(path.join(projectDir, "docs"));
+		expect(lsResult.stdout).toContain(`${path.join(projectDir, "docs")}/`);
 
 		const topicResult = await runDocsCli(["topic", "infra"], {
 			env,
@@ -295,7 +295,7 @@ test("docs park allows ngents as a normal collection name", async () => {
 		});
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain(`Parked "ngents" at ${path.join(projectDir, "docs")}`);
+		expect(result.stdout).toContain(`Parked "ngents" at ${path.join(projectDir, "docs")}/`);
 		expect(await readFile(stateFile, "utf8")).toContain(
 			`ngents\t${path.join(projectDir, "docs")}\n`,
 		);

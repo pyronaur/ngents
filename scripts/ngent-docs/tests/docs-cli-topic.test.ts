@@ -35,26 +35,23 @@ function expectTopicIndex(stdout: string): void {
 function expectHigComponentsSkill(
 	stdout: string,
 	options: {
-		normalizedRepoDir: string;
-		referencesDir: string;
-		headingLevel: number;
+		description?: boolean;
+		nameLine?: boolean;
+		references?: boolean;
 	},
 ): void {
-	expect(hasHeading(stdout, options.headingLevel, "Apple HIG: Content Components")).toBe(true);
-	expect(normalizedPathForOutput(stdout)).toContain(
-		topicDocsPathForOutput(
-			options.normalizedRepoDir,
-			"hig-doctor",
-			"skills",
-			"hig-components-content",
-			"SKILL.md",
-		),
-	);
-	expect(compactListEntries(stdout, `${normalizedPathForOutput(options.referencesDir)}/:`, 3))
-		.toEqual([
+	if (options.nameLine ?? true) {
+		expect(stdout).toContain("$hig-components-content");
+	}
+	if (options.description ?? true) {
+		expect(stdout).toContain("Apple Human Interface Guidelines for content display components.");
+	}
+	if (options.references ?? false) {
+		expect(compactListEntries(stdout, "References", 3)).toEqual([
 			"- alpha.md",
 			"- beta.md",
 		]);
+	}
 }
 
 test("docs topic shows the merged topic index", async () => {
@@ -82,10 +79,10 @@ test("docs topic merges local and global topic contributions", async () => {
 		expect(globalGuideIndex).toBeLessThan(topicHeadingIndex);
 		expect(countMatches(result.stdout, /^## Docs$/gm)).toBe(1);
 		expect(normalizedStdout).toContain(
-			`### ${topicDocsPathForOutput(repoDir, "..", "qmd", "references")}`,
+			`### ${topicDocsPathForOutput(repoDir, "..", "qmd", "references")}/`,
 		);
 		expect(normalizedStdout).toContain(
-			`### ${normalizedPathForOutput(globalDocsPath(homeDir, "topics", "qmd", "references"))}`,
+			`### ${normalizedPathForOutput(globalDocsPath(homeDir, "topics", "qmd", "references"))}/`,
 		);
 	});
 });
@@ -135,12 +132,12 @@ test("docs topic overview renders grouped docs and skills without a Subtrees blo
 			expect(result.stdout).not.toContain("## Subtrees");
 			expect(countMatches(result.stdout, /^## Docs$/gm)).toBe(1);
 			expect(countMatches(result.stdout, /^## Skills$/gm)).toBe(1);
-			expect(normalizedStdout).toContain(`### ${topicDocsPathForOutput(normalizedRepoDir)}`);
+			expect(normalizedStdout).toContain(`### ${topicDocsPathForOutput(normalizedRepoDir)}/`);
 			expect(result.stdout).toContain(
 				"- SOSUMI.md - Sosumi CLI and MCP reference for fetching Apple Developer doc...",
 			);
 			expect(normalizedStdout).toContain(
-				`### ${topicDocsPathForOutput(normalizedRepoDir, "docs", "guides")}`,
+				`### ${topicDocsPathForOutput(normalizedRepoDir, "docs", "guides")}/`,
 			);
 			expect(result.stdout).toContain(
 				"- simulator.md - Boot and prepare the simulator for Apple tooling.",
@@ -232,9 +229,11 @@ test("docs topic focus accepts nested topic paths", async () => {
 			expect(result.exitCode).toBe(0);
 			expect(result.stdout).toContain("## guides");
 			expect(normalizedPathForOutput(result.stdout)).toContain(
-				`source: ${topicDocsPathForOutput(normalizedRepoDir, "docs", "guides")}`,
+				`### ${topicDocsPathForOutput(normalizedRepoDir, "docs", "guides")}/`,
 			);
-			expect(result.stdout).toContain("### Simulator Guide");
+			expect(result.stdout).toContain(
+				"  simulator.md - Boot and prepare the simulator for Apple tooling.",
+			);
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);
@@ -246,10 +245,12 @@ test("docs topic focus keeps merged path views", async () => {
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("## References");
-		expect(result.stdout).toContain(path.join(repoDir, "docs", "topics", "qmd", "references"));
-		expect(result.stdout).toContain(globalDocsPath(homeDir, "topics", "qmd", "references"));
-		expect(result.stdout).toContain("Local Indexing");
-		expect(result.stdout).toContain("Global Indexing");
+		expect(result.stdout).toContain(`${path.join(repoDir, "docs", "topics", "qmd", "references")}/`);
+		expect(result.stdout).toContain(`${globalDocsPath(homeDir, "topics", "qmd", "references")}/`);
+		expect(result.stdout).toContain("Start with the local notes.");
+		expect(result.stdout).toContain("Use these upstream references.");
+		expect(result.stdout).toContain("  local-indexing.md - local index notes");
+		expect(result.stdout).toContain("  global-indexing.md - global index notes");
 	});
 });
 
@@ -281,21 +282,20 @@ test("docs topic unknown path renders available paths as bullets", async () => {
 test("docs topic section renders a single root skill directly", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-skill-section-",
-		async ({ repoDir, env, normalizedRepoDir }) => {
+	async ({ repoDir, env, normalizedRepoDir }) => {
 			const result = await runDocsCli(["topic", TEST_TOPIC_NAME, "ios-debugger-agent"], {
 				cwd: repoDir,
 				env,
 			});
-			const referencesDir = topicDocsPath(normalizedRepoDir, "ios-debugger-agent", "references");
 			expect(result.exitCode).toBe(0);
 			expect(hasHeading(result.stdout, 2, "iOS Debugger Agent")).toBe(true);
-			expect(result.stdout).toContain(
+			expect(result.stdout).not.toContain(
 				topicDocsPathForOutput(normalizedRepoDir, "ios-debugger-agent", "SKILL.md"),
 			);
 			expect(result.stdout).toContain(
 				"Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
 			);
-			expect(compactListEntries(result.stdout, `${normalizedPathForOutput(referencesDir)}/:`, 3))
+			expect(compactListEntries(result.stdout, "References", 3))
 				.toContain("- quickstart.md");
 		},
 	);
@@ -310,19 +310,20 @@ test("docs topic focus resolves nested skill paths directly", async () => {
 				["topic", TEST_TOPIC_NAME, "hig-doctor/skills/hig-components-content"],
 				{ cwd: repoDir, env },
 			);
-			const referencesDir = topicDocsPath(
-				normalizedRepoDir,
-				"hig-doctor",
-				"skills",
-				"hig-components-content",
-				"references",
-			);
 
 			expect(result.exitCode).toBe(0);
+			expect(normalizedPathForOutput(result.stdout)).not.toContain(
+				topicDocsPathForOutput(
+					normalizedRepoDir,
+					"hig-doctor",
+					"skills",
+					"hig-components-content",
+					"SKILL.md",
+				),
+			);
 			expectHigComponentsSkill(result.stdout, {
-				normalizedRepoDir,
-				referencesDir,
-				headingLevel: 2,
+				nameLine: false,
+				references: true,
 			});
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
@@ -413,24 +414,24 @@ test("docs topic path focus keeps sibling docs outside nested skill paths", asyn
 				cwd: repoDir,
 				env,
 			});
-			const referencesDir = topicDocsPath(
-				normalizedRepoDir,
-				"hig-doctor",
-				"skills",
-				"hig-components-content",
-				"references",
-			);
 			expect(result.exitCode).toBe(0);
 			expect(hasHeading(result.stdout, 2, "hig-doctor")).toBe(true);
 			expect(normalizedPathForOutput(result.stdout)).toContain(
-				`source: ${topicDocsPathForOutput(normalizedRepoDir, "hig-doctor")}`,
+				`### ${topicDocsPathForOutput(normalizedRepoDir, "hig-doctor")}/`,
 			);
-			expect(result.stdout).toContain("### HIG Doctor Usage");
-			expect(hasHeading(result.stdout, 3, "skills")).toBe(true);
+			expect(result.stdout).toContain(
+				"  usage.md - Run the HIG skill set against the current app before broader Apple docs.",
+			);
+			expect(result.stdout).toContain("### Skills");
+			const usageIndex = result.stdout.indexOf(
+				"  usage.md - Run the HIG skill set against the current app before broader Apple docs.",
+			);
+			const skillSectionIndex = result.stdout.indexOf("### Skills");
+			expect(usageIndex).toBeGreaterThanOrEqual(0);
+			expect(skillSectionIndex).toBeGreaterThanOrEqual(0);
+			expect(usageIndex).toBeLessThan(skillSectionIndex);
 			expectHigComponentsSkill(result.stdout, {
-				normalizedRepoDir,
-				referencesDir,
-				headingLevel: 4,
+				references: false,
 			});
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },

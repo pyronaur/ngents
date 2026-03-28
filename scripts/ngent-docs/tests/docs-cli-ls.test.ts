@@ -25,7 +25,9 @@ function expectDocsLsSelectorMiss(
 	expect(result.stderr).toContain("Topics");
 	expect(result.stderr).toContain("Registered Docs");
 	expect(result.stderr).toContain(`architecture: ${architecturePath}`);
-	expect(result.stderr).toContain(`browser: ${path.join(homeDir, ".ngents", "docs", "browser")}`);
+	expect(result.stderr).toContain(
+		`browser: ${path.join(homeDir, ".ngents", "docs", "browser")}/`,
+	);
 }
 
 async function runDocsLsSelectorMiss(
@@ -36,8 +38,8 @@ async function runDocsLsSelectorMiss(
 ): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
 	const result = await runDocsCli(["ls", selector], { cwd: repoDir, env });
 	const expectedArchitecturePath = [
-		await realpath(path.join(repoDir, "docs", "architecture")),
-		path.join(homeDir, ".ngents", "docs", "architecture"),
+		`${await realpath(path.join(repoDir, "docs", "architecture"))}/`,
+		`${path.join(homeDir, ".ngents", "docs", "architecture")}/`,
 	].join(", ");
 
 	expectDocsLsSelectorMiss(result, selector, homeDir, expectedArchitecturePath);
@@ -63,8 +65,8 @@ test("docs ls merges local and global docs by default", async () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# Docs");
 		expect(result.stdout).not.toContain("Usage: docs ls [where]");
-		expect(result.stdout).toContain(path.join(repoDir, "docs"));
-		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+		expect(result.stdout).toContain(`${path.join(repoDir, "docs")}/`);
+		expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 		expect(result.stdout).toContain("web-fetching.md");
 		expect(result.stdout).toContain("Need to fetch web content for research.");
 		expect(result.stdout).toContain("cdp.md");
@@ -80,7 +82,7 @@ test("docs ls . shows only local docs", async () => {
 		const result = await runDocsCli(["ls", "."], { cwd: repoDir, env });
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain(path.join(repoDir, "docs"));
+		expect(result.stdout).toContain(`${path.join(repoDir, "docs")}/`);
 		expect(result.stdout).not.toContain(path.join(homeDir, ".ngents", "docs"));
 	});
 });
@@ -90,7 +92,7 @@ test("docs ls global shows only global docs", async () => {
 		const result = await runDocsCli(["ls", "global"], { cwd: repoDir, env });
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+		expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 		expect(result.stdout).not.toContain(path.join(repoDir, "docs"));
 	});
 });
@@ -100,7 +102,7 @@ test("docs ls ./docs/subdir focuses a local docs subtree", async () => {
 		const result = await runDocsCli(["ls", "./docs/architecture"], { cwd: repoDir, env });
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
+		expect(result.stdout).toContain(`${path.join(repoDir, "docs", "architecture")}/`);
 		expect(result.stdout).toContain("main.md");
 		expect(result.stdout).toContain("local-only.md");
 		expect(result.stdout).not.toContain("web-fetching.md");
@@ -113,8 +115,8 @@ test("docs ls docs/subdir merges matching local and global doc subtrees", async 
 		const result = await runDocsCli(["ls", "docs/architecture"], { cwd: repoDir, env });
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
-		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
+		expect(result.stdout).toContain(`${path.join(repoDir, "docs", "architecture")}/`);
+		expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "architecture")}/`);
 		expect(result.stdout).toContain("main.md");
 		expect(result.stdout).toContain("local-only.md");
 		expect(result.stdout).toContain("global-only.md");
@@ -128,7 +130,7 @@ test("docs ls docs/subdir succeeds when only the global subtree exists", async (
 		const result = await runDocsCli(["ls", "docs/process"], { cwd: repoDir, env });
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "process"));
+		expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "process")}/`);
 		expect(result.stdout).toContain("qa.md");
 		expect(result.stdout).not.toContain(path.join(repoDir, "docs", "process"));
 	});
@@ -190,7 +192,7 @@ test("docs ls resolves parked global docs roots by case-insensitive name", async
 			const result = await runDocsCli(["ls", "machine"], { cwd: repoDir, env });
 
 			expect(result.exitCode).toBe(0);
-			expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+			expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 			expect(result.stdout).toContain("cdp.md");
 			expect(result.stdout).not.toContain(path.join(repoDir, "docs"));
 		},
@@ -205,7 +207,7 @@ test("docs ls rejects non-docs paths with suggestions", async () => {
 		const result = await runDocsCli(["ls", "~/misc"], { cwd: tempDir, env });
 
 		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain(`Not a docs directory: ${miscDir}`);
+		expect(result.stderr).toContain(`Not a docs directory: ${miscDir}/`);
 		expect(result.stderr).toContain(`docs ls ${path.join(miscDir, "docs")}`);
 	});
 });
@@ -254,8 +256,8 @@ test("docs ls opens exact registered docs names as merged subtrees", async () =>
 
 		expect(result.exitCode).toBe(0);
 		expect(result.stdout).toContain("# Docs: architecture");
-		expect(result.stdout).toContain(path.join(repoDir, "docs", "architecture"));
-		expect(result.stdout).toContain(path.join(homeDir, ".ngents", "docs", "architecture"));
+		expect(result.stdout).toContain(`${path.join(repoDir, "docs", "architecture")}/`);
+		expect(result.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "architecture")}/`);
 		expect(result.stdout).toContain("local-only.md");
 		expect(result.stdout).toContain("global-only.md");
 	});
@@ -295,8 +297,8 @@ test("docs browser shows both the topic and registered docs when names overlap",
 			expect(bareResult.stdout).toContain("### Docs");
 			expect(bareResult.stdout).not.toContain("#### extensive");
 			expect(bareResult.stdout).toContain("## Docs: browser");
-			expect(bareResult.stdout).toContain(path.join(repoDir, "docs", "browser"));
-			expect(bareResult.stdout).toContain(path.join(homeDir, ".ngents", "docs", "browser"));
+			expect(bareResult.stdout).toContain(`${path.join(repoDir, "docs", "browser")}/`);
+			expect(bareResult.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "browser")}/`);
 			expect(bareResult.stdout).toContain("local-browser.md");
 			expect(bareResult.stdout).toContain("extensive.md");
 			expect(bareResult.stdout).toContain("cdp.md");
@@ -304,8 +306,8 @@ test("docs browser shows both the topic and registered docs when names overlap",
 			expect(docsOnlyResult.exitCode).toBe(0);
 			expect(docsOnlyResult.stdout).toContain("# Docs: browser");
 			expect(docsOnlyResult.stdout).toContain("Topic available: docs topic browser");
-			expect(docsOnlyResult.stdout).toContain(path.join(repoDir, "docs", "browser"));
-			expect(docsOnlyResult.stdout).toContain(path.join(homeDir, ".ngents", "docs", "browser"));
+			expect(docsOnlyResult.stdout).toContain(`${path.join(repoDir, "docs", "browser")}/`);
+			expect(docsOnlyResult.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "browser")}/`);
 			expect(docsOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "topics", "browser"));
 
 			expect(topicOnlyResult.exitCode).toBe(0);
@@ -336,7 +338,7 @@ test("single-token root selectors open topics and registered docs", async () => 
 			expect(bareName.stdout).toContain("# Docs: machine");
 			expect(bareName.stdout).toContain("## Topics: machine");
 			expect(bareName.stdout).toContain("qmd");
-			expect(bareName.stdout).toContain(path.join(homeDir, ".ngents", "docs"));
+			expect(bareName.stdout).toContain(`${path.join(homeDir, ".ngents", "docs")}/`);
 			expect(bareName.stdout).toContain("cdp.md");
 
 			expect(bareTopic.exitCode).toBe(0);
@@ -345,17 +347,17 @@ test("single-token root selectors open topics and registered docs", async () => 
 
 			expect(bareRegisteredDocs.exitCode).toBe(0);
 			expect(bareRegisteredDocs.stdout).toContain("# Docs: architecture");
-			expect(bareRegisteredDocs.stdout).toContain(path.join(repoDir, "docs", "architecture"));
+			expect(bareRegisteredDocs.stdout).toContain(`${path.join(repoDir, "docs", "architecture")}/`);
 			expect(bareRegisteredDocs.stdout).toContain(
-				path.join(homeDir, ".ngents", "docs", "architecture"),
+				`${path.join(homeDir, ".ngents", "docs", "architecture")}/`,
 			);
 
 			expect(bareWorkspace.exitCode).toBe(0);
-			expect(bareWorkspace.stdout).toContain(path.join(repoDir, "docs"));
+			expect(bareWorkspace.stdout).toContain(`${path.join(repoDir, "docs")}/`);
 			expect(bareWorkspace.stdout).toContain("web-fetching.md");
 
 			expect(bareDocsPath.exitCode).toBe(0);
-			expect(bareDocsPath.stdout).toContain(path.join(repoDir, "docs"));
+			expect(bareDocsPath.stdout).toContain(`${path.join(repoDir, "docs")}/`);
 			expect(bareDocsPath.stdout).toContain("web-fetching.md");
 		},
 		{ collectionName: "Machine" },
@@ -382,8 +384,8 @@ test("single-token unknown root selectors show commands plus browse inventory", 
 	await withDocsCliWorkspace("docs-root-selector-miss-", async ({ repoDir, homeDir, env }) => {
 		const result = await runDocsCli(["poop"], { cwd: repoDir, env });
 		const expectedArchitecturePath = [
-			await realpath(path.join(repoDir, "docs", "architecture")),
-			path.join(homeDir, ".ngents", "docs", "architecture"),
+			`${await realpath(path.join(repoDir, "docs", "architecture"))}/`,
+			`${path.join(homeDir, ".ngents", "docs", "architecture")}/`,
 		].join(", ");
 
 		expectDocsLsSelectorMiss(result, "poop", homeDir, expectedArchitecturePath);

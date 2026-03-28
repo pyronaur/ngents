@@ -149,56 +149,6 @@ export type TopicTemplateScopedBrowserContext = {
 	topic_table: DocsTemplateTopicTable;
 };
 
-export type TopicTemplateReferenceGroup = {
-	heading_line: string;
-	item_lines: string[];
-};
-
-export type TopicTemplateCompactSkillContext = {
-	kind: "compact_skill";
-	description_line: string | null;
-	heading_line: string;
-	path_line: string;
-	reference_groups: TopicTemplateReferenceGroup[];
-};
-
-export type TopicTemplateFocusedSkillEntry = {
-	description_line: string | null;
-	error_line: string | null;
-	heading_line: string;
-	path_line: string;
-	reference_groups: TopicTemplateReferenceGroup[];
-};
-
-export type TopicTemplateFocusedSkillsBlock = {
-	entries: TopicTemplateFocusedSkillEntry[];
-	heading_line: string;
-};
-
-export type TopicTemplateMarkdownEntry = {
-	error_line: string | null;
-	heading_line: string;
-	path_line: string;
-	read_when_line: string | null;
-	summary_line: string | null;
-};
-
-export type TopicTemplateFocusedSectionNode = {
-	kind: "section";
-	children: TopicTemplateFocusedNode[];
-	empty_line: string | null;
-	heading_line: string | null;
-	markdown_entries: TopicTemplateMarkdownEntry[];
-	metadata_lines: string[];
-	path_line: string | null;
-	skills_block: TopicTemplateFocusedSkillsBlock | null;
-	source_line: string | null;
-};
-
-export type TopicTemplateFocusedNode =
-	| TopicTemplateCompactSkillContext
-	| TopicTemplateFocusedSectionNode;
-
 export type TopicTemplateFocusedContext = {
 	view: "focused";
 	sections: Array<{ text: string }>;

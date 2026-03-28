@@ -2,11 +2,10 @@
 
 exports[`docs topic direct skill view matches the current output 1`] = `
 "## Workflow Agent
-/fixture/repo/docs/topics/platform/workflow-agent/SKILL.md
 
 Run the current workflow against a local test environment.
 
-### /fixture/repo/docs/topics/platform/workflow-agent/references/:
+### References
 - checklist.md
 - troubleshooting.md
 "
@@ -15,59 +14,29 @@ Run the current workflow against a local test environment.
 exports[`docs topic focused nested path matches the current output 1`] = `
 "## pattern-library
 
-source: /fixture/repo/docs/topics/platform/pattern-library
 Use this subtree before falling back to broader references.
 
-### Pattern Library Usage
-path: /fixture/repo/docs/topics/platform/pattern-library/usage.md
-Start here before opening deeper sections in the subtree.
+### /fixture/repo/docs/topics/platform/pattern-library/
+  usage.md - Start here before opening deeper sections in the subtree.
 
-### skills
-path: /fixture/repo/docs/topics/platform/pattern-library/skills/
-#### Content Cards Review
-/fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/SKILL.md
-
-Review content card structures and their supporting references.
-
-### /fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/references/:
-- checklist.md
-- examples.md
-
-### website
-path: /fixture/repo/docs/topics/platform/pattern-library/website/
-#### app
-path: /fixture/repo/docs/topics/platform/pattern-library/website/app/
-##### topics
-path: /fixture/repo/docs/topics/platform/pattern-library/website/app/topics/
-###### [slug]
-path: /fixture/repo/docs/topics/platform/pattern-library/website/app/topics/[slug]/
-[no section entries found]
-
-#### components
-path: /fixture/repo/docs/topics/platform/pattern-library/website/components/
-##### ui
-path: /fixture/repo/docs/topics/platform/pattern-library/website/components/ui/
-[no section entries found]
+### Skills
+$content-cards - Review content card structures and their supporting references.
 "
 `;
 
 exports[`docs topic focused path matches the current output 1`] = `
 "## guides
 
-source: /fixture/repo/docs/topics/platform/docs/guides
 Use local workflows first.
-Read when: Need guided simulator setup.
+Need guided simulator setup.
 
-### Session Guide
-path: /fixture/repo/docs/topics/platform/docs/guides/session.md
-Prepare the local workspace before using the topic tooling.
-
-source: /fixture/home/.ngents/docs/topics/platform/docs/guides
 Shared machine conventions.
 
-### Shared Guide
-path: /fixture/home/.ngents/docs/topics/platform/docs/guides/shared.md
-Shared workspace guidance.
+### /fixture/home/.ngents/docs/topics/platform/docs/guides/
+  shared.md - Shared workspace guidance.
+
+### /fixture/repo/docs/topics/platform/docs/guides/
+  session.md - local workspace setup
 "
 `;
 
@@ -95,16 +64,16 @@ Read when: Need reusable machine docs.
 
 ## Docs
 
-### /fixture/repo/docs/topics/platform
+### /fixture/repo/docs/topics/platform/
 - overview.md - entry point
 
-### /fixture/repo/docs/topics/platform/docs/guides
+### /fixture/repo/docs/topics/platform/docs/guides/
 - session.md - local workspace setup
 
-### /fixture/home/.ngents/docs/topics/platform
+### /fixture/home/.ngents/docs/topics/platform/
 - overview.md - Global overview notes.
 
-### /fixture/home/.ngents/docs/topics/platform/docs/guides
+### /fixture/home/.ngents/docs/topics/platform/docs/guides/
 - shared.md - Shared workspace guidance.
 
 ## Skills

@@ -17,7 +17,7 @@ import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
 import { groupedDocs } from "./docs-grouping.ts";
 import templateOutput from "./template-output.ts";
 
-const { compactDescription, heading } = browseContracts;
+const { compactDescription, directoryDisplayPath, heading } = browseContracts;
 
 function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
 	return entries
@@ -36,7 +36,7 @@ function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
 function rootHelpDocsGroups(docs: MarkdownEntry[]): DocsTemplateDocsGroup[] {
 	return groupedDocs(docs).map(([directoryPath, entries]) => ({
 		entry_lines: rootHelpDocsEntryLines(entries),
-		heading_line: heading(3, directoryPath),
+		heading_line: heading(3, directoryDisplayPath(directoryPath)),
 	}));
 }
 

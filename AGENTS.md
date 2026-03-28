@@ -15,20 +15,12 @@
 
 ## Documentation Protocol
  - `docs` is the canonical source for documentation discovery.
- - Run `docs` before text search for current instructions, maps, and entrypoints.
+ - Run `docs -i` before text search for current instructions, maps, and entrypoints.
  - Use `docs` to build context before reading source or searching with `rg`.
  - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 
-
-## Machine
-- Local Setup: `docs ls local/setup`
-- iOS projects: `~/Projects/iOS`
-- Shell/config: `~/.nconf/AGENTS.md`
-
-## Host Context Resolution
-- Use `~/.nconf/docs/hosts/README.md` when host-specific context is needed.
-- Follow the host resolution instructions documented there when applicable.
-- Do not guess host aliases, SSH targets, or network topology.
+## Local Setup
+- Read `docs ls local/setup` when the task may need info about this machine (hosts, paths, shell, tools, services, etc)
 
 ## Docs
 - Read & Maintain Docs

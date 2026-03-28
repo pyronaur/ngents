@@ -5,7 +5,7 @@
 			"target": "topics/apple/asc-cli",
 			"handler": "docs-git-fetch",
 			"root": "skills",
-			"hash": "56bcbffb9a69adf4fd322187b7d1d324a24e99994a4983205589a6aab847f805"
+			"hash": "b717157b64265c09e340a53849eeca6c2b268dedd382ae9058b8acd0700010a4"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",

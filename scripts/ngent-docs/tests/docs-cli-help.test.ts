@@ -116,6 +116,19 @@ test("docs --help uses the same markdown help style without the docs index", asy
 	});
 });
 
+test("docs --init and docs -i render the main docs page", async () => {
+	await withDocsCliWorkspace("docs-init-", async ({ repoDir, env }) => {
+		const bare = await runDocsCli([], { cwd: repoDir, env });
+		const init = await runDocsCli(["--init"], { cwd: repoDir, env });
+		const shortInit = await runDocsCli(["-i"], { cwd: repoDir, env });
+
+		expect(init.exitCode).toBe(0);
+		expect(shortInit.exitCode).toBe(0);
+		expect(init.stdout).toBe(bare.stdout);
+		expect(shortInit.stdout).toBe(bare.stdout);
+	});
+});
+
 test("docs --ops-help renders the operations manual", async () => {
 	const result = await runDocsCli(["--ops-help"]);
 

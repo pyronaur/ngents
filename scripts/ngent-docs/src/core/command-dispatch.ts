@@ -203,6 +203,9 @@ function readRootHelpRequest(
 	if (argv.length === 0) {
 		return { kind: "root", includeDocsIndex: true };
 	}
+	if (argv.length === 1 && (argv[0] === "--init" || argv[0] === "-i")) {
+		return { kind: "root", includeDocsIndex: true };
+	}
 	if (argv.length === 1 && (argv[0] === "--help" || argv[0] === "-h" || argv[0] === "help")) {
 		return { kind: "root", includeDocsIndex: false };
 	}

@@ -17,11 +17,11 @@ import { rootHelpCommandLines, rootHelpUsageLines } from "./command-usage.ts";
 import { groupedDocs } from "./docs-grouping.ts";
 import templateOutput from "./template-output.ts";
 
-const { compactDescription, directoryDisplayPath, heading } = browseContracts;
+const { compactDescription, directoryDisplayPath, heading, sortedMarkdownEntries } =
+	browseContracts;
 
 function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
-	return entries
-		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
+	return sortedMarkdownEntries(entries)
 		.map(entry => {
 			const description = compactDescription(entry.short, entry.summary);
 			const fileName = path.basename(entry.absolutePath);

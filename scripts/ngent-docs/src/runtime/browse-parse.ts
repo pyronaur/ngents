@@ -8,7 +8,7 @@ import type {
 } from "./browse-contracts.ts";
 import browseContracts from "./browse-contracts.ts";
 
-const { compactStrings, stripQuotes } = browseContracts;
+const { compactStrings, firstContentParagraph, stripQuotes } = browseContracts;
 
 type PositionedLine = {
 	index: number;
@@ -405,18 +405,7 @@ function parseGuideBody(content: string): string | null {
 
 function parseGuideSummary(content: string): string | null {
 	const guideBody = parseGuideBody(content);
-	if (!guideBody) {
-		return null;
-	}
-	for (const paragraph of guideBody.split("\n\n")) {
-		const normalized = paragraph.replace(/\s+/g, " ").trim();
-		if (normalized.length === 0 || normalized.startsWith("- ")) {
-			continue;
-		}
-		return normalized;
-	}
-
-	return null;
+	return firstContentParagraph(guideBody);
 }
 
 function parseMarkdownTitle(content: string): string | null {

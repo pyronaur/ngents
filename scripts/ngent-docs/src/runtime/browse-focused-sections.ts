@@ -9,8 +9,15 @@ import { isCompactFocusedSkillSection } from "./browse-focused-skills.ts";
 import type { TopicTemplateFocusedContext } from "./command-template.ts";
 import { groupedDocs } from "./docs-grouping.ts";
 
-const { compactDescription, directoryDisplayPath, errorText, heading, normalizeInlineText } =
-	browseContracts;
+const {
+	compactDescription,
+	directoryDisplayPath,
+	errorText,
+	firstContentParagraph,
+	heading,
+	normalizeInlineText,
+	sortedMarkdownEntries,
+} = browseContracts;
 
 function blockText(lines: string[]): string {
 	return lines.join("\n");
@@ -44,19 +51,7 @@ function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): strin
 }
 
 function guideSummary(section: SectionEntry): string | null {
-	if (!section.guideBody) {
-		return null;
-	}
-
-	for (const paragraph of section.guideBody.split("\n\n")) {
-		const normalized = paragraph.replace(/\s+/g, " ").trim();
-		if (normalized.length === 0 || normalized.startsWith("- ")) {
-			continue;
-		}
-		return normalized;
-	}
-
-	return null;
+	return firstContentParagraph(section.guideBody);
 }
 
 function sectionMetadataLines(section: SectionEntry): string[] {
@@ -77,8 +72,7 @@ function sectionMetadataLines(section: SectionEntry): string[] {
 }
 
 function rootHelpDocsEntryLines(entries: MarkdownEntry[]): string[] {
-	return entries
-		.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
+	return sortedMarkdownEntries(entries)
 		.map(entry => {
 			const description = normalizeInlineText(entry.short)
 				?? normalizeInlineText(entry.summary)

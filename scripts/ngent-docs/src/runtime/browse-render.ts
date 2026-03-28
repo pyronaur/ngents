@@ -22,7 +22,6 @@ import {
 import { availableSectionKeys } from "./browse-topic-sections.ts";
 import commandTemplate, {
 	type DocsTemplateExpandedDocsGroup,
-	type LsTemplateContext,
 } from "./command-template.ts";
 import { groupedDocs } from "./docs-grouping.ts";
 import templateOutput from "./template-output.ts";
@@ -34,6 +33,13 @@ const {
 	heading,
 	normalizeInlineText,
 } = browseContracts;
+
+type DocsBrowserOptions = {
+	title?: string;
+	titleLevel?: 1 | 2;
+	groupHeadingLevel?: 2 | 3;
+	topicHint?: string;
+};
 
 function renderBlock(
 	renderLines: (pushLine: (text?: string, indent?: number) => void) => void,
@@ -158,22 +164,7 @@ function expandedDocDescriptionLines(entry: MarkdownEntry): string[] {
 	return lines;
 }
 
-function docsBrowserGroups(
-	docs: MarkdownEntry[],
-	groupHeadingLevel: 2 | 3,
-): LsTemplateContext["docs_groups"] {
-	return groupedDocs(docs).map(([directoryPath, entries]) => ({
-		entries: entries
-			.sort((left, right) => left.absolutePath.localeCompare(right.absolutePath))
-			.map(entry => ({
-				detail_lines: expandedDocDescriptionLines(entry),
-				file_line: ` - ${path.basename(entry.absolutePath)}`,
-			})),
-		heading_line: heading(groupHeadingLevel, directoryDisplayPath(directoryPath)),
-	}));
-}
-
-function docsTemplateGroups(
+function expandedDocsGroups(
 	docs: MarkdownEntry[],
 	groupHeadingLevel: 2 | 3,
 ): DocsTemplateExpandedDocsGroup[] {
@@ -197,15 +188,10 @@ function topicTable(topics: TopicIndexRow[]) {
 
 function renderDocsBrowser(
 	docs: MarkdownEntry[],
-	options: {
-		title?: string;
-		titleLevel?: 1 | 2;
-		groupHeadingLevel?: 2 | 3;
-		topicHint?: string;
-	} = {},
+	options: DocsBrowserOptions = {},
 ): string {
 	return commandTemplate.renderLsTemplate({
-		docs_groups: docsBrowserGroups(docs, options.groupHeadingLevel ?? 2),
+		docs_groups: expandedDocsGroups(docs, options.groupHeadingLevel ?? 2),
 		title_line: heading(options.titleLevel ?? 1, options.title ?? "Docs"),
 		topic_hint_line: options.topicHint ? `Topic available: docs topic ${options.topicHint}` : null,
 		view: "browser",
@@ -214,14 +200,18 @@ function renderDocsBrowser(
 
 function printDocsBrowser(
 	docs: MarkdownEntry[],
-	options: {
-		title?: string;
-		titleLevel?: 1 | 2;
-		groupHeadingLevel?: 2 | 3;
-		topicHint?: string;
-	} = {},
+	options: DocsBrowserOptions = {},
 ): void {
 	templateOutput.printRenderedTemplate(renderDocsBrowser(docs, options));
+}
+
+function selectorDocsContext(selector: string, docs: MarkdownEntry[]) {
+	const title = `Docs: ${selector}`;
+	return {
+		docs_groups: expandedDocsGroups(docs, 3),
+		docs_title_line: heading(2, title),
+		title_line: heading(1, title),
+	};
 }
 
 function printTopicBrowser(topics: TopicIndexRow[]): void {
@@ -271,9 +261,7 @@ function printCollectionSelectorView(
 	docs: MarkdownEntry[],
 ): void {
 	templateOutput.printRenderedTemplate(commandTemplate.renderDocsTemplate({
-		docs_groups: docsTemplateGroups(docs, 3),
-		docs_title_line: heading(2, `Docs: ${selector}`),
-		title_line: heading(1, `Docs: ${selector}`),
+		...selectorDocsContext(selector, docs),
 		topics: topics.length > 0
 			? {
 				title_line: heading(2, `Topics: ${selector}`),
@@ -290,9 +278,7 @@ function printCombinedSelectorView(
 	docs: MarkdownEntry[],
 ): void {
 	templateOutput.printRenderedTemplate(commandTemplate.renderDocsTemplate({
-		docs_groups: docsTemplateGroups(docs, 3),
-		docs_title_line: heading(2, `Docs: ${selector}`),
-		title_line: heading(1, `Docs: ${selector}`),
+		...selectorDocsContext(selector, docs),
 		topic_view: createTopicOverviewContext(topic, {
 			entryHeadingLevel: 4,
 			sectionHeadingLevel: 3,

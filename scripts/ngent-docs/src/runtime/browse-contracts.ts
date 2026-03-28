@@ -177,6 +177,22 @@ function normalizeInlineText(value: string | null): string | null {
 	return normalized;
 }
 
+function firstContentParagraph(value: string | null | undefined): string | null {
+	if (!value) {
+		return null;
+	}
+
+	for (const paragraph of value.split("\n\n")) {
+		const normalized = normalizeInlineText(paragraph);
+		if (!normalized || normalized.startsWith("- ")) {
+			continue;
+		}
+		return normalized;
+	}
+
+	return null;
+}
+
 function truncateCompactText(value: string, maxLength: number): string {
 	if (value.length <= maxLength) {
 		return value;
@@ -201,6 +217,10 @@ function compactDescription(short: string | null, summary: string | null): strin
 	}
 
 	return truncateCompactText(normalizedSummary, 64);
+}
+
+function sortedMarkdownEntries(entries: MarkdownEntry[]): MarkdownEntry[] {
+	return [...entries].sort((left, right) => left.absolutePath.localeCompare(right.absolutePath));
 }
 
 function heading(level: 1 | 2 | 3 | 4 | 5 | 6, text: string): string {
@@ -245,12 +265,14 @@ export default {
 	compactDescription,
 	directoryDisplayPath,
 	errorText,
+	firstContentParagraph,
 	hasHiddenOrExcludedSegment,
 	heading,
 	normalizeInlineText,
 	normalizePath,
 	printLine,
 	sameFileName,
+	sortedMarkdownEntries,
 	stripQuotes,
 	toDisplayPath,
 };

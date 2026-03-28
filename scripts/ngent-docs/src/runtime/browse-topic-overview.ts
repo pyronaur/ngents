@@ -30,6 +30,14 @@ type DocsBucket = {
 	entries: MarkdownEntry[];
 };
 
+type TopicOverviewOptions = {
+	titleLevel?: 1 | 2;
+	titlePrefix?: string;
+	sectionHeadingLevel?: 2 | 3;
+	entryHeadingLevel?: 3 | 4;
+	maxDepth?: number;
+};
+
 function printTopicSkillLine(skill: SkillEntry): string {
 	if (skill.hint) {
 		return `$${skill.name} - ${skill.hint}`;
@@ -326,13 +334,7 @@ function createSkillSections(
 
 export function createTopicOverviewContext(
 	topic: MergedTopic,
-	options: {
-		titleLevel?: 1 | 2;
-		titlePrefix?: string;
-		sectionHeadingLevel?: 2 | 3;
-		entryHeadingLevel?: 3 | 4;
-		maxDepth?: number;
-	} = {},
+	options: TopicOverviewOptions = {},
 ): TopicTemplateOverviewContext {
 	const titleLevel = options.titleLevel ?? 1;
 	const titlePrefix = options.titlePrefix ?? "";
@@ -353,13 +355,7 @@ export function createTopicOverviewContext(
 
 export function renderTopicOverview(
 	topic: MergedTopic,
-	options: {
-		titleLevel?: 1 | 2;
-		titlePrefix?: string;
-		sectionHeadingLevel?: 2 | 3;
-		entryHeadingLevel?: 3 | 4;
-		maxDepth?: number;
-	} = {},
+	options: TopicOverviewOptions = {},
 ): string {
 	return commandTemplate.renderTopicTemplate(createTopicOverviewContext(topic, options));
 }

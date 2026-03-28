@@ -163,7 +163,7 @@ const websiteSection: SectionEntry = {
 	children: [appSection, componentsSection],
 };
 
-export const patternLibrarySection: SectionEntry = {
+const patternLibrarySection: SectionEntry = {
 	key: "pattern-library",
 	absolutePath: "/fixture/repo/docs/topics/platform/pattern-library",
 	title: "pattern-library",
@@ -185,7 +185,7 @@ export const patternLibrarySection: SectionEntry = {
 	children: [patternLibrarySkillsSection, websiteSection],
 };
 
-export const directSkillSection: SectionEntry = {
+const directSkillSection: SectionEntry = {
 	key: "workflow-agent",
 	absolutePath: "/fixture/repo/docs/topics/platform/workflow-agent",
 	title: "workflow-agent",

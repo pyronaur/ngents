@@ -188,6 +188,7 @@ const result = await store.update({
 // Generate vector embeddings
 const embedResult = await store.embed({
   force: false,           // true to re-embed everything
+  chunkStrategy: "auto",  // "regex" (default) or "auto" (AST for code files)
   onProgress: ({ current, total, collection }) => {
     console.log(`Embedding ${current}/${total}`)
   },

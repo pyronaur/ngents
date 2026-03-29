@@ -26,5 +26,5 @@ QMD is a local search engine for markdown notes, meeting transcripts, documentat
 - Read [sdk-and-integration.md](references/sdk-and-integration.md) for Bun/Node integrations.
 - Read [architecture-and-internals.md](references/architecture-and-internals.md) for scoring, storage, indexing, chunking, and internals.
 
-Upstream source repo for regeneration: `https://github.com/tobi/qmd.git` at commit `2b8f329`.
+Upstream source repo for regeneration: `https://github.com/tobi/qmd.git` at commit `1fb2e28`.
 

@@ -33,7 +33,7 @@
 			"target": "topics/qmd",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/qmd-import.sh",
-			"hash": "9d631923fc4ed584b4a7875f0c60b6c935333e97dc2f9b57ccafdf8144d68681"
+			"hash": "7fb099e5fb4440a3e41264ffd07cd2e0ed0c53e6cc78899aa86101cce9ff69cc"
 		}
 	]
 }

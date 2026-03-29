@@ -112,6 +112,28 @@ test("docs ls ./docs/subdir focuses a local docs subtree", async () => {
 	});
 });
 
+test("docs file selectors open a local markdown doc from root and ls browse", async () => {
+	await withDocsCliWorkspace("docs-file-selector-", async ({ repoDir, env }) => {
+		const rootResult = await runDocsCli(["./docs/web-fetching.md"], { cwd: repoDir, env });
+		const lsResult = await runDocsCli(["ls", "./docs/web-fetching.md"], {
+			cwd: repoDir,
+			env,
+		});
+
+		expect(rootResult.exitCode).toBe(0);
+		expect(lsResult.exitCode).toBe(0);
+		expect(rootResult.stdout.trim()).toBe(lsResult.stdout.trim());
+		expect(rootResult.stdout).toContain("# Doc: Web Fetching");
+		expect(rootResult.stdout.replaceAll("/private/var", "/var")).toContain(
+			`Path: ${path.join(repoDir, "docs", "web-fetching.md")}`,
+		);
+		expect(rootResult.stdout).toContain(
+			"Use browser tools when fetch/search is blocked by JavaScript pages.",
+		);
+		expect(rootResult.stdout).not.toContain("title: Web Fetching");
+	});
+});
+
 test("docs ls docs/subdir merges matching local and global doc subtrees", async () => {
 	await withDocsCliWorkspace("docs-ls-subdir-merged-", async ({ repoDir, homeDir, env }) => {
 		const result = await runDocsCli(["ls", "docs/architecture"], { cwd: repoDir, env });

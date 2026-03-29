@@ -37,6 +37,10 @@ export type MarkdownEntry = {
 	error?: string;
 };
 
+export type MarkdownDocument = MarkdownEntry & {
+	body: string | null;
+};
+
 export type SkillEntry = {
 	absolutePath: string;
 	relativePath: string;

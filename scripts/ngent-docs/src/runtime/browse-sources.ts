@@ -6,11 +6,19 @@ import browseContracts, { type DocsSources } from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import { isQmdRequiredError, listQmdCollections, type QmdCollection } from "./qmd.ts";
 
-const { directoryDisplayPath, normalizePath } = browseContracts;
+const { META_FILE, directoryDisplayPath, normalizePath, sameFileName } = browseContracts;
 
 async function isDirectory(directoryPath: string): Promise<boolean> {
 	try {
 		return (await stat(directoryPath)).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+async function isFile(filePath: string): Promise<boolean> {
+	try {
+		return (await stat(filePath)).isFile();
 	} catch {
 		return false;
 	}
@@ -107,6 +115,23 @@ function selectorSegments(selector: string): string[] {
 		.filter(segment => segment.length > 0);
 }
 
+function isMarkdownDocFileName(fileName: string): boolean {
+	if (!fileName.endsWith(".md")) {
+		return false;
+	}
+	if (sameFileName(fileName, META_FILE) || sameFileName(fileName, "SKILL.md")) {
+		return false;
+	}
+	return true;
+}
+
+async function isMarkdownDocFile(filePath: string): Promise<boolean> {
+	if (!(await isFile(filePath))) {
+		return false;
+	}
+	return isMarkdownDocFileName(path.posix.basename(filePath));
+}
+
 class BrowseSelectorNotFoundError extends Error {
 	public readonly selector: string;
 
@@ -188,6 +213,25 @@ export async function resolveFilesystemDocsDirectory(
 	);
 }
 
+export async function resolveFilesystemDocsFile(
+	sources: DocsSources,
+	selector: string,
+): Promise<string> {
+	const filePath = normalizePath(expandHomeSelector(selector));
+	if (!(await isMarkdownDocFile(filePath))) {
+		throw new BrowseSelectorNotFoundError(selector);
+	}
+
+	const docsRoot = findContainingDocsRoot(filePath);
+	if (docsRoot && await isDirectory(docsRoot)) {
+		return filePath;
+	}
+
+	throw runtimeError(
+		`Docs file is outside docs roots: ${selector}\n${suggestionLine(defaultSuggestions(sources))}`,
+	);
+}
+
 export function resolveGlobalDocsDirectoryByName(
 	sources: DocsSources,
 	selector: string,
@@ -236,6 +280,30 @@ export async function resolveLocalDocsDirectory(
 	}
 
 	return directoryPath;
+}
+
+export async function resolveLocalDocsFile(
+	sources: DocsSources,
+	selector: string,
+): Promise<string> {
+	if (sources.localDocsRoots.length === 0) {
+		throw new BrowseSelectorNotFoundError(selector);
+	}
+
+	const baseDir = sources.repoRoot ?? sources.currentDir;
+	const filePath = normalizePath(path.resolve(baseDir, selector));
+	if (!(await isMarkdownDocFile(filePath))) {
+		throw new BrowseSelectorNotFoundError(selector);
+	}
+	if (!isWithinDocsRoots(filePath, sources.localDocsRoots)) {
+		throw runtimeError(
+			`Docs file is outside project docs roots: ${selector}\n${
+				suggestionLine(defaultSuggestions(sources))
+			}`,
+		);
+	}
+
+	return filePath;
 }
 
 export async function resolveQualifiedDocsDirectory(
@@ -293,4 +361,8 @@ export async function resolveMergedDocsDirectories(
 
 export function isDocsFilesystemSelector(selector: string): boolean {
 	return selector === "~" || selector.startsWith("~/") || path.isAbsolute(selector);
+}
+
+export function isDocsFileSelector(selector: string): boolean {
+	return path.posix.extname(selector.replaceAll("\\", path.posix.sep)).toLowerCase() === ".md";
 }

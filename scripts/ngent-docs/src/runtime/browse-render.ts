@@ -4,6 +4,7 @@ import pc from "picocolors";
 
 import browseContracts, {
 	type BrowseInventory,
+	type MarkdownDocument,
 	type MarkdownEntry,
 	type MergedTopic,
 	type RegisteredDocsRow,
@@ -205,6 +206,32 @@ function printDocsBrowser(
 	templateOutput.printRenderedTemplate(renderDocsBrowser(docs, options));
 }
 
+function renderDocsFile(doc: MarkdownDocument): string {
+	const metadataLines: string[] = [];
+	const summary = normalizeInlineText(doc.summary);
+	if (summary) {
+		metadataLines.push(summary);
+	}
+	if (doc.readWhen.length > 0) {
+		metadataLines.push(`Read when: ${doc.readWhen.join("; ")}`);
+	}
+	if (doc.error) {
+		metadataLines.push(errorText(doc.error));
+	}
+
+	return commandTemplate.renderDocsTemplate({
+		body_text: doc.body,
+		metadata_lines: metadataLines,
+		path_line: `Path: ${doc.absolutePath}`,
+		title_line: heading(1, `Doc: ${doc.title ?? path.basename(doc.absolutePath)}`),
+		view: "file",
+	});
+}
+
+function printDocsFile(doc: MarkdownDocument): void {
+	templateOutput.printRenderedTemplate(renderDocsFile(doc));
+}
+
 function selectorDocsContext(selector: string, docs: MarkdownEntry[]) {
 	const title = `Docs: ${selector}`;
 	return {
@@ -293,11 +320,13 @@ export default {
 	availableSectionKeys,
 	printCollectionSelectorView,
 	printCombinedSelectorView,
+	printDocsFile,
 	printDocsBrowser,
 	printFocusedSection,
 	printScopedTopicBrowser,
 	printTopicBrowser,
 	printTopicView,
+	renderDocsFile,
 	renderDocsBrowser,
 	renderRootSelectorNotFound,
 	renderSelectorNotFound,

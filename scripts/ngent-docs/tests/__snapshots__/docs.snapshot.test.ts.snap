@@ -123,15 +123,18 @@ It may open a topic like \`docs <topic>\` or a docs view like \`docs <docs-root>
 - \`.\`
 - \`global\`
 - \`docs/subdir\` or \`./docs/subdir\`
+- \`docs/file.md\` or \`./docs/file.md\`
 - a registered docs root like \`browser\`
 - a parked collection selector like \`local/setup\`
 - a workspace path like \`~/work/foo\`
 - an explicit docs path like \`~/work/foo/docs\`
+- an explicit docs file path like \`~/work/foo/docs/file.md\`
 
 Examples
 docs <topic>
 docs <docs-root>
 docs local/setup
+docs ./docs/file.md
 docs ls .
 docs ls local setup
 docs ls docs/subdir
@@ -200,15 +203,18 @@ It may open a topic like \`docs <topic>\` or a docs view like \`docs <docs-root>
 - \`.\`
 - \`global\`
 - \`docs/subdir\` or \`./docs/subdir\`
+- \`docs/file.md\` or \`./docs/file.md\`
 - a registered docs root like \`browser\`
 - a parked collection selector like \`local/setup\`
 - a workspace path like \`~/work/foo\`
 - an explicit docs path like \`~/work/foo/docs\`
+- an explicit docs file path like \`~/work/foo/docs/file.md\`
 
 Examples
 docs <topic>
 docs <docs-root>
 docs local/setup
+docs ./docs/file.md
 docs ls .
 docs ls local setup
 docs ls docs/subdir

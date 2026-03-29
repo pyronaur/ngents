@@ -15,6 +15,7 @@ type RenderOptions = {
 const DOCS_SCREEN_TEMPLATE = {
 	collection_selector: "screens/docs-collection-selector.md",
 	combined_selector: "screens/docs-combined-selector.md",
+	file: "screens/docs-file.md",
 	ops_help: "screens/docs-ops-help.md",
 	root_help: "screens/docs-root-help.md",
 } as const;
@@ -122,9 +123,18 @@ export type DocsTemplateCombinedSelectorContext = {
 	topic_view: TopicTemplateOverviewContext;
 };
 
+export type DocsTemplateFileContext = {
+	view: "file";
+	body_text: string | null;
+	metadata_lines: string[];
+	path_line: string;
+	title_line: string;
+};
+
 export type DocsTemplateContext =
 	| DocsTemplateCollectionSelectorContext
 	| DocsTemplateCombinedSelectorContext
+	| DocsTemplateFileContext
 	| DocsTemplateOpsHelpContext
 	| DocsTemplateRootHelpContext;
 

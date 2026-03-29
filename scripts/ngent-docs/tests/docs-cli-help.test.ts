@@ -70,6 +70,8 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain(
 			"It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.",
 		);
+		expect(result.stdout).toContain("`docs/file.md` or `./docs/file.md`");
+		expect(result.stdout).toContain("an explicit docs file path like `~/work/foo/docs/file.md`");
 		expect(result.stdout).toContain("docs ls docs/subdir");
 		expect(result.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
 		expect(result.stdout).toContain("qmd");

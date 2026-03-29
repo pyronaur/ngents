@@ -1,5 +1,6 @@
 import { runtimeError } from "../core/errors.ts";
 import browseContracts, {
+	type MarkdownDocument,
 	type MarkdownEntry,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
@@ -8,21 +9,33 @@ import browseRender from "./browse-render.ts";
 import {
 	discoverDocsSources,
 	isBrowseSelectorNotFoundError,
+	isDocsFileSelector,
 	isDocsFilesystemSelector,
 	resolveFilesystemDocsDirectory,
+	resolveFilesystemDocsFile,
 	resolveGlobalDocsDirectoryByName,
 	resolveLocalDocsDirectory,
+	resolveLocalDocsFile,
 	resolveMergedDocsDirectories,
 	resolveQualifiedDocsDirectory,
 	resolveRegisteredDocsDirectoriesByName,
 } from "./browse-sources.ts";
+import { readMarkdownDocument } from "./markdown-document.ts";
 
 const { normalizePath } = browseContracts;
 type DocsBrowseView = {
+	kind: "browse";
 	docs: Awaited<ReturnType<typeof browseDiscovery.readDocsEntriesUnder>>;
 	title: string;
 	topicHint?: string;
 };
+
+type DocsFileView = {
+	doc: MarkdownDocument;
+	kind: "file";
+};
+
+type DocsView = DocsBrowseView | DocsFileView;
 
 type ParkedCollectionSelectorView = {
 	docsRoot: string;
@@ -69,8 +82,16 @@ async function docsBrowseViewForDirectory(
 ): Promise<DocsBrowseView> {
 	return {
 		...(await docsEntriesUnder(directoryPath)),
+		kind: "browse",
 		title: docsTitle(where),
 	} satisfies DocsBrowseView;
+}
+
+async function docsFileViewForPath(filePath: string): Promise<DocsFileView> {
+	return {
+		doc: await readMarkdownDocument(filePath),
+		kind: "file",
+	} satisfies DocsFileView;
 }
 
 function docsTitle(where: string | null): string {
@@ -104,14 +125,30 @@ async function resolveDirectDocsDirectory(
 	return resolveGlobalDocsDirectoryByName(sources, where);
 }
 
+async function resolveDirectDocsFile(
+	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
+	where: string,
+): Promise<string | null> {
+	if (!isDocsFileSelector(where)) {
+		return null;
+	}
+
+	if (isDocsFilesystemSelector(where)) {
+		return resolveFilesystemDocsFile(sources, where);
+	}
+
+	return resolveLocalDocsFile(sources, where);
+}
+
 async function docsEntriesForWhere(
 	currentDir: string,
 	where: string | null,
-): Promise<DocsBrowseView> {
+): Promise<DocsView> {
 	const sources = await discoverDocsSources(currentDir);
 	if (!where) {
 		return {
 			...(await docsEntriesFromRoots(sources.mergedDocsRoots, currentDir)),
+			kind: "browse",
 			title: docsTitle(where),
 		} satisfies DocsBrowseView;
 	}
@@ -119,6 +156,7 @@ async function docsEntriesForWhere(
 	if (where === ".") {
 		return {
 			...(await docsEntriesFromRoots(sources.localDocsRoots, ".")),
+			kind: "browse",
 			title: docsTitle(where),
 		} satisfies DocsBrowseView;
 	}
@@ -126,8 +164,14 @@ async function docsEntriesForWhere(
 	if (where === "global") {
 		return {
 			...(await docsEntriesFromRoots(sources.globalDocsRoots, "global")),
+			kind: "browse",
 			title: docsTitle(where),
 		} satisfies DocsBrowseView;
+	}
+
+	const directFilePath = await resolveDirectDocsFile(sources, where);
+	if (directFilePath) {
+		return docsFileViewForPath(directFilePath);
 	}
 
 	if (where.startsWith("docs/")) {
@@ -135,6 +179,7 @@ async function docsEntriesForWhere(
 		const directories = await resolveMergedDocsDirectories(sources, where);
 		return {
 			...(await docsEntriesFromRoots(directories, currentDir)),
+			kind: "browse",
 			title: docsTitle(where),
 		} satisfies DocsBrowseView;
 	}
@@ -148,6 +193,7 @@ async function docsEntriesForWhere(
 	if (registeredDirectories) {
 		return {
 			...(await docsEntriesUnderMany(registeredDirectories)),
+			kind: "browse",
 			title: docsTitle(where),
 			topicHint: await topicHintForSelector(where, sources.mergedDocsRoots),
 		} satisfies DocsBrowseView;
@@ -156,6 +202,7 @@ async function docsEntriesForWhere(
 	const directoryPath = await resolveLocalDocsDirectory(sources, where);
 	return {
 		...(await docsEntriesUnder(directoryPath)),
+		kind: "browse",
 		title: docsTitle(where),
 	} satisfies DocsBrowseView;
 }
@@ -211,10 +258,15 @@ export async function readRegisteredDocsSelector(
 }
 
 export async function runDocsBrowseSelector(currentDir: string, where: string): Promise<void> {
-	const { docs, title, topicHint } = await docsEntriesForWhere(currentDir, where);
-	browseRender.printDocsBrowser(docs, {
-		title,
-		topicHint,
+	const view = await docsEntriesForWhere(currentDir, where);
+	if (view.kind === "file") {
+		browseRender.printDocsFile(view.doc);
+		return;
+	}
+
+	browseRender.printDocsBrowser(view.docs, {
+		title: view.title,
+		topicHint: view.topicHint,
 	});
 }
 
@@ -252,10 +304,13 @@ export async function runDocsLs(positionals: string[]): Promise<void> {
 		.filter(part => part.length > 0)
 		.join("/") || null;
 	if (!where) {
-		const { docs, title, topicHint } = await docsEntriesForWhere(currentDir, where);
-		browseRender.printDocsBrowser(docs, {
-			title,
-			topicHint,
+		const view = await docsEntriesForWhere(currentDir, where);
+		if (view.kind !== "browse") {
+			fail("Expected docs browse view");
+		}
+		browseRender.printDocsBrowser(view.docs, {
+			title: view.title,
+			topicHint: view.topicHint,
 		});
 		return;
 	}

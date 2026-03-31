@@ -72,7 +72,7 @@ docs ls [where...]
 docs topic [topic] [path]
 docs query [--limit <n>] <query...> | status
 docs park <name> [path]
-docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]
+docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]
 docs update
 ```
 
@@ -208,13 +208,16 @@ Result output includes:
 
 ### `fetch`
 
-`fetch` registers one fetched docs subtree and refreshes it immediately.
+`fetch` registers one fetched docs file or subtree and refreshes it immediately.
 
-- It accepts `docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]`.
+- It accepts `docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]`.
 - The target path must resolve inside a discovered docs root.
+- A target ending in `.md` is treated as one docs file.
+- Any other target path is treated as a docs subtree directory.
 - `--handler` is required.
 - Use `git` for the built-in git fetch handler.
 - Use `url` for the built-in URL/file fetch handler.
+- `--force` bypasses the stored fetch hash for that one run.
 - Successful fetches update the local fetch manifest for future `docs update` runs.
 
 ### `update`

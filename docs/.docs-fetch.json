@@ -8,6 +8,19 @@
 			"hash": "b717157b64265c09e340a53849eeca6c2b268dedd382ae9058b8acd0700010a4"
 		},
 		{
+			"source": "https://raw.githubusercontent.com/airbnb/swift/master/README.md",
+			"target": "topics/apple/guidelines/airbnb-swift-style-guide.md",
+			"handler": "docs-url-file-fetch",
+			"hash": "ab324611821f478ede2786365a059fa591c3ed182671217fff35a6fee91904d3"
+		},
+		{
+			"source": "https://www.swift.org/documentation/api-design-guidelines/",
+			"target": "topics/apple/guidelines/swift-api-design-guidelines.md",
+			"handler": "docs-url-file-fetch",
+			"transform": "html-md",
+			"hash": "fef78338e6d3d11a49634e8a1ea052b7b3170f87c3da4b50c2b94bb5aa513c74"
+		},
+		{
 			"source": "https://github.com/raintree-technology/hig-doctor",
 			"target": "topics/apple/hig-doctor",
 			"handler": "docs-git-fetch",

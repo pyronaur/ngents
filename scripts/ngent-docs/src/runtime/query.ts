@@ -5,6 +5,7 @@ import pc from "picocolors";
 import { runtimeError } from "../core/errors.ts";
 import { docsCommandUsage } from "../core/usage.ts";
 import commandTemplate, { type QueryTemplateResultsContext } from "./command-template.ts";
+import { writeProcessStream } from "./fetch-handler-support.ts";
 import { CACHE_ROOT, CONFIG_ROOT, INDEX_NAME, listQmdCollections, runQmd } from "./qmd.ts";
 import templateOutput from "./template-output.ts";
 
@@ -442,8 +443,14 @@ async function runQuery(query: string, limitArg: string | undefined): Promise<vo
 		}
 		parsed = candidate;
 	} catch {
-		process.stdout.write(result.stdout);
-		process.stderr.write(result.stderr);
+		writeProcessStream(process.stdout, result.stdout, {
+			isBroken: () => false,
+			setBroken: () => undefined,
+		});
+		writeProcessStream(process.stderr, result.stderr, {
+			isBroken: () => false,
+			setBroken: () => undefined,
+		});
 		fail("Failed to parse qmd JSON output");
 	}
 

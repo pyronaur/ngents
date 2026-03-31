@@ -234,7 +234,7 @@ async function validateFetchEntryTarget(definition: RunFetchDefinition): Promise
 		return {
 			ok: false,
 			message:
-				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must be a subdirectory, got ${
+				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must be a docs path inside the root, got ${
 					manifestTarget || "<empty>"
 				}`,
 		};
@@ -454,11 +454,12 @@ export async function runDocsFetch(input: {
 	handler: string;
 	root?: string;
 	transform?: string;
+	force?: boolean;
 }): Promise<void> {
 	const resolvedTarget = await resolveFetchTarget(input.projectDir, input.targetArg);
 	if (resolvedTarget.targetRelativePath === ".") {
 		throw runtimeError(
-			`Fetch target must be a subdirectory inside a discovered docs root: ${input.targetArg}`,
+			`Fetch target must be a docs path inside a discovered docs root: ${input.targetArg}`,
 		);
 	}
 	const manifest = await readFetchManifest(resolvedTarget.docsRoot);
@@ -474,7 +475,7 @@ export async function runDocsFetch(input: {
 		...(input.transform
 			? { transform: normalizeStoredCommand(input.transform, input.projectDir) }
 			: {}),
-		hash: existingEntry?.hash ?? "",
+		hash: input.force ? "" : (existingEntry?.hash ?? ""),
 	};
 
 	const updatedEntry = await runFetchDefinition({

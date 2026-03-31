@@ -53,7 +53,7 @@ async function readHeadValidators(source: string): Promise<{
 }> {
 	const result = await runExternalCommand({
 		command: "curl",
-		args: ["-fsSIL", source],
+		args: ["-fsSIL", "--compressed", source],
 	});
 	if (result.exitCode !== 0) {
 		return {
@@ -89,7 +89,7 @@ async function readHeadValidators(source: string): Promise<{
 async function downloadHttpSource(source: string, destinationPath: string): Promise<void> {
 	const result = await runExternalCommand({
 		command: "curl",
-		args: ["-fsSL", source, "-o", destinationPath],
+		args: ["-fsSL", "--compressed", source, "-o", destinationPath],
 	});
 	if (result.exitCode !== 0) {
 		throw new Error(result.stderr.trim() || result.stdout.trim() || `Failed to fetch ${source}`);

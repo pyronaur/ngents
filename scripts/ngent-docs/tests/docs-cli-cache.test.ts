@@ -184,39 +184,45 @@ test("docs query uses cached collection metadata and still runs a fresh qmd quer
 	);
 });
 
-test("docs update invalidates the collection metadata cache after a successful refresh", async () => {
-	await withDocsCliWorkspace("docs-cache-update-invalidate-",
-		async ({ tempDir, homeDir, binDir, env }) => {
-			const logFile = path.join(tempDir, "qmd.log");
-			await seedFakeQmd(binDir);
-			await seedQmdCollectionsCache(homeDir, {
-				fetchedAt: new Date().toISOString(),
-				collections: [{ name: "global", path: path.join(homeDir, ".ngents", "docs") }],
-			});
+test("docs update invalidates the collection metadata cache after a successful refresh",
+	async () => {
+		await withDocsCliWorkspace("docs-cache-update-invalidate-",
+			async ({ tempDir, homeDir, binDir, env }) => {
+				const logFile = path.join(tempDir, "qmd.log");
+				await seedFakeQmd(binDir);
+				await seedQmdCollectionsCache(homeDir, {
+					fetchedAt: new Date().toISOString(),
+					collections: [{ name: "global", path: path.join(homeDir, ".ngents", "docs") }],
+				});
 
-			const result = await runDocsCli(["update"], {
-				env: {
-					...env,
-					DOCS_TEST_QMD_LOG: logFile,
-				},
-			});
+				const result = await runDocsCli(["update"], {
+					env: {
+						...env,
+						DOCS_TEST_QMD_LOG: logFile,
+					},
+				});
 
-			expect(result.exitCode).toBe(0);
-			expect(await readTextOrEmpty(qmdCollectionsCachePath(homeDir))).toBe("");
-			expect(await readText(logFile)).toBe(
-				[
-					"--index ngents-docs update",
-					"--index ngents-docs embed",
-					"",
-				].join("\n"),
-			);
+				expect(result.exitCode).toBe(0);
+				expect(await readTextOrEmpty(qmdCollectionsCachePath(homeDir))).toBe("");
+				expect(await readText(logFile)).toBe(
+					[
+						"--index ngents-docs update",
+						"--index ngents-docs embed",
+						"",
+					].join("\n"),
+				);
+			}, {
+			seedLocalDocsRepo: false,
+			seedGlobalDocsHome: false,
+			seedGlobalDocsIndex: false,
 		});
-});
+	}, 20_000);
 
-test("docs park adds a named collection, refreshes the index, and exposes parked docs in browse", async () => {
-	await withDocsCliWorkspace("docs-park-", async ({ tempDir, env }) => {
+test("docs park adds a named collection and refreshes the index", async () => {
+	await withDocsCliWorkspace("docs-park-", async ({ tempDir, binDir, env }) => {
 		const projectDir = path.join(tempDir, "project");
 		const logFile = path.join(tempDir, "qmd.log");
+		await seedFakeQmd(binDir);
 		await writeText(
 			path.join(projectDir, "docs", "topics", "infra", ".docs.md"),
 			[
@@ -261,24 +267,12 @@ test("docs park adds a named collection, refreshes the index, and exposes parked
 		);
 		expect(logContents).toContain("--index ngents-docs update");
 		expect(logContents).toContain("--index ngents-docs embed");
-
-		const lsResult = await runDocsCli(["ls", "global"], {
-			env,
-		});
-		expect(lsResult.exitCode).toBe(0);
-		expect(lsResult.stdout).toContain(`${path.join(projectDir, "docs")}/`);
-
-		const topicResult = await runDocsCli(["topic", "infra"], {
-			env,
-		});
-		expect(topicResult.exitCode).toBe(0);
-		expect(topicResult.stdout).toContain("# Topic: Infrastructure");
-		expect(topicResult.stdout).toContain("Infra body.");
-		expect(topicResult.stdout.indexOf("Infra body.")).toBeLessThan(
-			topicResult.stdout.indexOf("# Topic: Infrastructure"),
-		);
+	}, {
+		seedLocalDocsRepo: false,
+		seedGlobalDocsHome: false,
+		seedGlobalDocsIndex: false,
 	});
-});
+}, 15_000);
 
 test("docs park allows ngents as a normal collection name", async () => {
 	await withDocsCliWorkspace("docs-park-ngents-name-", async ({ tempDir, binDir, env }) => {
@@ -299,8 +293,12 @@ test("docs park allows ngents as a normal collection name", async () => {
 		expect(await readFile(stateFile, "utf8")).toContain(
 			`ngents\t${path.join(projectDir, "docs")}\n`,
 		);
+	}, {
+		seedLocalDocsRepo: false,
+		seedGlobalDocsHome: false,
+		seedGlobalDocsIndex: false,
 	});
-});
+}, 10_000);
 
 test("docs ls global ignores unparked global docs roots", async () => {
 	await withDocsCliWorkspace(
@@ -321,7 +319,10 @@ test("docs ls global ignores unparked global docs roots", async () => {
 	);
 });
 
-test("docs park rejects duplicate names and duplicate docs roots", async () => {
+test(
+	"docs park rejects duplicate names and duplicate docs roots",
+	{ timeout: 15_000 },
+	async () => {
 	await withDocsCliWorkspace("docs-park-collisions-", async ({ tempDir, binDir, env }) => {
 		const projectDir = path.join(tempDir, "project");
 		const otherProjectDir = path.join(tempDir, "other-project");

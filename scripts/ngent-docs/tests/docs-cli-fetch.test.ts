@@ -1,9 +1,11 @@
 import { readFile, realpath } from "node:fs/promises";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { gzipSync } from "node:zlib";
 import { expect, test } from "vitest";
 
-import { runDocsCli } from "./helpers/cli.ts";
+import { runCommand, runDocsCli } from "./helpers/cli.ts";
 import {
 	createGitFetchSource,
 	readText,
@@ -183,6 +185,36 @@ async function runDocsUpdateWithUnsafeTarget(
 	);
 }
 
+async function withHttpServer<T>(
+	handler: (request: IncomingMessage, response: ServerResponse<IncomingMessage>) => void,
+	run: (baseUrl: string) => Promise<T>,
+): Promise<T> {
+	const server = createServer(handler);
+	await new Promise<void>((resolve, reject) => {
+		server.once("error", reject);
+		server.listen(0, "127.0.0.1", () => resolve());
+	});
+
+	const address = server.address();
+	if (!address || typeof address === "string") {
+		throw new Error("Failed to bind HTTP test server");
+	}
+
+	try {
+		return await run(`http://127.0.0.1:${address.port}`);
+	} finally {
+		await new Promise<void>((resolve, reject) => {
+			server.close(error => {
+				if (error) {
+					reject(error);
+					return;
+				}
+				resolve();
+			});
+		});
+	}
+}
+
 test("docs query status preserves the status output shape", async () => {
 	await withDocsCliWorkspace(
 		"docs-query-status-",
@@ -254,6 +286,39 @@ test("docs fetch creates a local manifest entry and saves the returned hash", as
 	});
 });
 
+test("docs fetch writes a single staged file directly to a markdown file target", async () => {
+	await withDocsCliWorkspace("docs-fetch-file-target-", async ({ tempDir, repoDir, env }) => {
+		const sourcePath = path.join(tempDir, "source.md");
+		const targetPath = fetchTargetPath(repoDir, "single-doc.md");
+		await writeText(sourcePath, "# Single Doc\n");
+
+		const result = await runDocsCli(
+			[
+				"fetch",
+				pathToFileURL(sourcePath).href,
+				targetPath,
+				"--handler",
+				"url",
+			],
+			{
+				cwd: repoDir,
+				env,
+			},
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(await readText(targetPath)).toBe("# Single Doc\n");
+
+		const manifestEntries = readFetchManifestEntries(await readText(fetchManifestPath(repoDir)));
+		expect(manifestEntries).toContainEqual({
+			source: pathToFileURL(sourcePath).href,
+			target: path.posix.join("topics", TEST_TOPIC_NAME, "single-doc.md"),
+			handler: "docs-url-file-fetch",
+			hash: expect.any(String),
+		});
+	});
+});
+
 test("docs fetch passes the previous hash back to the handler on later runs", async () => {
 	await withDocsCliWorkspace("docs-fetch-previous-hash-",
 		async ({ tempDir, repoDir, binDir, env }) => {
@@ -292,6 +357,47 @@ test("docs fetch passes the previous hash back to the handler on later runs", as
 				"\"hash\": \"hash-2\"",
 			);
 		});
+});
+
+test("docs fetch --force clears the previous hash passed to the handler", async () => {
+	await withDocsCliWorkspace("docs-fetch-force-", async ({ tempDir, repoDir, binDir, env }) => {
+		const logFile = path.join(tempDir, "fetch.log");
+		const handlerPath = await writeFetchHandler(binDir, "fake-fetch-handler");
+		const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+
+		const first = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath],
+			{
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_FETCH_HASH: "hash-1",
+					DOCS_TEST_FETCH_LOG: logFile,
+				}),
+			},
+		);
+		const second = await runDocsCli(
+			["fetch", "https://example.com/source", targetPath, "--handler", handlerPath, "--force"],
+			{
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_FETCH_HASH: "hash-2",
+					DOCS_TEST_FETCH_LOG: logFile,
+				}),
+			},
+		);
+
+		const logLines = (await readTextOrEmpty(logFile))
+			.split(/\r?\n/)
+			.filter(line => line.length > 0);
+		const previousLines = logLines.filter(line => line.startsWith("previous="));
+
+		expect(first.exitCode).toBe(0);
+		expect(second.exitCode).toBe(0);
+		expect(previousLines).toEqual(["previous=", "previous="]);
+		expect(await readText(fetchManifestPath(repoDir))).toContain(
+			"\"hash\": \"hash-2\"",
+		);
+	});
 });
 
 test("docs fetch requires --handler", async () => {
@@ -373,6 +479,61 @@ test("docs fetch accepts git and url handler shorthands", async () => {
 	});
 });
 
+test("docs fetch decompresses compressed HTTP responses before transforms run", async () => {
+	await withDocsCliWorkspace("docs-fetch-compressed-http-", async ({ repoDir, binDir, env }) => {
+		await withHttpServer((request, response) => {
+			if (request.method === "HEAD") {
+				response.writeHead(200, {
+					"content-encoding": "gzip",
+					"content-type": "text/html; charset=utf-8",
+					etag: "\"compressed-html\"",
+				});
+				response.end();
+				return;
+			}
+
+			response.writeHead(200, {
+				"content-encoding": "gzip",
+				"content-type": "text/html; charset=utf-8",
+			});
+			response.end(gzipSync("<main><h1>Compressed</h1></main>\n"));
+		}, async (baseUrl) => {
+			const transformPath = path.join(binDir, "capture-compressed-html");
+			await writeExecutable(
+				binDir,
+				"capture-compressed-html",
+				[
+					"#!/bin/sh",
+					"mkdir -p \"$DOCS_FETCH_OUTPUT\"",
+					"cat > \"$DOCS_FETCH_OUTPUT/captured.html\"",
+					"",
+				].join("\n"),
+			);
+
+			const result = await runDocsCli(
+				[
+					"fetch",
+					`${baseUrl}/source.html`,
+					fetchTargetPath(repoDir, "compressed-http"),
+					"--handler",
+					"url",
+					"--transform",
+					transformPath,
+				],
+				{
+					cwd: repoDir,
+					env,
+				},
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(
+				await readText(fetchTargetPath(repoDir, "compressed-http", "captured.html")),
+			).toBe("<main><h1>Compressed</h1></main>\n");
+		});
+	});
+});
+
 test("docs fetch rejects targets outside discovered docs roots", async () => {
 	await withDocsCliWorkspace("docs-fetch-outside-root-", async ({ tempDir, repoDir, env }) => {
 		const outsideDir = path.join(tempDir, "outside");
@@ -416,7 +577,7 @@ test("docs fetch rejects targeting the docs root itself", async () => {
 
 		expect(result.exitCode).toBe(1);
 		expect(result.stderr).toContain(
-			"Fetch target must be a subdirectory inside a discovered docs root",
+			"Fetch target must be a docs path inside a discovered docs root",
 		);
 	});
 });
@@ -630,7 +791,7 @@ test("docs update skips manifest entries targeting the docs root itself", async 
 		unsafeHash: "hash-root",
 		unsafeTarget: ".",
 		unsafeSource: "https://example.com/root",
-		skipReason: "target must be a subdirectory",
+		skipReason: "target must be a docs path inside the root",
 	});
 });
 
@@ -686,8 +847,12 @@ test("docs update runs qmd update then embed for the docs index", async () => {
 		const logContents = await readFile(logFile, "utf8");
 		expect(logContents).toContain("--index ngents-docs update");
 		expect(logContents).toContain("--index ngents-docs embed");
+	}, {
+		seedLocalDocsRepo: false,
+		seedGlobalDocsHome: false,
+		seedGlobalDocsIndex: false,
 	});
-});
+}, 15_000);
 
 test("docs update stops before embed when qmd update fails", async () => {
 	await withDocsCliWorkspace("docs-update-fail-update-", async ({ tempDir, binDir, env }) => {
@@ -707,8 +872,12 @@ test("docs update stops before embed when qmd update fails", async () => {
 		const logContents = await readFile(logFile, "utf8");
 		expect(logContents).toContain("--index ngents-docs update");
 		expect(logContents).not.toContain("--index ngents-docs embed");
+	}, {
+		seedLocalDocsRepo: false,
+		seedGlobalDocsHome: false,
+		seedGlobalDocsIndex: false,
 	});
-});
+}, 15_000);
 
 test("docs update fails when qmd embed fails after a successful update", async () => {
 	await withDocsCliWorkspace("docs-update-fail-embed-", async ({ tempDir, binDir, env }) => {
@@ -729,5 +898,33 @@ test("docs update fails when qmd embed fails after a successful update", async (
 		const logContents = await readFile(logFile, "utf8");
 		expect(logContents).toContain("--index ngents-docs update");
 		expect(logContents).toContain("--index ngents-docs embed");
+	}, {
+		seedLocalDocsRepo: false,
+		seedGlobalDocsHome: false,
+		seedGlobalDocsIndex: false,
 	});
-});
+}, 10_000);
+
+test("docs update tolerates a closed stdout pipe while streaming qmd output", async () => {
+	await withDocsCliWorkspace("docs-update-epipe-", async ({ repoDir, binDir, env }) => {
+		await seedFakeQmd(binDir);
+		const docsBin = fileURLToPath(new URL("../bin/docs.ts", import.meta.url));
+
+		const result = await runCommand(
+			"/bin/zsh",
+			["-lc", `set -o pipefail; node ${docsBin} update | head -n 1 >/dev/null`],
+			{
+				cwd: repoDir,
+				env,
+			},
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stderr).not.toContain("write EPIPE");
+		expect(result.stderr).not.toContain("Unhandled 'error' event");
+	}, {
+		seedLocalDocsRepo: false,
+		seedGlobalDocsHome: false,
+		seedGlobalDocsIndex: false,
+	});
+}, 10_000);

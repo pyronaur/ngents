@@ -139,7 +139,7 @@ test("docs --ops-help renders the operations manual", async () => {
 	expect(result.stdout).toContain("# docs operations");
 	expect(result.stdout).toContain("docs park <name> [path]");
 	expect(result.stdout).toContain(
-		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
+		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]",
 	);
 	expect(result.stdout).toContain("docs update");
 	expect(result.stdout).not.toContain(CANONICAL_QUERY_USAGE);
@@ -158,9 +158,10 @@ test("docs fetch --help uses the canonical fetch signature", async () => {
 
 	expect(result.exitCode).toBe(0);
 	expect(result.stdout).toContain(
-		"Usage: docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
+		"Usage: docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]",
 	);
 	expect(result.stdout).toContain("--handler <command>");
+	expect(result.stdout).toContain("--force");
 	expect(result.stdout).toContain("git");
 	expect(result.stdout).toContain("url");
 });
@@ -375,7 +376,7 @@ test("docs reference doc uses the canonical query signature", async () => {
 	expect(contents).not.toContain(STALE_QUERY_USAGE);
 	expect(contents).toContain("docs --ops-help");
 	expect(contents).toContain(
-		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>]",
+		"docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]",
 	);
 	expect(contents).toContain("docs park <name> [path]");
 	expect(contents).toContain("workspace paths that contain `docs/`");

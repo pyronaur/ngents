@@ -1,19 +1,36 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, cp, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { runtimeError } from "../core/errors.ts";
 
-type CommandResult = {
+export type CommandResult = {
 	exitCode: number;
 	stdout: string;
 	stderr: string;
 };
 
+let stdioBrokenPipeHandlingInstalled = false;
+let stdoutBrokenPipe = false;
+let stderrBrokenPipe = false;
+
 function fail(message: string): never {
 	throw runtimeError(message);
+}
+
+function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
+	return error instanceof Error && "code" in error;
+}
+
+function swallowBrokenPipe(error: Error): void {
+	if (isErrnoException(error) && error.code === "EPIPE") {
+		stdoutBrokenPipe = true;
+		stderrBrokenPipe = true;
+		return;
+	}
+	throw error;
 }
 
 function isExecutableAccessible(candidatePath: string): Promise<boolean> {
@@ -92,16 +109,24 @@ export async function replaceDirectory(targetPath: string, sourcePath: string): 
 	await cp(sourcePath, targetPath, { force: true, recursive: true });
 }
 
+export async function replaceFile(targetPath: string, contents: Buffer | string): Promise<void> {
+	await rm(targetPath, { recursive: true, force: true });
+	await mkdir(path.dirname(targetPath), { recursive: true });
+	await writeFile(targetPath, contents);
+}
+
 export async function runExternalCommand(input: {
 	command: string;
 	args?: string[];
 	cwd?: string;
 	env?: NodeJS.ProcessEnv;
+	stdin?: Buffer | string;
 	streamStderr?: boolean;
 	streamStdout?: boolean;
 	missingCommandMessage?: string;
 }): Promise<CommandResult> {
 	const args = input.args ?? [];
+	ensureProcessStdioHandlesBrokenPipe();
 	return new Promise((resolve, reject) => {
 		const child = spawn(input.command, args, {
 			cwd: input.cwd,
@@ -118,14 +143,24 @@ export async function runExternalCommand(input: {
 			const text = chunk.toString();
 			stdout += text;
 			if (input.streamStdout) {
-				process.stdout.write(text);
+				writeProcessStream(process.stdout, text, {
+					isBroken: () => stdoutBrokenPipe,
+					setBroken: () => {
+						stdoutBrokenPipe = true;
+					},
+				});
 			}
 		});
 		child.stderr.on("data", (chunk: Buffer | string) => {
 			const text = chunk.toString();
 			stderr += text;
 			if (input.streamStderr) {
-				process.stderr.write(text);
+				writeProcessStream(process.stderr, text, {
+					isBroken: () => stderrBrokenPipe,
+					setBroken: () => {
+						stderrBrokenPipe = true;
+					},
+				});
 			}
 		});
 		child.on("error", (error: NodeJS.ErrnoException) => {
@@ -140,6 +175,13 @@ export async function runExternalCommand(input: {
 
 			reject(error);
 		});
+		child.stdin.on("error", (error: NodeJS.ErrnoException) => {
+			if (error.code === "EPIPE" || error.code === "ERR_STREAM_DESTROYED") {
+				return;
+			}
+			reject(error);
+		});
+		child.stdin.end(input.stdin);
 		child.on("close", (exitCode) => {
 			resolve({
 				exitCode: exitCode ?? 1,
@@ -156,8 +198,9 @@ export async function runTransform(input: {
 	inputPath: string;
 	outputPath: string;
 	targetPath: string;
+	stdin?: Buffer;
 	root?: string;
-}): Promise<void> {
+}): Promise<CommandResult> {
 	const transformCommand = expandHomePath(input.command);
 	const result = await runExternalCommand({
 		command: transformCommand,
@@ -168,10 +211,52 @@ export async function runTransform(input: {
 			DOCS_FETCH_TARGET: input.targetPath,
 			...(input.root ? { DOCS_FETCH_ROOT: input.root } : {}),
 		},
+		stdin: input.stdin,
 	});
 	if (result.exitCode !== 0) {
 		fail(
 			result.stderr.trim() || result.stdout.trim() || `Fetch transform failed: ${input.command}`,
 		);
 	}
+	return result;
+}
+
+export function ensureProcessStdioHandlesBrokenPipe(): void {
+	if (stdioBrokenPipeHandlingInstalled) {
+		return;
+	}
+	stdioBrokenPipeHandlingInstalled = true;
+	process.stdout.on("error", swallowBrokenPipe);
+	process.stderr.on("error", swallowBrokenPipe);
+	process.stdout.on("close", () => {
+		stdoutBrokenPipe = true;
+	});
+	process.stderr.on("close", () => {
+		stderrBrokenPipe = true;
+	});
+}
+
+export function writeProcessStream(
+	stream: NodeJS.WriteStream,
+	text: string,
+	options: {
+		isBroken: () => boolean;
+		setBroken: () => void;
+	},
+): void {
+	ensureProcessStdioHandlesBrokenPipe();
+	if (options.isBroken() || stream.destroyed || text.length === 0) {
+		return;
+	}
+
+	stream.write(text, (error?: Error | null) => {
+		if (!error) {
+			return;
+		}
+		if (isErrnoException(error) && error.code === "EPIPE") {
+			options.setBroken();
+			return;
+		}
+		throw error;
+	});
 }

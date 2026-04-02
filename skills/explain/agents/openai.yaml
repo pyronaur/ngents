@@ -1,4 +1,0 @@
-interface:
-  display_name: "Explain"
-  short_description: "Explain concepts, systems, and code clearly"
-  default_prompt: "Use $explain to explain this concept or codebase clearly."

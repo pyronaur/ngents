@@ -1,6 +1,6 @@
 ---
 name: ts-lint-setup
-description: Set up or upgrade strict TypeScript/JavaScript linting with Oxlint (type-aware), dprint (formatter), jscpd (0% duplication), and knip, plus a strict AGENTS.md lint policy. Use when a repo needs lint tooling installed, lint scripts wired, AGENTS.md hardened, or lint configuration standardized without silencing rules.
+description: Set up or upgrade strict TypeScript/JavaScript linting with Oxlint (type-aware), dprint (formatter), jscpd (0% duplication), and knip, routed through `gate`. Use when a repo needs lint tooling installed, Gatefile validation wired, or lint configuration standardized without silencing rules.
 ---
 
 # TS Lint Setup
@@ -26,11 +26,11 @@ Usually not meaningful by themselves:
 - repo root vs subdirectory config placement
 - different but equivalent path globs
 - project-specific directory names
-- AGENTS wording differences that preserve the same lint policy
 
-Follow this workflow to install lint tooling, harden AGENTS.md, copy the shared
-baseline templates, adapt them to the repo, and validate with a dry,
-non-destructive lint run.
+Follow this workflow to install lint tooling, update AGENTS.md through
+`$gatefile`, copy the shared
+baseline templates, adapt them to the repo, wire lint through Gatefile, and
+validate through `gate`.
 
 Do not weaken lint rules. Do not add exclusions to hide lint violations. Do not
 raise duplication thresholds.
@@ -42,8 +42,7 @@ compiled output must stay excluded.
 ## 1) Install Or Upgrade Lint Dependencies
 
 Install these dev dependencies using the repo's existing package manager. This
-skill does not dictate package-manager choice. It only requires `bun` for
-executing `.lint/run.ts`.
+skill does not dictate package-manager choice.
 
 Install:
 - `dprint@latest`
@@ -60,30 +59,14 @@ bun add -d dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhu
 npm install -D dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest jscpd@latest knip@latest
 ```
 
-## 2) Harden AGENTS.md (strict policy)
+## 2) Update AGENTS.md Through Gatefile
 
-Ensure the repo has a root `AGENTS.md`. If it is missing, copy the template. If
-it exists, merge in the strict lint policy without weakening it.
+If the repo needs an `AGENTS.md` update, use `$gatefile`
+`references/guide-agents-file.md`.
 
-Template location:
-- `assets/templates/AGENTS.md`
-
-Required outcomes:
-- Enforce zero lint complaints (no warnings, no errors, no duplication, no
-  unused code).
-- Forbid silencing, disabling, or weakening lint rules.
-- Forbid raising duplication thresholds.
-- Require user approval before ignoring any lint.
-- Require `make lint` as the only lint command agents run directly.
-- Require `make lint-dry` for check-only runs.
-- Require frequent lint checks during active TypeScript/JavaScript development
-  (for example after each meaningful implementation chunk) so style and
-  structure issues are caught early.
-- In multi-language repos, apply this frequent-run requirement to
-  TypeScript/JavaScript work only.
-- Run lint only after execution-affecting TypeScript/JavaScript source code
-  changes inside the repo's configured lint scope (exception: step 6 validation
-  run in this skill).
+Do not add TypeScript/JavaScript lint policy prose here.
+Keep AGENTS focused on `gate`.
+Let Gatefile own the workflow wording and runtime branches.
 
 ## 3) Copy Config Templates
 
@@ -93,7 +76,6 @@ Copy the templates into the repo root:
 - `assets/templates/.jscpd.json` -> `.jscpd.json`
 - `assets/templates/.jscpd.tests.json` -> `.jscpd.tests.json` when the repo has tests
 - `assets/templates/knip.json` -> `knip.json`
-- `assets/templates/.lint/run.ts` -> `.lint/run.ts`
 
 See `references/templates.md` for allowed tweaks.
 
@@ -156,15 +138,8 @@ Mandatory config expectations:
 - `threshold: 0`
 - `minTokens: 60`
 - `minLines: 7`
-- A hidden `.lint/run.ts` orchestrator is required and should:
-- be written in TypeScript and use Bun Shell (`Bun.$` / `$`)
-- run the full lint pipeline and fail only at the end
-- keep `fix` steps sequential before read-only validation
-- allow read-only `lint-dry` steps to run in parallel
-- print only a concise pass line for successful steps
-- print full captured stdout/stderr for failed steps
-- If a repo uses explicit lint scope globs, include `.lint/**/*.ts` (or the
-  repo-equivalent path) so the orchestrator is linted too.
+- Gatefile should own lint routing and decide when lint runs from the diff.
+- Consult `$gatefile` before changing `.gatefile.json5`.
 
 When comparing a repo to this skill, call out only actual config differences:
 - changed rule values
@@ -176,7 +151,6 @@ When comparing a repo to this skill, call out only actual config differences:
 Do not call out:
 - equivalent path/glob differences
 - root vs subdirectory config placement
-- project-specific AGENTS wording that preserves the same lint meaning
 
 ### Why These Guardrails Exist
 
@@ -195,73 +169,61 @@ Do not call out:
 - Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.
 - `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
 
-## 4) Wire Scripts, Runner, And Makefile
+## 4) Wire Lint Through Gatefile
 
-Use a hidden Bun-based lint orchestrator at `.lint/run.ts` instead of
-short-circuiting `&&` chains in `package.json`.
+Use Gatefile as the public validation surface. Agents should run `gate`.
 
-Keep `make lint` and `make lint-dry` as the only public entrypoints. When a
-Makefile exists, do not add top-level `package.json` `lint` / `lint-dry`
-shortcuts.
+Required outcomes:
+- Add or update lint-related gate entries in `.gatefile.json5`.
+- Keep lint scope ownership in lint config files, not in AGENTS prose.
+- Prefer running the concrete lint commands directly in Gatefile.
+- Only use an existing repo entrypoint when it is already the real
+  source-of-truth command for that proof, not a wrapper added just for Gatefile.
+- Do not add custom orchestrators such as `.lint/run.ts`.
+- Do not add `make`-based lint wrappers.
 
-Recommended leaf scripts:
+Gatefile guidance:
+- Select lint gates from real TypeScript/JavaScript source paths and lint
+  config files whose content can change lint results.
+- Build each gate selector for that gate's exact proof surface. Do not reuse one
+  broad match list across multiple gates.
+- A gate match should include only files whose changed content can change that
+  exact command's result on the next `gate` run.
+- Do not include package manifests or lockfiles in a gate match unless that gate
+  command reads them directly on every run or the gate itself performs the
+  install step that materializes their effect.
+- Do not treat invocation wrappers as selector inputs. Follow `$gatefile`
+  guidance for selector design.
+- Use simple gate keys that identify the proof without redundant package
+  prefixes.
+- Use human-readable gate names that describe what the gate actually does.
+- A gate name should tell a reader the action and subject clearly enough that
+  they do not need to inspect `run` to understand the proof.
+- Keep output terse and evidence-based.
+- If the repo needs a lint-only proof path during setup, expose it as a normal
+  gate key so it can be exercised with `gate run <key>`.
 
-```json
-{
-  "scripts": {
-    "lint:dprint": "dprint check",
-    "lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.json .",
-    "lint:dprint:fix": "dprint fmt",
-    "lint:oxlint:fix": "oxlint --type-aware --tsconfig tsconfig.json --fix .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "jscpd:src": "jscpd --config .jscpd.json",
-    "jscpd:tests": "jscpd --config .jscpd.tests.json",
-    "knip": "knip --no-progress"
-  }
-}
-```
+## 5) Validate Through Gatefile
 
-If the repo has no tests, omit `jscpd:tests`. The bundled `.lint/run.ts`
-template skips that step automatically when the script is absent.
-
-The runner template:
-- is written in TypeScript
-- uses Bun Shell with top-level `await`
-- uses `bun run` for the leaf scripts
-- keeps successful step output quiet except for a concise pass line
-- prints full captured output for failed steps
-- continues running the remaining steps even after a failure
-
-Recommended Makefile wiring:
-
-```make
-.PHONY: lint lint-dry
-
-lint:
-	bun ./.lint/run.ts fix
-
-lint-dry:
-	bun ./.lint/run.ts check
-```
-
-Do not run `npm run lint` / `bun run lint` directly. Use `make lint`.
-Remember that `make lint` runs auto-fix by default. Use `make lint-dry` for
-check-only runs (especially during setup).
-
-## 5) Validate With A Dry, Non-Destructive Lint Run
-
-After setup, run a single non-fixing lint pass to confirm wiring and that the
-linters complain as expected:
+After setup, validate through the repo's Gatefile:
 
 ```bash
-make lint-dry
+gate
 ```
 
-This skill explicitly allows the validation run even though the changes may be
-configuration-only.
+If the repo exposes a dedicated lint gate, you may also use:
+
+```bash
+gate run <lint-key>
+```
+
+This skill explicitly allows a targeted gate run during setup when you need to
+prove the lint wiring directly.
 
 Validation rules:
-- Do not run auto-fixers in this step.
+- Validate the repo's intended gate behavior. If a gate is designed to fix,
+  format, or otherwise mutate, validate that behavior instead of forcing a
+  check-only substitute.
 - Expect failures in existing repos. Report the most important failures.
 - Do not silence or weaken rules to make the run pass.
 
@@ -272,8 +234,6 @@ entry points. Always update these values per repo:
 - `knip.json` `entry`
 - `jscpd` source/test `path` or equivalent scope fields
 - Any ignore patterns for known generated artifacts
-- Whether explicit formatter/linter/knip/jscpd globs also need `.lint/**/*.ts`
-  so the hidden runner is included in coverage
 - Lint include/ignore patterns to match the repo's source and test layout while
   excluding tmp/weak sources/compiled output
 - Every ignore pattern must be justified by an actual project match; remove

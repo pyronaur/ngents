@@ -1,10 +1,8 @@
 # Main
 ## Agent Protocol
 - Context: Prioritize `docs` for fast access to repo/shared combined docs, notes, skills.
-- MCP: If a skill or command references an MCP you do not have wired up, use `mcporter` first; it is the universal on-demand MCP path and avoids persistent config/context pollution.
 - Bugs: prove bug first by creating a correct path test, if it fails, fix the bug, then validate it passes.
 - Web: search early; quote exact errors; prefer 2025–2026 sources; use `kpw` for JS-based pages; 
-- Docs: update docs only where the requested behavior changed, and write only present-state facts; never add migration/removal/history wording (removed, no longer, previously, now, will).
 - Guardrails: use `trash` for deletes.
 - Process: streamlined step by step processes we follow in docs/process
 - Output: Fact check yourself before you speak.
@@ -13,20 +11,17 @@
 - Be Flexible: Rigid ideas break. When writing, reading instructions, consider the nuance on a case by case basis. Ask if unclear. Don't speak in absolutes. Don't interpret in absolutes.
 - Do not broaden the task: If you notice cascading necessary changes, make sure you get explicit permission. Label broadening requests with `BROADEN:`.
 
-## Documentation Protocol
- - `docs` is the canonical source for documentation discovery.
- - Run `docs -i` before text search for current instructions, maps, and entrypoints.
- - Use `docs` to build context before reading source or searching with `rg`.
- - If documentation is missing or unclear, follow the docs process to identify and plug the gap.
-
 ## Local Setup
 - Read `docs ls local/setup` when the task may need info about this machine (hosts, paths, shell, tools, services, etc)
 
-## Docs
+## Documentation Protocol
 - Read & Maintain Docs
+- Command: `docs` - maintained docs useful in every project.
 - Order: `docs` -> source -> execute.
+- Use `docs` to build context before reading source or searching with `rg`.
 - Follow links until domain makes sense; honor `Read when` hints.
 - Keep notes short; update docs when behavior/API changes (no ship w/o docs).
+- If documentation is missing or unclear, follow the docs process to identify and plug the gap.
 - Add `read_when` hints on cross-cutting docs.
 - Add `short` summary for compact `docs` output
 - `docs ls [where]`
@@ -45,31 +40,23 @@
 - Use Codex background for long jobs; tmux only for interactive/persistent (debugger/server).
 
 ## Build / Test
-- Before handoff: run full gate (lint/typecheck/tests/docs).
+- Before handoff: run full `gate`.
 - Tests target the interaction surface. Do not add tests for internal functions, private methods, or implementation details.
-- Keep it observable.
 - Release: use repo-local checklist if present; if missing, write a minimal checklist before shipping.
 
 ## Git
-- Safe by default: `git status/diff/log`. Push only when user asks.
-- `git checkout` ok for PR review / explicit request.
+- Safe by default: `git status/diff/log`.
 - Branch changes require user consent.
-- Destructive ops forbidden unless explicit (`reset --hard`, `clean`, `restore`, `rm`, …).
-- Remotes under `~/Projects`: prefer HTTPS; flip SSH->HTTPS before pull/push.
+- Forbidden: Destructive ops (`reset --hard`, `clean`, `restore`, `rm`, …).
 - Don’t delete/rename unexpected stuff; stop + ask.
 - Avoid manual `git stash`; if Git auto-stashes during pull/rebase, that’s fine (hint, not hard guardrail).
-- If user types a command ("pull and push"), that’s consent for that command.
 - No amend unless asked.
 - Multi-agent: check `git status/diff` before edits; ship small commits.
-
-## Language/Stack Notes
-- Swift: use workspace helper/daemon; validate `swift build` + tests; keep concurrency attrs right.
-- TypeScript: use repo PM; keep files small; follow existing patterns.
 
 ## Architecture
 - Less is more
 - Single-owner minimal mode is the default
-- Fix lints early, they may change your design
+- Run `gate` often, it may change your design
 
 ## Code Style
 - Prefer guard clauses + early returns; avoid `else`.
@@ -102,4 +89,4 @@
 
 ## Editing Constraints Override
 - Prefer normal shell commands for pure filesystem operations such as `mv`, `cp`.
-- Choose the simplest safe tool that matches the kind of change: content edits use `apply_patch`; file moves, copies, and directory creation use normal filesystem commands.
+- Choose the simplest safe tool that matches the kind of change. File moves, copies, and directory creation use normal filesystem commands.

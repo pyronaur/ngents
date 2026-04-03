@@ -6,7 +6,7 @@ read_when:
   - Need the official Swift API Design Guidelines as Markdown in the Apple topic.
 ---
 
-# Swift API Design Guidelines
+# API Design Guidelines
 
 To facilitate use as a quick reference, the details of many guidelines can be expanded individually. Details are never hidden when this page is printed.
 

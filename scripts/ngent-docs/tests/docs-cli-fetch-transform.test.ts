@@ -118,6 +118,88 @@ test("docs fetch materializes transform stdout as a file target", async () => {
 		});
 });
 
+test("docs fetch merges local browse frontmatter for stdout file transforms", async () => {
+	await withDocsCliWorkspace("docs-fetch-transform-frontmatter-merge-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const sourcePath = path.join(tempDir, "source.md");
+			const targetPath = fetchTargetPath(repoDir, "stdout-frontmatter.md");
+			await writeText(sourcePath, "# Source body\n");
+			await writeText(
+				targetPath,
+				[
+					"---",
+					"title: 'Local title'",
+					"short: 'Local short'",
+					"summary: 'Local summary'",
+					"read_when:",
+					"  - 'Local hint'",
+					"local_only: 'discard me'",
+					"---",
+					"",
+					"# Old Body",
+					"",
+				].join("\n"),
+			);
+			const transformPath = path.join(binDir, "stdout-frontmatter-transform");
+			await writeExecutable(
+				binDir,
+				"stdout-frontmatter-transform",
+				[
+					"#!/bin/sh",
+					"cat <<'EOF'",
+					"---",
+					"title: ''",
+					"short: 'Incoming short'",
+					"summary: ''",
+					"read_when: []",
+					"extra: 'keep me'",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+					"Updated content.",
+					"EOF",
+					"",
+				].join("\n"),
+			);
+
+			const result = await runDocsCli(
+				[
+					"fetch",
+					pathToFileURL(sourcePath).href,
+					targetPath,
+					"--handler",
+					"url",
+					"--transform",
+					transformPath,
+				],
+				{
+					cwd: repoDir,
+					env,
+				},
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(await readText(targetPath)).toBe(
+				[
+					"---",
+					"title: Local title",
+					"short: Incoming short",
+					"summary: Local summary",
+					"read_when:",
+					"  - Local hint",
+					"extra: keep me",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+					"Updated content.",
+					"",
+				].join("\n"),
+			);
+		});
+});
+
 test("docs fetch materializes a single staged input file as a file target", async () => {
 	await withDocsCliWorkspace("docs-fetch-file-target-", async ({ tempDir, repoDir, env }) => {
 		const sourcePath = path.join(tempDir, "source.md");

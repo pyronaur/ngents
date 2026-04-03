@@ -2,6 +2,7 @@ import { access, copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:
 import path from "node:path";
 
 import { toDocsError } from "../core/errors.ts";
+import { mergeFetchedMarkdownFrontMatter } from "./fetch-frontmatter.ts";
 import {
 	makeTempDir,
 	replaceDirectory,
@@ -39,6 +40,21 @@ async function writeTargetFile(targetPath: string, contents: string): Promise<vo
 	await writeFile(targetPath, contents);
 }
 
+async function mergeMarkdownFileTarget(input: {
+	targetPath: string;
+	incomingContent: string;
+}): Promise<string> {
+	let localContent: string | null = null;
+	if (await pathExists(input.targetPath)) {
+		localContent = await readFile(input.targetPath, "utf8");
+	}
+
+	return mergeFetchedMarkdownFrontMatter({
+		localContent,
+		incomingContent: input.incomingContent,
+	});
+}
+
 async function materializeFileTarget(input: {
 	inputDirectory: string;
 	targetPath: string;
@@ -49,7 +65,17 @@ async function materializeFileTarget(input: {
 			`Fetch file target mode requires exactly one staged file: ${input.targetPath}`,
 		);
 	}
-	await copyTargetFile(input.targetPath, inputFiles[0] ?? "");
+	const sourcePath = inputFiles[0] ?? "";
+	if (!isMarkdownFileTarget(input.targetPath)) {
+		await copyTargetFile(input.targetPath, sourcePath);
+		return;
+	}
+
+	const incomingContent = await readFile(sourcePath, "utf8");
+	await writeTargetFile(input.targetPath, await mergeMarkdownFileTarget({
+		targetPath: input.targetPath,
+		incomingContent,
+	}));
 }
 
 async function runFetchTransform(input: {
@@ -129,7 +155,11 @@ async function materializeTransformOutput(input: {
 	wroteStdout: boolean;
 }): Promise<void> {
 	if (input.fileTarget) {
-		await writeTargetFile(input.targetPath, input.stdout);
+		const contents = await mergeMarkdownFileTarget({
+			targetPath: input.targetPath,
+			incomingContent: input.stdout,
+		});
+		await writeTargetFile(input.targetPath, contents);
 		return;
 	}
 	if (input.wroteStdout) {

@@ -217,8 +217,13 @@ Result output includes:
 - `--handler` is required.
 - Use `git` for the built-in git fetch handler.
 - Use `url` for the built-in URL/file fetch handler.
+- `--transform` runs an external CLI after the fetch handler stages source files and before the final docs files are written.
+- Transforms may be repo-local scripts or separately installed CLIs.
+- Markdown file targets merge `title`, `short`, `summary`, and `read_when` from the existing local file and the fetched result.
+- Incoming non-empty values win for those keys. Missing or empty incoming values fall back to the existing local values.
 - `--force` bypasses the stored fetch hash for that one run.
 - Successful fetches update the local fetch manifest for future `docs update` runs.
+- Placement and curation guidance for fetched docs belongs in the owning docs root.
 
 ### `update`
 

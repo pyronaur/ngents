@@ -319,6 +319,205 @@ test("docs fetch writes a single staged file directly to a markdown file target"
 	});
 });
 
+test("docs fetch preserves local browse frontmatter when fetched markdown has none", async () => {
+	await withDocsCliWorkspace("docs-fetch-frontmatter-preserve-",
+		async ({ tempDir, repoDir, env }) => {
+			const sourcePath = path.join(tempDir, "source.md");
+			const targetPath = fetchTargetPath(repoDir, "preserve-frontmatter.md");
+			await writeText(sourcePath, "# Fresh Body\n\nUpdated content.\n");
+			await writeText(
+				targetPath,
+				[
+					"---",
+					"title: 'Local title'",
+					"short: 'Local short'",
+					"summary: 'Local summary'",
+					"read_when:",
+					"  - 'Local hint'",
+					"---",
+					"",
+					"# Old Body",
+					"",
+					"Stale content.",
+					"",
+				].join("\n"),
+			);
+
+			const result = await runDocsCli(
+				[
+					"fetch",
+					pathToFileURL(sourcePath).href,
+					targetPath,
+					"--handler",
+					"url",
+				],
+				{
+					cwd: repoDir,
+					env,
+				},
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(await readText(targetPath)).toBe(
+				[
+					"---",
+					"title: Local title",
+					"short: Local short",
+					"summary: Local summary",
+					"read_when:",
+					"  - Local hint",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+					"Updated content.",
+					"",
+				].join("\n"),
+			);
+		});
+});
+
+test("docs fetch merges browse keys and keeps incoming non-merged frontmatter", async () => {
+	await withDocsCliWorkspace("docs-fetch-frontmatter-merge-",
+		async ({ tempDir, repoDir, env }) => {
+			const sourcePath = path.join(tempDir, "source.md");
+			const targetPath = fetchTargetPath(repoDir, "merge-frontmatter.md");
+			await writeText(
+				targetPath,
+				[
+					"---",
+					"title: 'Local title'",
+					"short: 'Local short'",
+					"summary: 'Local summary'",
+					"read_when:",
+					"  - 'Local hint'",
+					"local_only: 'discard me'",
+					"---",
+					"",
+					"# Old Body",
+					"",
+				].join("\n"),
+			);
+			await writeText(
+				sourcePath,
+				[
+					"---",
+					"title: ''",
+					"short: 'Incoming short'",
+					"summary: ''",
+					"read_when: []",
+					"extra: 'keep me'",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+					"Updated content.",
+					"",
+				].join("\n"),
+			);
+
+			const result = await runDocsCli(
+				[
+					"fetch",
+					pathToFileURL(sourcePath).href,
+					targetPath,
+					"--handler",
+					"url",
+				],
+				{
+					cwd: repoDir,
+					env,
+				},
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(await readText(targetPath)).toBe(
+				[
+					"---",
+					"title: Local title",
+					"short: Incoming short",
+					"summary: Local summary",
+					"read_when:",
+					"  - Local hint",
+					"extra: keep me",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+					"Updated content.",
+					"",
+				].join("\n"),
+			);
+		});
+});
+
+test("docs fetch quotes only YAML-ambiguous frontmatter scalars", async () => {
+	await withDocsCliWorkspace("docs-fetch-frontmatter-quote-minimal-",
+		async ({ tempDir, repoDir, env }) => {
+			const sourcePath = path.join(tempDir, "source.md");
+			const targetPath = fetchTargetPath(repoDir, "quote-minimal-frontmatter.md");
+			await writeText(
+				targetPath,
+				[
+					"---",
+					"title: Local title",
+					"summary: keep plain",
+					"---",
+					"",
+					"# Old Body",
+					"",
+				].join("\n"),
+			);
+			await writeText(
+				sourcePath,
+				[
+					"---",
+					"title: 'Needs: quotes'",
+					"short: '@quoted-start'",
+					"summary: keep plain",
+					"read_when:",
+					"  - 'Section: detail'",
+					"extra: '#hash-start'",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+				].join("\n"),
+			);
+
+			const result = await runDocsCli(
+				[
+					"fetch",
+					pathToFileURL(sourcePath).href,
+					targetPath,
+					"--handler",
+					"url",
+				],
+				{
+					cwd: repoDir,
+					env,
+				},
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(await readText(targetPath)).toBe(
+				[
+					"---",
+					"title: 'Needs: quotes'",
+					"short: '@quoted-start'",
+					"summary: keep plain",
+					"read_when:",
+					"  - 'Section: detail'",
+					"extra: '#hash-start'",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+				].join("\n"),
+			);
+		});
+});
+
 test("docs fetch passes the previous hash back to the handler on later runs", async () => {
 	await withDocsCliWorkspace("docs-fetch-previous-hash-",
 		async ({ tempDir, repoDir, binDir, env }) => {
@@ -666,6 +865,62 @@ test("docs update reruns registered fetch entries before qmd refresh", async () 
 			expect(logLines).toContain("--index ngents-docs update");
 			expect(logLines.indexOf("previous=hash-1")).toBeLessThan(
 				logLines.indexOf("--index ngents-docs update"),
+			);
+		});
+});
+
+test("docs update preserves local browse frontmatter for markdown file targets", async () => {
+	await withDocsCliWorkspace("docs-update-frontmatter-preserve-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const sourcePath = path.join(tempDir, "source.md");
+			const targetPath = fetchTargetPath(repoDir, "update-frontmatter.md");
+			await seedFakeQmd(binDir);
+			await writeText(sourcePath, "# Fresh Body\n\nUpdated content.\n");
+			await writeText(
+				targetPath,
+				[
+					"---",
+					"title: 'Local title'",
+					"short: 'Local short'",
+					"summary: 'Local summary'",
+					"read_when:",
+					"  - 'Local hint'",
+					"---",
+					"",
+					"# Old Body",
+					"",
+				].join("\n"),
+			);
+			await writeFetchManifest(repoDir, [
+				{
+					source: pathToFileURL(sourcePath).href,
+					target: path.posix.join("topics", TEST_TOPIC_NAME, "update-frontmatter.md"),
+					handler: "docs-url-file-fetch",
+					hash: "",
+				},
+			]);
+
+			const result = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env,
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(await readText(targetPath)).toBe(
+				[
+					"---",
+					"title: Local title",
+					"short: Local short",
+					"summary: Local summary",
+					"read_when:",
+					"  - Local hint",
+					"---",
+					"",
+					"# Fresh Body",
+					"",
+					"Updated content.",
+					"",
+				].join("\n"),
 			);
 		});
 });

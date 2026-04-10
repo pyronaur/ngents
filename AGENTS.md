@@ -40,7 +40,6 @@
 - Use Codex background for long jobs; tmux only for interactive/persistent (debugger/server).
 
 ## Build / Test
-- Before handoff: run full `gate`.
 - Tests target the interaction surface. Do not add tests for internal functions, private methods, or implementation details.
 - Release: use repo-local checklist if present; if missing, write a minimal checklist before shipping.
 
@@ -56,7 +55,6 @@
 ## Architecture
 - Less is more
 - Single-owner minimal mode is the default
-- Run `gate` often, it may change your design
 
 ## Code Style
 - Prefer guard clauses + early returns; avoid `else`.

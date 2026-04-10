@@ -1,6 +1,7 @@
 ---
 name: journey-walkthrough
 description: Explain a process, decision, workflow, or discovery path as a short step-by-step story from the actor's point of view. Use when the user asks for a journey, ideal path, discovery flow, step-by-step story, or wants to understand how someone with little context figures out what to do next.
+disable-model-invocation: true
 ---
 
 # Journey Walkthrough

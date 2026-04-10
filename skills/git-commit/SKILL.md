@@ -1,6 +1,7 @@
 ---
 name: git-commit
 description: Only invoked by the user. Use this skill to learn the commit style guide, but the commit process should be invoked by user directly using $git-commit.
+disable-model-invocation: true
 ---
 
 # Git Commit

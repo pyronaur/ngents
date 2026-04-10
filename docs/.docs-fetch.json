@@ -18,7 +18,7 @@
 			"target": "topics/apple/guidelines/swift-api-design-guidelines.md",
 			"handler": "docs-url-file-fetch",
 			"transform": "html-md",
-			"hash": "003ebdf9b07a7a7bdd984f1da1bf048d1b2fae8ae4dbc544f496e51be0534ef0"
+			"hash": "e8b8a9ba373e889f9bc150b9df61f58402deb4ad7e6df62f86d44dcff3db4f16"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",
@@ -46,7 +46,7 @@
 			"target": "topics/qmd",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/qmd-import.sh",
-			"hash": "7fb099e5fb4440a3e41264ffd07cd2e0ed0c53e6cc78899aa86101cce9ff69cc"
+			"hash": "cdbefe8a7e3b7c9b35eec949a6725d526e1be0067f26dbe199329f92c40a1935"
 		}
 	]
 }

@@ -18,6 +18,14 @@
 		{
 			"files": ["**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}"],
 			"rules": {
+				"eslint/no-unused-vars": [
+					"error",
+					{
+						"args": "after-used",
+						"vars": "all",
+						"caughtErrors": "all"
+					}
+				],
 				"max-depth": ["error", { "max": 3 }],
 				"max-params": ["error", { "max": 3 }],
 				"max-lines": ["error", { "max": 500 }],

@@ -1,6 +1,7 @@
 ---
 name: prompting
 description: Teach practical prompt engineering for coding agents using context contracts, scope discipline, tool contracts, and verification loops. Use when improving prompts, AGENTS.md/SKILL.md instructions, or debugging agent drift (verbosity, scope creep, weak verification, tool misuse).
+disable-model-invocation: true
 ---
 
 # Prompting

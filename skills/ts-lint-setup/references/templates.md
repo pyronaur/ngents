@@ -13,6 +13,8 @@ Gatefile expectations:
 - Expose a normal lint gate key when the repo needs a lint-only validation path
   during setup.
 - Prefer running concrete lint commands directly in Gatefile.
+- Put lint edge-case operator guidance on the failing lint gate via a run
+  object `guidance` footer, not in AGENTS prose.
 - Only use an existing repo entrypoint when it is already the real
   source-of-truth command for that proof, not a wrapper added just for
   Gatefile.
@@ -51,10 +53,27 @@ Allowed tweaks:
 - Update source/test globs and config placement to match the repo structure.
 - Update `jscpd` source/test scope fields to match the repo layout.
 - Keep Oxlint type-aware wiring intact when type-aware rules are enabled.
+- Keep `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all" }]`.
+- Do not add unused-binding ignore-pattern escapes unless the user explicitly
+  approves a real exception.
+
+Lint-failure guidance pattern:
+
+```json5
+run: {
+  label: 'TypeScript lint',
+  cmd: 'npm exec -- oxlint --type-aware .',
+  guidance: [
+    'If addressing these lints would require unreasonable or hacky workarounds, stop and write a brief problem description to the user.',
+    'Exceptions are rare and reserved for edge cases where no truly clean solution exists.',
+  ],
+}
+```
 
 Disallowed tweaks without user approval:
 - Raising duplication thresholds.
 - Disabling or silencing lint rules.
+- Adding underscore-name or ignore-pattern escapes for unused bindings.
 - Adding exclusions to hide lint violations.
 - Removing `--type-aware` or `oxlint-tsgolint` when type-aware rules are
   enabled.

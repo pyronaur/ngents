@@ -1,6 +1,7 @@
 ---
 name: setup-loop
 description: Set up a production-ready Agent Loop in any repository from an existing plan/spec or from scratch. Use when asked to initialize or fix Agent Loop configuration, convert a detailed plan into checklist-driven execution, enforce verification and backpressure gates, or prepare a reviewer-friendly demo. Apply Ralph methodology for loop correctness (template tag, checklist semantics, context, verification, completion contract); run agent-loop validate; never run agent-loop start unless explicitly asked; always end with one start command for the user.
+disable-model-invocation: true
 ---
 
 # Agent Loop Setup

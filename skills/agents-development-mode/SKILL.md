@@ -1,6 +1,7 @@
 ---
 name: agents-development-mode
 description: Invoked by user directly to enable "Devmode Instructions" in project.
+disable-model-invocation: true
 ---
 
 # agents-development-mode

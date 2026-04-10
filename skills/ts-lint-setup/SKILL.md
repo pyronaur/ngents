@@ -1,6 +1,7 @@
 ---
 name: ts-lint-setup
 description: Set up or upgrade strict TypeScript/JavaScript linting with Oxlint (type-aware), dprint (formatter), jscpd (0% duplication), and knip, routed through `gate`. Use when a repo needs lint tooling installed, Gatefile validation wired, or lint configuration standardized without silencing rules.
+disable-model-invocation: true
 ---
 
 # TS Lint Setup
@@ -98,8 +99,10 @@ Mandatory config expectations:
 - Adapt paths and globs to the repo. Different directory names or config
   locations are not meaningful deltas by themselves.
 - Oxlint enables these plugins: `eslint`, `typescript`, `unicorn`, `oxc`,
-  `import`.
-- Oxlint enables the JS plugin: `oxlint-plugin-inhuman`.
+  `import`, plus the JS plugin `oxlint-plugin-inhuman`.
+- Oxlint enforces `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all" }]`.
+- Do not add unused-binding ignore-pattern escapes without explicit user
+  approval.
 - Oxlint enforces the strict `max-*` guardrails:
 - `max-depth: 3`
 - `max-params: 3`
@@ -202,6 +205,9 @@ Gatefile guidance:
 - Keep output terse and evidence-based.
 - If the repo needs a lint-only proof path during setup, expose it as a normal
   gate key so it can be exercised with `gate run <key>`.
+- Put lint edge-case guidance on the failing Gatefile lint step with
+  `guidance`, not in AGENTS prose or skill text. See
+  `references/templates.md` for the pattern.
 
 ## 5) Validate Through Gatefile
 

@@ -9,7 +9,6 @@
 - Output: No inline file/line references unless I directly ask for them.
 - Precision: When describing code, use code signatures, not lines or files.
 - Be Flexible: Rigid ideas break. When writing, reading instructions, consider the nuance on a case by case basis. Ask if unclear. Don't speak in absolutes. Don't interpret in absolutes.
-- Do not broaden the task: If you notice cascading necessary changes, make sure you get explicit permission. Label broadening requests with `BROADEN:`.
 
 ## Local Setup
 - Read `docs ls local/setup` when the task may need info about this machine (hosts, paths, shell, tools, services, etc)
@@ -53,8 +52,16 @@
 - Multi-agent: check `git status/diff` before edits; ship small commits.
 
 ## Architecture
-- Less is more
-- Single-owner minimal mode is the default
+- Less is more: choose the difficult path
+	- Less is more means we want to keep the codebase lean. We seek to eliminate duplicate code. Look out for 3+ similarly named functions and immediately identify incorrect abstractions.
+	- Less is more means that we aim to write less code, **by refactoring with more effort**: effort goes into research and refactor, the final output is less code, but cleaner.
+	- Less is more means that BEFORE you write code, you research if similar code already exists, and attempt to create properly layered abstractions so that the finished state is LESS code.
+	- Less is more applies to FINAL OUTPUT, it does not apply to effort made.
+	- Never take the shortest path, unless it's throwaway code.
+	- Less is more means SOLID and DRY code.
+- ITERATE: Write first pass DIRTY - first pass make sure idea works, then IMMEDIATELY refactor to proper SOLID principles.
+- Single-owner minimal mode is the default: unless instructed otherwise - don't consider compatibility, CI, enterprise grade rigidity.
+- Focus on correct types, SOLID principles, observability
 
 ## Code Style
 - Prefer guard clauses + early returns; avoid `else`.
@@ -72,6 +79,7 @@
 		- `findContainingDocsRoot(directoryPath: string)` -> `findTargetRoot(directoryPath: string, target = 'docs')`
 
 ## Developer Protocol
+- DO NOT ASSUME: Research first, if unclear - ask.
 - No proactive future-proofing
 - Guardrail: legacy-guardrail code is forbidden by default
 - Guardrail: never insert anything "just in case"

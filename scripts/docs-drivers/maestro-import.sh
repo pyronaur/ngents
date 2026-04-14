@@ -91,4 +91,4 @@ done <<EOF
 $API_REFERENCE_FILES
 EOF
 
-printf 'Imported %s Maestro files from %s\n' "$REFERENCE_COUNT" "$SOURCE_LABEL"
+printf 'Imported %s Maestro files from %s\n' "$REFERENCE_COUNT" "$SOURCE_LABEL" >&2

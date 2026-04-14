@@ -1,7 +1,7 @@
 ---
-title: Docs Organization
-short: Shared rules for where docs live and when to use files versus directories.
-summary: Public-versus-local placement rules plus the authoring convention for single files, grouping directories, and `.docs.md`.
+title: Docs Authoring
+short: Must read before writing docs.
+summary: Must read this doc before writing any documentation.
 read_when:
   - Deciding whether a doc belongs in repo docs or local docs.
   - Creating a new docs path and choosing between a single `.md` file or a directory.
@@ -9,7 +9,6 @@ read_when:
 ---
 
 Use repo docs for reusable, public-safe material.
-
 Use local docs for private, machine-specific, or personal material that should not live in a repo.
 
 ## File and directory rules

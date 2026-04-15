@@ -25,11 +25,9 @@ function expectDocsLsSelectorMiss(
 	expect(result.stderr).toContain("Topics");
 	expect(result.stderr).toContain("Registered Docs");
 	expect(result.stderr).toContain(`architecture: ${architecturePath}`);
-	expect(result.stderr).toContain("global/architecture");
 	expect(result.stderr).toContain(
 		`browser: ${path.join(homeDir, ".ngents", "docs", "browser")}/`,
 	);
-	expect(result.stderr).toContain("global/browser");
 }
 
 async function runDocsLsSelectorMiss(
@@ -58,6 +56,37 @@ async function withDocsLsSelectorMiss(
 		const result = await runDocsLsSelectorMiss(repoDir, homeDir, env, "poop");
 		await assertions(result);
 	});
+}
+
+async function seedArchitectureDecisions(repoDir: string, homeDir: string): Promise<void> {
+	await writeText(
+		path.join(repoDir, "docs", "architecture", "decisions", "local-adr.md"),
+		[
+			"---",
+			"title: Local ADR",
+			"summary: Local architecture decision record.",
+			"---",
+			"",
+			"# Local ADR",
+			"",
+			"Local ADR details.",
+			"",
+		].join("\n"),
+	);
+	await writeText(
+		path.join(homeDir, ".ngents", "docs", "architecture", "decisions", "global-adr.md"),
+		[
+			"---",
+			"title: Global ADR",
+			"summary: Global architecture decision record.",
+			"---",
+			"",
+			"# Global ADR",
+			"",
+			"Global ADR details.",
+			"",
+		].join("\n"),
+	);
 }
 
 test("docs ls merges local and global docs by default", async () => {
@@ -147,6 +176,31 @@ test("docs ls docs/subdir merges matching local and global doc subtrees", async 
 		expect(result.stdout).not.toContain("web-fetching.md");
 		expect(result.stdout).not.toContain("cdp.md");
 	});
+});
+
+test("docs ls registered-docs-root/subdir merges matching local and global doc subtrees", async () => {
+	await withDocsCliWorkspace(
+		"docs-ls-registered-doc-subdir-",
+		async ({ repoDir, homeDir, env }) => {
+			await seedArchitectureDecisions(repoDir, homeDir);
+
+			const nestedDirectoryResult = await runDocsCli(["ls", "architecture/decisions"], {
+				cwd: repoDir,
+				env,
+			});
+
+			expect(nestedDirectoryResult.exitCode).toBe(0);
+			expect(nestedDirectoryResult.stdout).toContain(
+				`${path.join(repoDir, "docs", "architecture", "decisions")}/`,
+			);
+			expect(nestedDirectoryResult.stdout).toContain(
+				`${path.join(homeDir, ".ngents", "docs", "architecture", "decisions")}/`,
+			);
+			expect(nestedDirectoryResult.stdout).toContain("local-adr.md");
+			expect(nestedDirectoryResult.stdout).toContain("global-adr.md");
+			expect(nestedDirectoryResult.stdout).not.toContain("main.md");
+		},
+	);
 });
 
 test("docs ls docs/subdir succeeds when only the global subtree exists", async () => {
@@ -452,6 +506,28 @@ test("single-token root selectors open topics and registered docs", async () => 
 			expect(bareDocsPath.stdout).toContain("web-fetching.md");
 		},
 		{ collectionName: "Local" },
+	);
+});
+
+test("single-token root selectors open registered docs subpaths", async () => {
+	await withDocsCliWorkspace(
+		"docs-root-selector-registered-doc-subpath-",
+		async ({ repoDir, homeDir, env }) => {
+			await seedArchitectureDecisions(repoDir, homeDir);
+
+			const result = await runDocsCli(["architecture/decisions"], { cwd: repoDir, env });
+
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout).toContain("# Docs: architecture/decisions");
+			expect(result.stdout).toContain(
+				`${path.join(repoDir, "docs", "architecture", "decisions")}/`,
+			);
+			expect(result.stdout).toContain(
+				`${path.join(homeDir, ".ngents", "docs", "architecture", "decisions")}/`,
+			);
+			expect(result.stdout).toContain("local-adr.md");
+			expect(result.stdout).toContain("global-adr.md");
+		},
 	);
 });
 

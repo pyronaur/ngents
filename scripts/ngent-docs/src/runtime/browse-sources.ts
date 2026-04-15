@@ -142,6 +142,48 @@ class BrowseSelectorNotFoundError extends Error {
 	}
 }
 
+async function tryResolveRegisteredDocsDirectories(
+	sources: DocsSources,
+	selector: string,
+): Promise<string[] | null> {
+	try {
+		return await resolveMergedDocsDirectories(sources, `docs/${selector}`);
+	} catch (error) {
+		if (!isBrowseSelectorNotFoundError(error)) {
+			throw error;
+		}
+		return null;
+	}
+}
+
+async function resolveLocalDocsPath(
+	sources: DocsSources,
+	selector: string,
+	options: {
+		pathType: "directory" | "file";
+		validate: (candidatePath: string) => Promise<boolean>;
+	},
+): Promise<string> {
+	if (sources.localDocsRoots.length === 0) {
+		throw new BrowseSelectorNotFoundError(selector);
+	}
+
+	const baseDir = sources.repoRoot ?? sources.currentDir;
+	const targetPath = normalizePath(path.resolve(baseDir, selector));
+	if (!(await options.validate(targetPath))) {
+		throw new BrowseSelectorNotFoundError(selector);
+	}
+	if (!isWithinDocsRoots(targetPath, sources.localDocsRoots)) {
+		throw runtimeError(
+			`Docs ${options.pathType} is outside project docs roots: ${selector}\n${
+				suggestionLine(defaultSuggestions(sources))
+			}`,
+		);
+	}
+
+	return targetPath;
+}
+
 export function isBrowseSelectorNotFoundError(
 	error: unknown,
 ): error is BrowseSelectorNotFoundError {
@@ -248,62 +290,42 @@ export async function resolveRegisteredDocsDirectoriesByName(
 		return null;
 	}
 
-	try {
-		return await resolveMergedDocsDirectories(sources, `docs/${normalizedSelector}`);
-	} catch (error) {
-		if (!isBrowseSelectorNotFoundError(error)) {
-			throw error;
-		}
-		return null;
-	}
+	return tryResolveRegisteredDocsDirectories(sources, normalizedSelector);
 }
 
+export async function resolveRegisteredDocsDirectoriesBySelector(
+	sources: DocsSources,
+	selector: string,
+): Promise<string[] | null> {
+	const normalizedSelector = selector.trim();
+	if (normalizedSelector.length === 0) {
+		return null;
+	}
+
+	if (isBareSelectorName(normalizedSelector)) {
+		return null;
+	}
+
+	return tryResolveRegisteredDocsDirectories(sources, normalizedSelector);
+}
 export async function resolveLocalDocsDirectory(
 	sources: DocsSources,
 	selector: string,
 ): Promise<string> {
-	if (sources.localDocsRoots.length === 0) {
-		throw new BrowseSelectorNotFoundError(selector);
-	}
-
-	const baseDir = sources.repoRoot ?? sources.currentDir;
-	const directoryPath = normalizePath(path.resolve(baseDir, selector));
-	if (!(await isDirectory(directoryPath))) {
-		throw new BrowseSelectorNotFoundError(selector);
-	}
-	if (!isWithinDocsRoots(directoryPath, sources.localDocsRoots)) {
-		throw runtimeError(
-			`Docs directory is outside project docs roots: ${selector}\n${
-				suggestionLine(defaultSuggestions(sources))
-			}`,
-		);
-	}
-
-	return directoryPath;
+	return resolveLocalDocsPath(sources, selector, {
+		pathType: "directory",
+		validate: isDirectory,
+	});
 }
 
 export async function resolveLocalDocsFile(
 	sources: DocsSources,
 	selector: string,
 ): Promise<string> {
-	if (sources.localDocsRoots.length === 0) {
-		throw new BrowseSelectorNotFoundError(selector);
-	}
-
-	const baseDir = sources.repoRoot ?? sources.currentDir;
-	const filePath = normalizePath(path.resolve(baseDir, selector));
-	if (!(await isMarkdownDocFile(filePath))) {
-		throw new BrowseSelectorNotFoundError(selector);
-	}
-	if (!isWithinDocsRoots(filePath, sources.localDocsRoots)) {
-		throw runtimeError(
-			`Docs file is outside project docs roots: ${selector}\n${
-				suggestionLine(defaultSuggestions(sources))
-			}`,
-		);
-	}
-
-	return filePath;
+	return resolveLocalDocsPath(sources, selector, {
+		pathType: "file",
+		validate: isMarkdownDocFile,
+	});
 }
 
 export async function resolveQualifiedDocsDirectory(

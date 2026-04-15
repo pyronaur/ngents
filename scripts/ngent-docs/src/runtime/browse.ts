@@ -19,6 +19,7 @@ import {
 	resolveMergedDocsDirectories,
 	resolveQualifiedDocsDirectory,
 	resolveRegisteredDocsDirectoriesByName,
+	resolveRegisteredDocsDirectoriesBySelector,
 } from "./browse-sources.ts";
 import { readMarkdownDocument } from "./markdown-document.ts";
 
@@ -87,6 +88,31 @@ async function docsBrowseViewForDirectory(
 	} satisfies DocsBrowseView;
 }
 
+async function docsBrowseViewForDirectories(
+	directoryPaths: string[],
+	title: string,
+	topicHint?: string,
+): Promise<DocsBrowseView> {
+	return {
+		...(await docsEntriesUnderMany(directoryPaths)),
+		kind: "browse",
+		title,
+		topicHint,
+	} satisfies DocsBrowseView;
+}
+
+async function docsBrowseViewForRoots(
+	docsRoots: string[],
+	label: string,
+	title: string,
+): Promise<DocsBrowseView> {
+	return {
+		...(await docsEntriesFromRoots(docsRoots, label)),
+		kind: "browse",
+		title,
+	} satisfies DocsBrowseView;
+}
+
 async function docsFileViewForPath(filePath: string): Promise<DocsFileView> {
 	return {
 		doc: await readMarkdownDocument(filePath),
@@ -140,33 +166,48 @@ async function resolveDirectDocsFile(
 	return resolveLocalDocsFile(sources, where);
 }
 
+async function resolveIndirectDocsView(
+	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
+	where: string,
+	title: string,
+): Promise<DocsBrowseView> {
+	const registeredDirectoriesBySelector = await resolveRegisteredDocsDirectoriesBySelector(
+		sources,
+		where,
+	);
+	if (registeredDirectoriesBySelector) {
+		return docsBrowseViewForDirectories(registeredDirectoriesBySelector, title);
+	}
+
+	const registeredDirectories = await resolveRegisteredDocsDirectoriesByName(sources, where);
+	if (registeredDirectories) {
+		return docsBrowseViewForDirectories(
+			registeredDirectories,
+			title,
+			await topicHintForSelector(where, sources.mergedDocsRoots),
+		);
+	}
+
+	const directoryPath = await resolveLocalDocsDirectory(sources, where);
+	return docsBrowseViewForDirectory(directoryPath, where);
+}
+
 async function docsEntriesForWhere(
 	currentDir: string,
 	where: string | null,
 ): Promise<DocsView> {
 	const sources = await discoverDocsSources(currentDir);
+	const title = docsTitle(where);
 	if (!where) {
-		return {
-			...(await docsEntriesFromRoots(sources.mergedDocsRoots, currentDir)),
-			kind: "browse",
-			title: docsTitle(where),
-		} satisfies DocsBrowseView;
+		return docsBrowseViewForRoots(sources.mergedDocsRoots, currentDir, title);
 	}
 
 	if (where === ".") {
-		return {
-			...(await docsEntriesFromRoots(sources.localDocsRoots, ".")),
-			kind: "browse",
-			title: docsTitle(where),
-		} satisfies DocsBrowseView;
+		return docsBrowseViewForRoots(sources.localDocsRoots, ".", title);
 	}
 
 	if (where === "global") {
-		return {
-			...(await docsEntriesFromRoots(sources.globalDocsRoots, "global")),
-			kind: "browse",
-			title: docsTitle(where),
-		} satisfies DocsBrowseView;
+		return docsBrowseViewForRoots(sources.globalDocsRoots, "global", title);
 	}
 
 	const directFilePath = await resolveDirectDocsFile(sources, where);
@@ -177,11 +218,7 @@ async function docsEntriesForWhere(
 	if (where.startsWith("docs/")) {
 		ensureDocsRoots(sources.mergedDocsRoots, currentDir);
 		const directories = await resolveMergedDocsDirectories(sources, where);
-		return {
-			...(await docsEntriesFromRoots(directories, currentDir)),
-			kind: "browse",
-			title: docsTitle(where),
-		} satisfies DocsBrowseView;
+		return docsBrowseViewForRoots(directories, currentDir, title);
 	}
 
 	const directDirectoryPath = await resolveDirectDocsDirectory(sources, where);
@@ -189,22 +226,7 @@ async function docsEntriesForWhere(
 		return docsBrowseViewForDirectory(directDirectoryPath, where);
 	}
 
-	const registeredDirectories = await resolveRegisteredDocsDirectoriesByName(sources, where);
-	if (registeredDirectories) {
-		return {
-			...(await docsEntriesUnderMany(registeredDirectories)),
-			kind: "browse",
-			title: docsTitle(where),
-			topicHint: await topicHintForSelector(where, sources.mergedDocsRoots),
-		} satisfies DocsBrowseView;
-	}
-
-	const directoryPath = await resolveLocalDocsDirectory(sources, where);
-	return {
-		...(await docsEntriesUnder(directoryPath)),
-		kind: "browse",
-		title: docsTitle(where),
-	} satisfies DocsBrowseView;
+	return resolveIndirectDocsView(sources, where, title);
 }
 
 async function browseInventoryForCurrentDir(currentDir: string) {

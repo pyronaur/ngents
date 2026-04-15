@@ -63,14 +63,9 @@ function renderInventoryTopicLines(topics: TopicIndexRow[]): string[] {
 }
 
 function renderRegisteredDocsLines(registeredDocs: RegisteredDocsRow[]): string[] {
-	return registeredDocs.map(directory => {
-		const aliases = directory.qualifiedNames.length > 0
-			? ` (aliases: ${directory.qualifiedNames.join(", ")})`
-			: "";
-		return `- ${directory.name}: ${
-			directory.absolutePaths.map(directoryDisplayPath).join(", ")
-		}${aliases}`;
-	});
+	return registeredDocs.map(directory =>
+		`- ${directory.name}: ${directory.absolutePaths.map(directoryDisplayPath).join(", ")}`
+	);
 }
 
 function pushBrowseInventory(

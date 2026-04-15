@@ -110,7 +110,7 @@ Global docs collection metadata is cached for 1 hour.
 `ls` browses docs only.
 
 - It merges local and global docs by default.
-- It accepts `.`, `global`, `./docs/...`, `docs/...`, `<parked-collection>/<docs-root[/subpath]>`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
+- It accepts `.`, `global`, `./docs/...`, `docs/...`, `<docs-root>/<subpath>`, `<parked-collection>/<docs-root[/subpath]>`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
 - It also accepts an exact top-level registered docs name such as `architecture`.
 - When `ls` receives multiple selector args, it joins them with `/` before resolution.
 - `.` means project docs only.
@@ -159,6 +159,7 @@ Global docs collection metadata is cached for 1 hour.
 - `docs local` shows the parked `local` collection topics and docs together.
 - `docs ls local` shows only the parked `local` collection docs.
 - `docs local/setup` shows only the `setup` subtree from the parked `local` collection.
+- `docs architecture/decisions` shows only the `decisions` subtree from the merged registered `architecture` docs root.
 - `docs ls local setup` is equivalent to `docs ls local/setup`.
 - `docs topic local` shows only the parked `local` collection topics.
 - `docs browser` shows the `browser` topic and matching `docs/browser` docs together.
@@ -169,9 +170,11 @@ Global docs collection metadata is cached for 1 hour.
 
 - `docs <topic>`
 - `docs <docs-root>`
+- `docs <docs-root>/<subpath>`
 - `docs local/setup`
 - `docs ls .`
 - `docs ls local setup`
+- `docs ls architecture/decisions`
 - `docs ls docs/subdir`
 
 ### `query`

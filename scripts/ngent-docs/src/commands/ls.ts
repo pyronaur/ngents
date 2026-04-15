@@ -12,7 +12,7 @@ export const lsCommand = defineCommand({
 	usage: docsCommandUsage.ls,
 	configure: (command) => {
 		command.argument("[where...]",
-			"Optional docs selector segments, path, or parked name: `.`, `global`, `./docs/...`, `docs/...`, `local/setup`, `~/work/foo`, or `local`.");
+			"Optional docs selector segments, path, or parked name: `.`, `global`, `./docs/...`, `docs/...`, `<docs-root>/<subpath>`, `local/setup`, `~/work/foo`, or `local`.");
 	},
 	optionsSchema: lsOptionsSchema,
 	run: async ({ args }) => {

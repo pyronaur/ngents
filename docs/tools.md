@@ -94,11 +94,12 @@ Session-safe Playwright wrapper for web browsing and extraction.
 
 Machine-local Chrome CDP session commands.
 
-- Use `cdp status` before browser automation that depends on the shared local profile.
-- Use `cdp start` to ensure personal Chrome is open with Chrome's last-used personal profile, launch the configured CDP Chrome session, and refresh the `agent-browser` connection.
-- `cdp status` repairs the stack by ensuring personal Chrome is open with Chrome's last-used personal profile, starting Chrome if needed, and refreshing the `agent-browser` connection.
+- Use `cdp status` before browser automation that depends on the shared local browser.
+- Use `cdp start` to launch the configured CDP Chrome session and refresh the `agent-browser` connection.
+- `cdp status` repairs the stack by starting the configured CDP Chrome session if needed and refreshing the `agent-browser` connection.
+- Local `cdp` workflows may also open a separate personal Chrome instance as a side effect.
 - Use `cdp stop` only when the shared local browser session should be shut down.
-- Read `docs/browser/cdp.md` for the tracked contract and config schema.
+- Run `docs tools` to find `cdp.md` and read the machine-local profile mapping and contract.
 
 ## agent-browser
 

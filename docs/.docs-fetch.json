@@ -32,7 +32,7 @@
 			"target": "topics/apple/skills/maestro/references",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/maestro-import.sh",
-			"hash": "a2a56c3199001d92c07892900a8de820cf8b2214f9c459cea0e341f6482707bf"
+			"hash": "a7fd38c9f37ec20f3ed2b388bae3127df68a96538379e87fd4e67dde8720162c"
 		},
 		{
 			"source": "https://github.com/TimBroddin/app-store-aso-skill",

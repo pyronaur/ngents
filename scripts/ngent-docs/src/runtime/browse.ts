@@ -17,6 +17,7 @@ import {
 	resolveLocalDocsDirectory,
 	resolveLocalDocsFile,
 	resolveMergedDocsDirectories,
+	resolveMergedDocsFile,
 	resolveQualifiedDocsDirectory,
 	resolveRegisteredDocsDirectoriesByName,
 	resolveRegisteredDocsDirectoriesBySelector,
@@ -163,7 +164,23 @@ async function resolveDirectDocsFile(
 		return resolveFilesystemDocsFile(sources, where);
 	}
 
-	return resolveLocalDocsFile(sources, where);
+	try {
+		return await resolveLocalDocsFile(sources, where);
+	} catch (error) {
+		if (!isBrowseSelectorNotFoundError(error)) {
+			throw error;
+		}
+	}
+
+	if (where.startsWith("docs/")) {
+		return resolveMergedDocsFile(sources, where);
+	}
+
+	if (!where.includes("/") && !where.includes("\\")) {
+		return null;
+	}
+
+	return resolveMergedDocsFile(sources, `docs/${where}`);
 }
 
 async function resolveIndirectDocsView(

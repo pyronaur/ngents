@@ -24,6 +24,7 @@ It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.
 - `docs/subdir` or `./docs/subdir`
 - `docs/file.md` or `./docs/file.md`
 - a registered docs root like `browser`
+- a registered docs file like `architecture/main.md`
 - a parked collection selector like `local/setup`
 - a workspace path like `~/work/foo`
 - an explicit docs path like `~/work/foo/docs`

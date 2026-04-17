@@ -531,6 +531,59 @@ test("single-token root selectors open registered docs subpaths", async () => {
 	);
 });
 
+test("single-token root selectors open registered docs markdown files", async () => {
+	await withDocsCliWorkspace(
+		"docs-root-selector-registered-doc-file-",
+		async ({ repoDir, env }) => {
+			const result = await runDocsCli(["architecture/local-only.md"], {
+				cwd: repoDir,
+				env,
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout).toContain("# Doc: Local Architecture Notes");
+			expect(result.stdout.replaceAll("/private/var", "/var")).toContain(
+				`Path: ${path.join(repoDir, "docs", "architecture", "local-only.md")}`,
+			);
+			expect(result.stdout).toContain("Local architecture-only notes.");
+			expect(result.stdout).not.toContain("title: Local Architecture Notes");
+		},
+	);
+});
+
+test("single-token registered docs markdown files prefer local matches over global", async () => {
+	await withDocsCliWorkspace(
+		"docs-root-selector-registered-doc-file-local-first-",
+		async ({ repoDir, homeDir, env }) => {
+			await writeText(
+				path.join(homeDir, ".ngents", "docs", "architecture", "main.md"),
+				[
+					"---",
+					"title: Global Main Architecture",
+					"summary: Global main architecture summary.",
+					"---",
+					"",
+					"# Global Main Architecture",
+					"",
+					"Global architecture details.",
+					"",
+				].join("\n"),
+			);
+
+			const result = await runDocsCli(["architecture/main.md"], {
+				cwd: repoDir,
+				env,
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout).toContain("# Doc: Main Architecture");
+			expect(result.stdout).toContain("Architecture details.");
+			expect(result.stdout).not.toContain("# Doc: Global Main Architecture");
+			expect(result.stdout).not.toContain("Global architecture details.");
+		},
+	);
+});
+
 test("docs topic opens parked collection topic indexes without docs", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-parked-collection-",

@@ -381,6 +381,28 @@ export async function resolveMergedDocsDirectories(
 	return uniquePaths(matchingDirectories);
 }
 
+export async function resolveMergedDocsFile(
+	sources: DocsSources,
+	selector: string,
+): Promise<string | null> {
+	const docsRoots = [...sources.localDocsRoots, ...sources.globalDocsRoots];
+	const relativeSelector = docsRelativeSelector(selector);
+
+	for (const docsRoot of docsRoots) {
+		const filePath = normalizePath(path.resolve(docsRoot, relativeSelector));
+		if (!isWithinDocsRoots(filePath, [docsRoot])) {
+			throw runtimeError(`Docs file is outside docs roots: ${selector}`);
+		}
+		if (!(await isMarkdownDocFile(filePath))) {
+			continue;
+		}
+
+		return filePath;
+	}
+
+	return null;
+}
+
 export function isDocsFilesystemSelector(selector: string): boolean {
 	return selector === "~" || selector.startsWith("~/") || path.isAbsolute(selector);
 }

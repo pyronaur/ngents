@@ -110,7 +110,7 @@ Global docs collection metadata is cached for 1 hour.
 `ls` browses docs only.
 
 - It merges local and global docs by default.
-- It accepts `.`, `global`, `./docs/...`, `docs/...`, `<docs-root>/<subpath>`, `<parked-collection>/<docs-root[/subpath]>`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
+- It accepts `.`, `global`, `./docs/...`, `docs/...`, `<docs-root>/<subpath>`, `<docs-root>/<file.md>`, `<parked-collection>/<docs-root[/subpath]>`, explicit docs paths, workspace paths that contain `docs/`, and parked global root names.
 - It also accepts an exact top-level registered docs name such as `architecture`.
 - When `ls` receives multiple selector args, it joins them with `/` before resolution.
 - `.` means project docs only.
@@ -128,7 +128,7 @@ Global docs collection metadata is cached for 1 hour.
 
 `docs <where>` resolves a single non-command token in a more helpful order.
 
-- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, `<parked-collection>/<docs-root[/subpath]>` selectors, explicit docs paths, and workspace paths that contain `docs/`.
+- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, `<docs-root>/<file.md>` selectors, `<parked-collection>/<docs-root[/subpath]>` selectors, explicit docs paths, and workspace paths that contain `docs/`.
 - Root command names still win, so `docs topic` and `docs query` keep their command behavior.
 - Parked collection names win before topics.
 - Bare parked collection selectors show that collection's topics and docs together.
@@ -160,6 +160,7 @@ Global docs collection metadata is cached for 1 hour.
 - `docs ls local` shows only the parked `local` collection docs.
 - `docs local/setup` shows only the `setup` subtree from the parked `local` collection.
 - `docs architecture/decisions` shows only the `decisions` subtree from the merged registered `architecture` docs root.
+- `docs architecture/main.md` renders the first matching file from the merged registered `architecture` docs root, preferring local over global when both exist.
 - `docs ls local setup` is equivalent to `docs ls local/setup`.
 - `docs topic local` shows only the parked `local` collection topics.
 - `docs browser` shows the `browser` topic and matching `docs/browser` docs together.
@@ -171,6 +172,7 @@ Global docs collection metadata is cached for 1 hour.
 - `docs <topic>`
 - `docs <docs-root>`
 - `docs <docs-root>/<subpath>`
+- `docs <docs-root>/<file.md>`
 - `docs local/setup`
 - `docs ls .`
 - `docs ls local setup`

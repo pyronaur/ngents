@@ -5,20 +5,20 @@
 			"target": "topics/apple/asc-cli",
 			"handler": "docs-git-fetch",
 			"root": "skills",
-			"hash": "b717157b64265c09e340a53849eeca6c2b268dedd382ae9058b8acd0700010a4"
+			"hash": "6ea2100daeb5d08a714b0e56de62398ee7a904bb00620491d4118a66f0e549e5"
 		},
 		{
 			"source": "https://raw.githubusercontent.com/airbnb/swift/master/README.md",
 			"target": "topics/apple/guidelines/airbnb-swift-style-guide.md",
 			"handler": "docs-url-file-fetch",
-			"hash": "cd87f5489837e3ca7ef68286825b3d58d7c40192a7dd2b9dadd9631b813296ab"
+			"hash": "961673e9d792563a263ad326ea454582059f6f11d6483efb252c66a9970df78d"
 		},
 		{
 			"source": "https://www.swift.org/documentation/api-design-guidelines/",
 			"target": "topics/apple/guidelines/swift-api-design-guidelines.md",
 			"handler": "docs-url-file-fetch",
 			"transform": "html-md",
-			"hash": "55a1259a01a006ff557e75d632146cf11a7693169e5fb99eb20bd2dc70065610"
+			"hash": "e6970daabe5ef8c1d0df8f763767efc2179947086f0218d51ac76372a872d171"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",

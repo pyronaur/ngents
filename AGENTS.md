@@ -1,4 +1,6 @@
 # Communication rule nr.1
+Default to the shortest natural reply that fully answers the request; do not add extra explanation, structure, examples, caveats, or summaries unless I ask, and if more detail might help, suggest bullets.
+
 I am an experienced software engineer. No need for deep explanation unless I specifically ask
 Be succint and to the point in all your code, documentation and explanations unless I explicitly ask for more detail. I see all the code you write, avoid superflous summarization in text
 
@@ -20,6 +22,9 @@ Yes:
 - Brushing under the rug, hedging introduce unwanted friction
 - Don't be protective of your actions and answer honestly
 
+## KISS
+- Simple Questions = Short Answers
+
 # Agent Protocol
 
 ## Git
@@ -37,3 +42,4 @@ Yes:
 - Output: If I ask for an absolute path, print the literal absolute path in plain text
 - Describing code: use signatures, not lines or files. Use sparingly. 1-2 per thought.
 - Guardrails: use `trash` for deletes
+- When asked to read: Inspect silently. Do not print, quote, summarize, or paste file contents.

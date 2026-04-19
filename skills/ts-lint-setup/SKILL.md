@@ -50,14 +50,15 @@ Install:
 - `oxlint@latest`
 - `oxlint-tsgolint@latest` (required for Oxlint type-aware rules)
 - `oxlint-plugin-inhuman@latest` (custom strictness rules)
+- `oxlint-plugin-complexity@latest` (complexity rule plugin)
 - `jscpd@latest`
 - `knip@latest`
 
 Examples:
 
 ```bash
-bun add -d dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest jscpd@latest knip@latest
-npm install -D dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest jscpd@latest knip@latest
+bun add -d dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest oxlint-plugin-complexity@latest jscpd@latest knip@latest
+npm install -D dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest oxlint-plugin-complexity@latest jscpd@latest knip@latest
 ```
 
 ## 2) Update AGENTS.md Through Gatefile
@@ -99,7 +100,13 @@ Mandatory config expectations:
 - Adapt paths and globs to the repo. Different directory names or config
   locations are not meaningful deltas by themselves.
 - Oxlint enables these plugins: `eslint`, `typescript`, `unicorn`, `oxc`,
-  `import`, plus the JS plugin `oxlint-plugin-inhuman`.
+  `import`, plus the JS plugins `oxlint-plugin-inhuman` and
+  `oxlint-plugin-complexity`.
+- Oxlint enforces import hygiene rules:
+- `typescript/consistent-type-imports` with `{ "fixStyle": "inline-type-imports" }`
+- `typescript/no-import-type-side-effects`
+- `import/no-duplicates`
+- `import/no-self-import`
 - Oxlint enforces `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all" }]`.
 - Do not add unused-binding ignore-pattern escapes without explicit user
   approval.
@@ -107,8 +114,8 @@ Mandatory config expectations:
 - `max-depth: 3`
 - `max-params: 3`
 - `max-lines: 500`
-- `max-lines-per-function: 80`
-- `max-statements: 24`
+- `max-lines-per-function: 100`
+- `max-statements: 32`
 - `max-nested-callbacks: 3`
 - `max-classes-per-file: 1` (ignore expressions)
 - Oxlint enforces `curly: all` and `no-else-return` (no `else` after `return`).
@@ -120,6 +127,14 @@ Mandatory config expectations:
 - `inhuman/no-switch`
 - `inhuman/no-else`
 - Oxlint enforces `oxc/no-barrel-file`.
+- Oxlint enforces cleanup/style rules:
+- `typescript/no-unnecessary-type-constraint`
+- `typescript/no-useless-empty-export`
+- `eslint/no-unneeded-ternary`
+- `eslint/no-useless-concat`
+- `unicorn/prefer-array-flat-map`
+- `unicorn/no-abusive-eslint-disable`
+- Oxlint enforces `complexity/complexity`.
 - Oxlint enforces banned-type rules:
 - `typescript/no-wrapper-object-types`
 - `typescript/no-restricted-types` for:
@@ -160,13 +175,19 @@ Do not call out:
 - `max-depth: 3`: Deep nesting hides the happy path and correlates with bugs.
 - `max-params: 3`: Many parameters usually signal weak abstractions and fragile call sites.
 - `max-lines: 500`: Very long files become dumping grounds and are hard to review.
-- `max-lines-per-function: 80`: Long functions mix concerns and are risky to change.
-- `max-statements: 24`: Too many statements usually means “does too much.”
+- `max-lines-per-function: 100`: Long functions mix concerns and are risky to change.
+- `max-statements: 32`: Too many statements usually means “does too much.”
 - `max-nested-callbacks: 3`: Callback nesting rapidly explodes complexity.
 - `max-classes-per-file: 1`: Multiple classes per file blurs boundaries and ownership.
 - `curly: all` and `no-else-return`: Make control flow explicit and push toward early returns.
 - `inhuman/*` rules: Enforce guard clauses, forbid swallowed errors, prevent `switch`/`else`, and forbid empty wrapper exports.
 - `oxc/no-barrel-file`: Discourage barrels and keep exports near their definitions.
+- Import hygiene rules: Keep type-only imports explicit, prevent side-effect-only
+  leftovers from inline type imports, and block duplicate or self imports.
+- Cleanup/style rules: Remove empty export noise, unnecessary type constraints,
+  weak ternaries, useless string concat, abusive lint suppression, and prefer
+  `flatMap` over `map(...).flat()` style chains.
+- `complexity/complexity`: Keep control-flow complexity from drifting into opaque code paths.
 - Banned-type rules: Push code away from vague placeholder types and toward
   specific shapes, generics, and explicit callable signatures.
 - Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.

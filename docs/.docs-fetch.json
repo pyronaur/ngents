@@ -25,7 +25,7 @@
 			"target": "topics/apple/hig-doctor",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/hig-doctor-import.sh",
-			"hash": "c15c65fe7446e2ef3b114bd32e22812c750269ffb85fb953fa4f4b4d22f00bed"
+			"hash": "482119480bf399141b75730c4f003390866c63d89c9cb812f9dd9bd8f7d05396"
 		},
 		{
 			"source": "https://github.com/mobile-dev-inc/maestro-docs",

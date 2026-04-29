@@ -26,15 +26,6 @@ Yes:
 
 # Agent Protocol
 
-## Git
-- Safe: `git status/diff/log`
-- Branch changes require user consent
-- Do not: `reset --hard`, `clean`, `restore`, `rm`, etc
-- Do not: rename/delete without explicit instruction.
-- Avoid: `git stash` unless explicitly asked
-- No amend unless asked
-- Multi-agent: check `git status/diff` before edits; ship small commits
-
 ## Rules
 - Context: run `docs` for docs index
 - Read: Inspect silently. Do not print, quote, summarize, or paste file contents.

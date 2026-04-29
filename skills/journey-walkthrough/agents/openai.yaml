@@ -2,3 +2,5 @@ interface:
   display_name: "Journey Walkthrough"
   short_description: "Tell short step-by-step discovery stories"
   default_prompt: "Use $journey-walkthrough to explain this as a short step-by-step story from the actor's point of view."
+policy:
+  allow_implicit_invocation: false

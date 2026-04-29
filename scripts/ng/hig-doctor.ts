@@ -5,8 +5,8 @@
  * @usage ng hig-doctor [directory]
  */
 import { access, readFile, realpath } from 'node:fs/promises';
-import path, { dirname, extname, join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import path, { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 type MatchType = 'pattern' | 'positive' | 'concern';
 
@@ -193,15 +193,14 @@ async function resolveModulePath(moduleDir: string, baseName: string, preferredE
 	throw new Error(`Unable to resolve hig-doctor module "${baseName}" from ${moduleDir}`);
 }
 
-async function loadHigDoctorModules(): Promise<HigDoctorModules> {
-	const executablePath = Bun.which('hig-doctor');
-	if (!executablePath) {
-		throw new Error('hig-doctor is not installed or not on PATH');
-	}
+function bundledModuleDir(): string {
+	const scriptDir = dirname(fileURLToPath(import.meta.url));
+	return resolve(scriptDir, '../../docs/topics/app/hig-doctor/packages/hig-doctor/src-termcast/src');
+}
 
-	const entrypointPath = await realpath(executablePath);
-	const moduleDir = dirname(entrypointPath);
-	const preferredExt = extname(entrypointPath);
+async function loadHigDoctorModules(): Promise<HigDoctorModules> {
+	const moduleDir = await realpath(bundledModuleDir());
+	const preferredExt = '.ts';
 
 	const scannerPath = await resolveModulePath(moduleDir, 'scanner', preferredExt);
 	const patternsPath = await resolveModulePath(moduleDir, 'patterns', preferredExt);

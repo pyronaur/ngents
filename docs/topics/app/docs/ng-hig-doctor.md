@@ -14,7 +14,7 @@ Use `ng hig-doctor` from an app repo when you want HIG audit output filtered thr
 
 The wrapper:
 
-- runs the upstream scanner and pattern detector,
+- runs the vendored HIG Doctor scanner and pattern detector from `docs topic app hig-doctor`,
 - reads `.higignore.yaml` from the current working directory,
 - skips configured paths before pattern detection,
 - filters exact accepted concerns after detection,

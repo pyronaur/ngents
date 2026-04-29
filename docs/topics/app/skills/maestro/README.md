@@ -10,7 +10,7 @@ read_when:
 
 This directory is the Maestro skill entrypoint.
 
-The canonical local official Maestro docs bundle lives under `docs topic apple testing/maestro`.
+The canonical local official Maestro docs bundle lives under `docs topic app testing/maestro`.
 
 This skill directory keeps only the remaining imported iOS platform and CLI references that are not part of that bundle.
 
@@ -22,7 +22,7 @@ This skill directory keeps only the remaining imported iOS platform and CLI refe
 
 ## Local layout
 
-- Canonical official docs bundle: `~/.n/local/docs/topics/apple/testing/maestro/`
+- Canonical official docs bundle: `~/.n/local/docs/topics/app/testing/maestro/`
 - `references/ios.md`: the upstream iOS platform doc.
 - `references/swiftui.md`: the upstream SwiftUI doc.
 - `references/uikit.md`: the upstream UIKit doc.

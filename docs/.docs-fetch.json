@@ -2,41 +2,41 @@
 	"entries": [
 		{
 			"source": "https://github.com/rudrankriyam/app-store-connect-cli-skills",
-			"target": "topics/apple/asc-cli",
+			"target": "topics/asc/cli",
 			"handler": "docs-git-fetch",
 			"root": "skills",
 			"hash": "6ea2100daeb5d08a714b0e56de62398ee7a904bb00620491d4118a66f0e549e5"
 		},
 		{
 			"source": "https://raw.githubusercontent.com/airbnb/swift/master/README.md",
-			"target": "topics/apple/guidelines/airbnb-swift-style-guide.md",
+			"target": "topics/app/guidelines/airbnb-swift-style-guide.md",
 			"handler": "docs-url-file-fetch",
 			"hash": "961673e9d792563a263ad326ea454582059f6f11d6483efb252c66a9970df78d"
 		},
 		{
 			"source": "https://www.swift.org/documentation/api-design-guidelines/",
-			"target": "topics/apple/guidelines/swift-api-design-guidelines.md",
+			"target": "topics/app/guidelines/swift-api-design-guidelines.md",
 			"handler": "docs-url-file-fetch",
 			"transform": "html-md",
 			"hash": "e6970daabe5ef8c1d0df8f763767efc2179947086f0218d51ac76372a872d171"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",
-			"target": "topics/apple/hig-doctor",
+			"target": "topics/app/hig-doctor",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/hig-doctor-import.sh",
 			"hash": "482119480bf399141b75730c4f003390866c63d89c9cb812f9dd9bd8f7d05396"
 		},
 		{
 			"source": "https://github.com/mobile-dev-inc/maestro-docs",
-			"target": "topics/apple/skills/maestro/references",
+			"target": "topics/app/skills/maestro/references",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/maestro-import.sh",
 			"hash": "a7fd38c9f37ec20f3ed2b388bae3127df68a96538379e87fd4e67dde8720162c"
 		},
 		{
 			"source": "https://github.com/TimBroddin/app-store-aso-skill",
-			"target": "topics/aso/aso-store-aso-skill",
+			"target": "topics/asc/aso/aso-store-aso-skill",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/aso-import.sh",
 			"hash": "49ba007d03ecc0f1684890e0a970265f4b143bd3dd23a86ac7a4a38a217b9084"

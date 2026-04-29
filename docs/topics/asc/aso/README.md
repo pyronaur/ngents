@@ -1,6 +1,6 @@
 # ASO Library Guide
 
-This directory is a docs topic, not an auto-loaded skill. Use it as reference material for App Store Optimization work, and pull in the upstream skill or Astro MCP only when you want them.
+This directory is a docs topic section, not an auto-loaded skill. Use it as reference material for App Store Optimization work, and pull in the upstream skill or Astro MCP only when you want them.
 
 ## Layout
 
@@ -33,7 +33,7 @@ Practical workflow:
 Example prompt pattern for an agent:
 
 ```text
-Use the ASO docs section guide at docs topic aso.
+Use the ASO docs section guide at docs topic asc aso.
 Reference ASO.md first.
 Then use aso-store-aso-skill/SKILL.md and check the final metadata against Apple field limits.
 

@@ -213,7 +213,7 @@ test('missing config file leaves visible concerns in markdown output', async () 
 		expect(result.stdout).toContain('`.ignoresSafeArea()`\n\n- `Sources/Sample.swift:13`');
 		expect(parseConcernCount(result.stderr)).toBe(2);
 		expect(parseHintLines(result.stderr)).toEqual([
-			{ skill: 'hig-foundations', command: 'docs topic apple hig-doctor' },
+			{ skill: 'hig-foundations', command: 'docs topic app hig-doctor' },
 		]);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
@@ -417,7 +417,7 @@ test('visible concerns print docs hints on stderr', async () => {
 		const result = await runWrapper(tempDir, 'Sources');
 		expect(result.exitCode).toBe(1);
 		expect(parseHintLines(result.stderr)).toEqual([
-			{ skill: 'hig-foundations', command: 'docs topic apple hig-doctor' },
+			{ skill: 'hig-foundations', command: 'docs topic app hig-doctor' },
 		]);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });

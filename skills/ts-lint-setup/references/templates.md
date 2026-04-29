@@ -46,6 +46,11 @@ Comparison rule:
 Allowed tweaks:
 - Update ignore patterns only for clearly generated artifacts.
 - Update `knip.json` `entry` to real entry points.
+- Update `knip.json` `project` to explicit runtime source globs.
+- Keep Knip `includeEntryExports: true`.
+- Run Knip in production mode from Gatefile.
+- Do not set Knip `project` to `tsconfig.json`; a broad tsconfig can let tests
+  keep dead runtime code alive.
 - Adjust dprint `lineWidth` only if the repo already has a clear standard.
 - Update dprint `includes`/`excludes` to cover the repo root and the repo's
   actual source/test layout while excluding tmp/compiled artifacts (do not use

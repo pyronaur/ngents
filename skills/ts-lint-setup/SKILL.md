@@ -156,6 +156,16 @@ Mandatory config expectations:
 - `threshold: 0`
 - `minTokens: 60`
 - `minLines: 7`
+- Knip runs in production mode and treats shipped runtime code as the dead-code
+  boundary.
+- Knip keeps `entry` minimal, sets `includeEntryExports: true`, and uses
+  explicit runtime `project` globs.
+- Do not set Knip `project` to `tsconfig.json`. Knip `project` is the reportable
+  file universe, not the TypeScript typecheck universe. Broad tsconfigs that
+  include tests can keep dead runtime code alive.
+- Test-only usage does not justify runtime code. If tests need a helper-only
+  surface, keep that surface explicit instead of letting tests define runtime
+  reachability.
 - Gatefile should own lint routing and decide when lint runs from the diff.
 - Consult `$gatefile` before changing `.gatefile.json5`.
 
@@ -259,6 +269,8 @@ Validation rules:
 Templates must remain generic. Do not add repo-specific ignores, file names, or
 entry points. Always update these values per repo:
 - `knip.json` `entry`
+- `knip.json` `project` explicit runtime source globs. Do not point it at
+  `tsconfig.json`.
 - `jscpd` source/test `path` or equivalent scope fields
 - Any ignore patterns for known generated artifacts
 - Lint include/ignore patterns to match the repo's source and test layout while

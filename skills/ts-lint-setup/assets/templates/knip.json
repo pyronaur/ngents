@@ -1,5 +1,6 @@
 {
-	"entry": ["src/index.ts"],
-	"project": ["tsconfig.json"],
-	"ignore": ["node_modules", "dist", "build", "coverage"]
+	"includeEntryExports": true,
+	"entry": ["src/index.ts!"],
+	"project": ["src/**/*.ts!"],
+	"ignore": ["dist", "build", "coverage"]
 }

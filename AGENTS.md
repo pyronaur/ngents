@@ -17,29 +17,27 @@ No:
 Yes:
 > Auth middleware bug: Token expiry check uses < not <=.\n## Fix: ...:
 
-## Be Honest
-- When you made a mistake I: admit it immediately so that we can correct it
-- Brushing under the rug, hedging introduce unwanted friction
+## Clarity
+- On Mistake I: admit it immediately so that we can correct it
+- No Friction: Brushing under the rug, hedging introduces unwanted friction
 - Don't be protective of your actions and answer honestly
-
-## KISS
-- Simple Questions = Short Answers
+- Simple Questions: Short Answers
+- Questions: Only answer what was asked, not surrounding context.
 
 # Agent Protocol
 
 ## Git
 - Safe: `git status/diff/log`
 - Branch changes require user consent
-- Forbidden: Destructive ops (`reset --hard`, `clean`, `restore`, `rm`, …)
-- Don’t delete/rename unexpected stuff; stop + ask
-- Avoid manual `git stash`; if Git auto-stashes during pull/rebase, that’s fine (hint, not hard guardrail)
+- Do not: `reset --hard`, `clean`, `restore`, `rm`, etc
+- Do not: rename/delete without explicit instruction.
+- Avoid: `git stash` unless explicitly asked
 - No amend unless asked
 - Multi-agent: check `git status/diff` before edits; ship small commits
 
 ## Rules
 - Context: run `docs` for docs index
-- Output: No inline file/line references unless I directly ask for them
-- Output: If I ask for an absolute path, print the literal absolute path in plain text
-- Describing code: use signatures, not lines or files. Use sparingly. 1-2 per thought.
+- Read: Inspect silently. Do not print, quote, summarize, or paste file contents.
+- Output: Show absolute paths. No inline file:line refs unless asked.
+- Output: Code signatures not lines or files. Use sparingly: 1-2 per thought.
 - Guardrails: use `trash` for deletes
-- When asked to read: Inspect silently. Do not print, quote, summarize, or paste file contents.

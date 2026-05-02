@@ -142,19 +142,64 @@ test("docs ls ./docs/subdir focuses a local docs subtree", async () => {
 });
 
 test("docs file selectors open a local markdown doc from root and ls browse", async () => {
-	await withDocsCliWorkspace("docs-file-selector-", async ({ repoDir, env }) => {
+	await withDocsCliWorkspace("docs-file-selector-", async ({ repoDir, homeDir, env }) => {
+		await writeText(
+			path.join(homeDir, ".ngents", "docs", "ngents-docs.md"),
+			[
+				"---",
+				"title: Ngents Docs",
+				"summary: Root-level global docs command reference.",
+				"---",
+				"",
+				"# Ngents Docs",
+				"",
+				"Read root-level global docs files without a prefix.",
+				"",
+			].join("\n"),
+		);
+
 		const rootResult = await runDocsCli(["./docs/web-fetching.md"], { cwd: repoDir, env });
+		const bareResult = await runDocsCli(["web-fetching.md"], { cwd: repoDir, env });
+		const bareNoExtensionResult = await runDocsCli(["web-fetching"], { cwd: repoDir, env });
+		const globalBareResult = await runDocsCli(["ngents-docs.md"], { cwd: repoDir, env });
+		const globalBareNoExtensionResult = await runDocsCli(["ngents-docs"], {
+			cwd: repoDir,
+			env,
+		});
+		const globalPrefixedResult = await runDocsCli(["docs/ngents-docs.md"], {
+			cwd: repoDir,
+			env,
+		});
+		const globalPrefixedNoExtensionResult = await runDocsCli(["docs/ngents-docs"], {
+			cwd: repoDir,
+			env,
+		});
 		const lsResult = await runDocsCli(["ls", "./docs/web-fetching.md"], {
 			cwd: repoDir,
 			env,
 		});
 
 		expect(rootResult.exitCode).toBe(0);
+		expect(bareResult.exitCode).toBe(0);
+		expect(bareNoExtensionResult.exitCode).toBe(0);
+		expect(globalBareResult.exitCode).toBe(0);
+		expect(globalBareNoExtensionResult.exitCode).toBe(0);
+		expect(globalPrefixedResult.exitCode).toBe(0);
+		expect(globalPrefixedNoExtensionResult.exitCode).toBe(0);
 		expect(lsResult.exitCode).toBe(0);
 		expect(rootResult.stdout.trim()).toBe(lsResult.stdout.trim());
+		expect(bareResult.stdout.trim()).toBe(rootResult.stdout.trim());
+		expect(bareNoExtensionResult.stdout.trim()).toBe(rootResult.stdout.trim());
+		expect(globalBareResult.stdout.trim()).toBe(globalPrefixedResult.stdout.trim());
+		expect(globalBareNoExtensionResult.stdout.trim()).toBe(globalPrefixedResult.stdout.trim());
+		expect(globalPrefixedNoExtensionResult.stdout.trim()).toBe(globalPrefixedResult.stdout.trim());
 		expect(rootResult.stdout).toContain("# Doc: Web Fetching");
+		expect(globalBareResult.stdout).toContain("# Doc: Ngents Docs");
 		expect(rootResult.stdout.replaceAll("/private/var", "/var")).toContain(
 			`Path: ${path.join(repoDir, "docs", "web-fetching.md")}`,
+		);
+		expect(globalBareResult.stdout).toContain(
+			`Path: ${path.join(homeDir, ".ngents", "docs", "ngents-docs.md")}`,
 		);
 		expect(rootResult.stdout).toContain(
 			"Use browser tools when fetch/search is blocked by JavaScript pages.",

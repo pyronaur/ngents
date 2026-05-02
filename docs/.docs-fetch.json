@@ -11,7 +11,7 @@
 			"target": "topics/app/guidelines/swift-api-design-guidelines.md",
 			"handler": "docs-url-file-fetch",
 			"transform": "html-md",
-			"hash": "5e26d1808474b17a193354d88ee66039ba63f9fa19a1895ecae8848b2ea17fa4"
+			"hash": "4e4e06283f074ff1b538e536b132722618c8c2046b1527346bc3778a9bb68fda"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",

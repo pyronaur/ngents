@@ -70,7 +70,9 @@ test("bare docs renders compact markdown help with merged topics and docs", asyn
 		expect(result.stdout).toContain(
 			"It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.",
 		);
-		expect(result.stdout).toContain("`docs/file.md` or `./docs/file.md`");
+		expect(result.stdout).toContain(
+			"`file`, `file.md`, `docs/file`, `docs/file.md`, or `./docs/file.md`",
+		);
 		expect(result.stdout).toContain(
 			"a topic docs file like `concepts/agent-experience` or `concepts/agent-experience.md`",
 		);

@@ -22,7 +22,7 @@ It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.
 - `.`
 - `global`
 - `docs/subdir` or `./docs/subdir`
-- `docs/file.md` or `./docs/file.md`
+- `file`, `file.md`, `docs/file`, `docs/file.md`, or `./docs/file.md`
 - a topic docs file like `concepts/agent-experience` or `concepts/agent-experience.md`
 - a registered docs root like `browser`
 - a registered docs file like `architecture/main.md`

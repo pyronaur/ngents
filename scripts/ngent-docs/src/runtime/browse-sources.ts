@@ -119,7 +119,7 @@ function isMarkdownDocFileName(fileName: string): boolean {
 	if (!fileName.endsWith(".md")) {
 		return false;
 	}
-	if (sameFileName(fileName, META_FILE) || sameFileName(fileName, "SKILL.md")) {
+	if (sameFileName(fileName, META_FILE)) {
 		return false;
 	}
 	return true;

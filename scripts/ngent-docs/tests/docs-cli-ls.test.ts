@@ -163,6 +163,33 @@ test("docs file selectors open a local markdown doc from root and ls browse", as
 	});
 });
 
+test("docs selectors open skill-only docs roots without spelling SKILL.md", async () => {
+	await withDocsCliWorkspace("docs-skill-selector-", async ({ repoDir, env }) => {
+		await writeText(
+			path.join(repoDir, "skills", "docs", "SKILL.md"),
+			[
+				"---",
+				"title: Dynamic Docs Skill",
+				"description: Read docs dynamically.",
+				"---",
+				"",
+				"# Dynamic Docs Skill",
+				"",
+				"Use this skill when docs should be loaded on demand.",
+				"",
+			].join("\n"),
+		);
+
+		const explicitResult = await runDocsCli(["skills/docs/SKILL.md"], { cwd: repoDir, env });
+		const implicitResult = await runDocsCli(["skills/docs"], { cwd: repoDir, env });
+
+		expect(explicitResult.exitCode).toBe(0);
+		expect(implicitResult.exitCode).toBe(0);
+		expect(explicitResult.stdout).toContain("# Doc: Dynamic Docs Skill");
+		expect(implicitResult.stdout).toBe(explicitResult.stdout);
+	});
+});
+
 test("docs ls docs/subdir merges matching local and global doc subtrees", async () => {
 	await withDocsCliWorkspace("docs-ls-subdir-merged-", async ({ repoDir, homeDir, env }) => {
 		const result = await runDocsCli(["ls", "docs/architecture"], { cwd: repoDir, env });

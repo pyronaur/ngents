@@ -1,3 +1,6 @@
+import { readdir } from "node:fs/promises";
+import path from "node:path";
+
 import { runtimeError } from "../core/errors.ts";
 import browseContracts, {
 	type MarkdownDocument,
@@ -24,7 +27,9 @@ import {
 } from "./browse-sources.ts";
 import { readMarkdownDocument } from "./markdown-document.ts";
 
-const { normalizePath } = browseContracts;
+const { normalizePath, sameFileName } = browseContracts;
+const SKILL_FILE = "SKILL.md";
+
 type DocsBrowseView = {
 	kind: "browse";
 	docs: Awaited<ReturnType<typeof browseDiscovery.readDocsEntriesUnder>>;
@@ -119,6 +124,54 @@ async function docsFileViewForPath(filePath: string): Promise<DocsFileView> {
 		doc: await readMarkdownDocument(filePath),
 		kind: "file",
 	} satisfies DocsFileView;
+}
+
+async function onlySkillMarkdownFile(directoryPath: string): Promise<string | null> {
+	let entries;
+	try {
+		entries = await readdir(directoryPath, { withFileTypes: true });
+	} catch {
+		return null;
+	}
+
+	const markdownFiles = entries.filter(entry => entry.isFile() && entry.name.endsWith(".md"));
+	if (markdownFiles.length !== 1) {
+		return null;
+	}
+
+	const file = markdownFiles[0];
+	if (!file || !sameFileName(file.name, SKILL_FILE)) {
+		return null;
+	}
+
+	return normalizePath(path.join(directoryPath, file.name));
+}
+
+async function docsViewForDirectory(
+	directoryPath: string,
+	where: string,
+): Promise<DocsView> {
+	const skillFilePath = await onlySkillMarkdownFile(directoryPath);
+	if (skillFilePath) {
+		return docsFileViewForPath(skillFilePath);
+	}
+
+	return docsBrowseViewForDirectory(directoryPath, where);
+}
+
+async function docsViewForDirectories(
+	directoryPaths: string[],
+	title: string,
+	topicHint?: string,
+): Promise<DocsView> {
+	if (directoryPaths.length === 1) {
+		const skillFilePath = await onlySkillMarkdownFile(directoryPaths[0] ?? "");
+		if (skillFilePath) {
+			return docsFileViewForPath(skillFilePath);
+		}
+	}
+
+	return docsBrowseViewForDirectories(directoryPaths, title, topicHint);
 }
 
 function docsTitle(where: string | null): string {
@@ -244,18 +297,18 @@ async function resolveIndirectDocsView(
 	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
 	where: string,
 	title: string,
-): Promise<DocsBrowseView> {
+): Promise<DocsView> {
 	const registeredDirectoriesBySelector = await resolveRegisteredDocsDirectoriesBySelector(
 		sources,
 		where,
 	);
 	if (registeredDirectoriesBySelector) {
-		return docsBrowseViewForDirectories(registeredDirectoriesBySelector, title);
+		return docsViewForDirectories(registeredDirectoriesBySelector, title);
 	}
 
 	const registeredDirectories = await resolveRegisteredDocsDirectoriesByName(sources, where);
 	if (registeredDirectories) {
-		return docsBrowseViewForDirectories(
+		return docsViewForDirectories(
 			registeredDirectories,
 			title,
 			await topicHintForSelector(where, sources.mergedDocsRoots),
@@ -263,7 +316,7 @@ async function resolveIndirectDocsView(
 	}
 
 	const directoryPath = await resolveLocalDocsDirectory(sources, where);
-	return docsBrowseViewForDirectory(directoryPath, where);
+	return docsViewForDirectory(directoryPath, where);
 }
 
 async function resolveIndirectDocsViewWithTopicFileFallback(
@@ -317,12 +370,12 @@ async function docsEntriesForWhere(
 	if (where.startsWith("docs/")) {
 		ensureDocsRoots(sources.mergedDocsRoots, currentDir);
 		const directories = await resolveMergedDocsDirectories(sources, where);
-		return docsBrowseViewForRoots(directories, currentDir, title);
+		return docsViewForDirectories(directories, title);
 	}
 
 	const directDirectoryPath = await resolveDirectDocsDirectory(sources, where);
 	if (directDirectoryPath) {
-		return docsBrowseViewForDirectory(directDirectoryPath, where);
+		return docsViewForDirectory(directDirectoryPath, where);
 	}
 
 	return resolveIndirectDocsViewWithTopicFileFallback(sources, where, title);

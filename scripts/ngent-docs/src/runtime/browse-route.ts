@@ -2,13 +2,13 @@ import { runtimeError } from "../core/errors.ts";
 import browseContracts from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import { onlySkillMarkdownFile, resolveImplicitDocsMarkdownFile } from "./browse-file-fallbacks.ts";
-import {
-	type DocsBrowseView,
-	type DocsFileView,
-	type DocsSelectorRoute,
-	type DocsSelectorRouteMode,
-	type DocsView,
-	type ParkedCollectionSelectorView,
+import type {
+	DocsBrowseView,
+	DocsFileView,
+	DocsSelectorRoute,
+	DocsSelectorRouteMode,
+	DocsView,
+	ParkedCollectionSelectorView,
 } from "./browse-route-contracts.ts";
 import {
 	discoverDocsSources,

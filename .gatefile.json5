@@ -1,0 +1,118 @@
+{
+	$use: "./scripts/ngent-docs/node_modules/.bin",
+
+	gatefile: {
+		name: "Validate Gatefile definition",
+		// Gatefile routing changes need an explicit syntax/discovery check.
+		match: ".gatefile.json5",
+		run: "gate ls",
+	},
+
+	format: {
+		name: "Format ngent-docs TypeScript and JavaScript",
+		cwd: "./scripts/ngent-docs",
+		// Runs on clean trees for broad validation, and when formatter inputs or config change.
+		match: [
+			"!*",
+			"scripts/ngent-docs/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+			"scripts/ngent-docs/dprint.json",
+		],
+		run: "dprint check .",
+	},
+
+	typecheck: {
+		name: "Type-check ngent-docs TypeScript",
+		cwd: "./scripts/ngent-docs",
+		// TypeScript diagnostics can change when runtime, test, or compiler config changes.
+		match: [
+			"!*",
+			"scripts/ngent-docs/{bin,src,tests}/**/*.ts",
+			"scripts/ngent-docs/tsconfig.json",
+		],
+		run: "tsc -p tsconfig.json --noEmit",
+	},
+
+	lint: {
+		name: "Lint ngent-docs TypeScript and JavaScript",
+		cwd: "./scripts/ngent-docs",
+		// Oxlint reads source/test files, the lint config, and the type-aware tsconfig.
+		match: [
+			"!*",
+			"scripts/ngent-docs/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+			"scripts/ngent-docs/.oxlintrc.json",
+			"scripts/ngent-docs/tsconfig.json",
+		],
+		run: {
+			label: "ngent-docs TypeScript lint",
+			cmd: "oxlint --type-aware --tsconfig tsconfig.json .",
+			guidance: [
+				"If addressing these lints would require unreasonable or hacky workarounds, stop and write a brief problem description to the user.",
+				"Exceptions are rare and require explicit user approval.",
+			],
+		},
+	},
+
+	duplicates: {
+		name: "Detect ngent-docs runtime source duplication",
+		cwd: "./scripts/ngent-docs",
+		// Runtime duplication policy covers shipped bin/src TypeScript plus jscpd config.
+		match: [
+			"!*",
+			"scripts/ngent-docs/{bin,src}/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+			"scripts/ngent-docs/.jscpd.json",
+		],
+		run: {
+			label: "ngent-docs runtime duplication",
+			cmd: "jscpd --config .jscpd.json",
+			guidance: [
+				"Keep threshold at zero.",
+				"Extract or rewrite duplicated code instead of excluding it.",
+			],
+		},
+	},
+
+	test_duplicates: {
+		name: "Detect ngent-docs test duplication",
+		cwd: "./scripts/ngent-docs",
+		// Test duplication has separate thresholds and scope from runtime source.
+		match: [
+			"!*",
+			"scripts/ngent-docs/tests/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+			"scripts/ngent-docs/.jscpd.tests.json",
+		],
+		run: {
+			label: "ngent-docs test duplication",
+			cmd: "jscpd --config .jscpd.tests.json",
+			guidance: [
+				"Keep threshold at zero.",
+				"Extract or rewrite duplicated test setup instead of excluding it.",
+			],
+		},
+	},
+
+	dead_code: {
+		name: "Detect unused shipped ngent-docs TypeScript",
+		cwd: "./scripts/ngent-docs",
+		// Knip reads package metadata, runtime entry/project files, tsconfig, and knip config.
+		match: [
+			"!*",
+			"scripts/ngent-docs/{bin,src}/**/*.ts",
+			"scripts/ngent-docs/package.json",
+			"scripts/ngent-docs/tsconfig.json",
+			"scripts/ngent-docs/knip.json",
+		],
+		run: "knip --production --no-progress",
+	},
+
+	test: {
+		name: "Run ngent-docs CLI behavior tests",
+		cwd: "./scripts/ngent-docs",
+		// Vitest exercises CLI behavior from source, tests, templates, and snapshots.
+		match: [
+			"!*",
+			"scripts/ngent-docs/{bin,src,tests,templates}/**/*",
+			"scripts/ngent-docs/tsconfig.json",
+		],
+		run: "vitest run",
+	},
+}

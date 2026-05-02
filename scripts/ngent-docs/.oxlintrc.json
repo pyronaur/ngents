@@ -1,7 +1,7 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
 	"plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
-	"jsPlugins": ["oxlint-plugin-inhuman"],
+	"jsPlugins": ["oxlint-plugin-inhuman", "oxlint-plugin-complexity"],
 	"ignorePatterns": [
 		"**/node_modules/**",
 		"**/dist/**",
@@ -18,6 +18,23 @@
 		{
 			"files": ["**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}"],
 			"rules": {
+				"typescript/consistent-type-imports": [
+					"error",
+					{
+						"fixStyle": "inline-type-imports"
+					}
+				],
+				"typescript/no-import-type-side-effects": "error",
+				"import/no-duplicates": "error",
+				"import/no-self-import": "error",
+				"eslint/no-unused-vars": [
+					"error",
+					{
+						"args": "after-used",
+						"vars": "all",
+						"caughtErrors": "all"
+					}
+				],
 				"max-depth": ["error", { "max": 3 }],
 				"max-params": ["error", { "max": 3 }],
 				"max-lines": ["error", { "max": 500 }],
@@ -34,6 +51,13 @@
 				"inhuman/no-switch": "error",
 				"inhuman/no-else": "error",
 				"oxc/no-barrel-file": "error",
+				"typescript/no-unnecessary-type-constraint": "error",
+				"typescript/no-useless-empty-export": "error",
+				"eslint/no-unneeded-ternary": "error",
+				"eslint/no-useless-concat": "error",
+				"unicorn/prefer-array-flat-map": "error",
+				"unicorn/no-abusive-eslint-disable": "error",
+				"complexity/complexity": "error",
 				"typescript/no-wrapper-object-types": "error",
 				"typescript/no-restricted-types": [
 					"error",
@@ -71,15 +95,7 @@
 			"rules": {
 				"max-depth": ["error", { "max": 4 }],
 				"max-params": ["error", { "max": 5 }],
-				"max-lines": ["error", { "max": 1000 }],
-				"max-lines-per-function": ["error", { "max": 250 }],
-				"max-statements": ["error", { "max": 40 }]
-			}
-		},
-		{
-			"files": ["**/tests/helpers/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}"],
-			"rules": {
-				"inhuman/export-code-last": "off"
+				"max-lines": ["error", { "max": 750 }]
 			}
 		}
 	]

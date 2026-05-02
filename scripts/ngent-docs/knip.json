@@ -1,11 +1,6 @@
 {
-	"entry": [
-		"src/**/*.ts",
-		".lint/run.ts"
-	],
-	"project": ["bin/**/*.ts", "src/**/*.ts", "tests/**/*.ts", ".lint/**/*.ts"],
-	"ignoreIssues": {
-		"tests/helpers/docs-cli-fixture.ts": ["exports", "types"]
-	},
-	"ignoreDependencies": ["oxlint-plugin-inhuman"]
+	"includeEntryExports": true,
+	"entry": ["bin/docs.ts!", "bin/docs-git-fetch.ts!", "bin/docs-url-file-fetch.ts!"],
+	"project": ["bin/**/*.ts!", "src/**/*.ts!"],
+	"ignore": ["dist", "build", "coverage"]
 }

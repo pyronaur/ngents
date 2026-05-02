@@ -291,9 +291,10 @@ test("docs topic section renders a single root skill directly", async () => {
 			});
 			expect(result.exitCode).toBe(0);
 			expect(hasHeading(result.stdout, 2, "iOS Debugger Agent")).toBe(true);
-			expect(result.stdout).not.toContain(
+			expect(normalizedPathForOutput(result.stdout)).toContain(
 				topicDocsPathForOutput(normalizedRepoDir, "ios-debugger-agent", "SKILL.md"),
 			);
+			expect(result.stdout).toContain(`Open: docs topic ${TEST_TOPIC_NAME} ios-debugger-agent`);
 			expect(result.stdout).toContain(
 				"Use XcodeBuildMCP to build, run, and debug the current iOS project on a booted simulator.",
 			);
@@ -314,7 +315,7 @@ test("docs topic focus resolves nested skill paths directly", async () => {
 			);
 
 			expect(result.exitCode).toBe(0);
-			expect(normalizedPathForOutput(result.stdout)).not.toContain(
+			expect(normalizedPathForOutput(result.stdout)).toContain(
 				topicDocsPathForOutput(
 					normalizedRepoDir,
 					"hig-doctor",
@@ -322,6 +323,9 @@ test("docs topic focus resolves nested skill paths directly", async () => {
 					"hig-components-content",
 					"SKILL.md",
 				),
+			);
+			expect(result.stdout).toContain(
+				`Open: docs topic ${TEST_TOPIC_NAME} hig-doctor/skills/hig-components-content`,
 			);
 			expectHigComponentsSkill(result.stdout, {
 				nameLine: false,

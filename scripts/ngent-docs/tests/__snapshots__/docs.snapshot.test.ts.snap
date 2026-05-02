@@ -57,15 +57,17 @@ Read when: Need reusable machine docs.
 
 #### pattern-library
 Path: /fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/SKILL.md
+Open: docs topic platform pattern-library/skills/content-cards
 
-$content-cards
+- skills/content-cards: $content-cards
 
 #### workflow-agent
 Path: /fixture/repo/docs/topics/platform/workflow-agent/SKILL.md
+Open: docs topic platform workflow-agent
 
 Workflow skill.
 
-$workflow-agent - Workflow-first checks.
+- workflow-agent: $workflow-agent - Workflow-first checks.
 
 
 ## Docs: platform

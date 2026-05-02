@@ -30,7 +30,10 @@ test("docs topic overview matches the current output", async () => {
 
 test("docs topic focused path matches the current output", async () => {
 	const rendered = await captureOutput(() =>
-		browseRender.printFocusedSection(platformTopicFixture.focusedSection)
+		browseRender.printFocusedSection({
+			...platformTopicFixture.focusedSection,
+			topicName: platformTopicFixture.topic.name,
+		})
 	);
 
 	expect(rendered).toMatchSnapshot();
@@ -38,7 +41,10 @@ test("docs topic focused path matches the current output", async () => {
 
 test("docs topic focused nested path matches the current output", async () => {
 	const rendered = await captureOutput(() =>
-		browseRender.printFocusedSection(platformTopicFixture.deepFocusedSection)
+		browseRender.printFocusedSection({
+			...platformTopicFixture.deepFocusedSection,
+			topicName: platformTopicFixture.topic.name,
+		})
 	);
 
 	expect(rendered).toMatchSnapshot();
@@ -49,6 +55,7 @@ test("docs topic direct skill view matches the current output", async () => {
 		browseRender.printFocusedSection({
 			key: platformTopicFixture.directSkillSection.key,
 			sections: [platformTopicFixture.directSkillSection],
+			topicName: platformTopicFixture.topic.name,
 		})
 	);
 

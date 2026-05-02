@@ -304,9 +304,11 @@ Current decisions:
 - The root overview expands nested doc directories to depth 2 from the topic root.
 - Docs render as compact buckets grouped by absolute owning directory path.
 - Topic-root docs and nested docs use the same compact bucket format.
-- Direct skill directories can print the exact `SKILL.md` `Path:`.
-- Skill overview entries are compact and print `$<skill.name>` with an
-  optional hint.
+- Skill sections print `Path:` and `Open:` before the skill entries.
+- Skill section `Path:` and `Open:` lines use a `{$directory}` template when
+  multiple sibling skills share the same shape.
+- Skill overview entries print the topic-relative skill directory selector,
+  `$<skill.name>`, and an optional hint.
 - Skill group metadata can include summary, `readWhen`, and parse error.
 - Mixed directories that contain nested skills are classified under `Skills` in
   the root overview.
@@ -325,7 +327,8 @@ Current decisions:
   directory, the CLI renders a compact direct skill view.
 - This compact view prints:
   - heading from `skill.title`, then `skill.name`, then basename fallback
-  - skill path
+  - exact `SKILL.md` `Path:`
+  - matching `docs topic <topic> <path>` `Open:` selector
   - skill description
   - grouped reference filenames
 
@@ -349,8 +352,8 @@ Current decisions:
   compact overview form.
 - Each focused skill prints:
   - `skill.title` if present, else `skill.name`
-  - either a bare absolute path in compact direct-skill mode or a labeled
-    `path:` in grouped skill blocks
+  - exact `SKILL.md` `Path:`
+  - matching `docs topic <topic> <path>` `Open:` selector
   - description when present
   - grouped reference filenames
 

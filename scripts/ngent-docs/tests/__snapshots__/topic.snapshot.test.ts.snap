@@ -3,6 +3,9 @@
 exports[`docs topic direct skill view matches the current output 1`] = `
 "## Workflow Agent
 
+Path: /fixture/repo/docs/topics/platform/workflow-agent/SKILL.md
+Open: docs topic platform workflow-agent
+
 Run the current workflow against a local test environment.
 
 ### References
@@ -20,7 +23,10 @@ Use this subtree before falling back to broader references.
   usage.md - Start here before opening deeper sections in the subtree.
 
 ### Skills
-$content-cards - Review content card structures and their supporting references.
+Path: /fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/SKILL.md
+Open: docs topic platform pattern-library/skills/content-cards
+
+- skills/content-cards: $content-cards - Review content card structures and their supporting references.
 "
 `;
 
@@ -80,15 +86,17 @@ Read when: Need reusable machine docs.
 
 ### pattern-library
 Path: /fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/SKILL.md
+Open: docs topic platform pattern-library/skills/content-cards
 
-$content-cards
+- skills/content-cards: $content-cards
 
 ### workflow-agent
 Path: /fixture/repo/docs/topics/platform/workflow-agent/SKILL.md
+Open: docs topic platform workflow-agent
 
 Workflow skill.
 
-$workflow-agent - Workflow-first checks.
+- workflow-agent: $workflow-agent - Workflow-first checks.
 "
 `;
 

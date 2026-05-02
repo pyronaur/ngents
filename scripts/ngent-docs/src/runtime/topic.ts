@@ -157,5 +157,5 @@ export async function runDocsTopic(positionals: string[]): Promise<void> {
 
 	const topic = await readTopicOrFail(sources.mergedDocsRoots, requestedTopic);
 	const sections = sectionsOrFail(topic, requestedTopic, requestedSection);
-	browseRender.printFocusedSection({ key: requestedSection, sections });
+	browseRender.printFocusedSection({ key: requestedSection, sections, topicName: requestedTopic });
 }

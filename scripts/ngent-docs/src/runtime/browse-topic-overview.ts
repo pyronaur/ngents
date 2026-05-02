@@ -8,6 +8,7 @@ import type {
 	TopicContribution,
 } from "./browse-contracts.ts";
 import browseContracts from "./browse-contracts.ts";
+import { renderSkillList } from "./browse-skill-render.ts";
 import commandTemplate, {
 	type TopicTemplateDocsBucket,
 	type TopicTemplateGuideBlock,
@@ -37,113 +38,6 @@ type TopicOverviewOptions = {
 	entryHeadingLevel?: 3 | 4;
 	maxDepth?: number;
 };
-
-function printTopicSkillLine(skill: SkillEntry): string {
-	if (skill.hint) {
-		return `$${skill.name} - ${skill.hint}`;
-	}
-
-	return `$${skill.name}`;
-}
-
-function relativePathParts(basePath: string, absolutePath: string): string[] {
-	return absolutePath.slice(`${basePath}/`.length).split("/").filter(Boolean);
-}
-
-function consistentPathParts(pathParts: string[][]): string[] | null {
-	const firstParts = pathParts[0];
-	if (!firstParts) {
-		return null;
-	}
-
-	for (const parts of pathParts) {
-		if (parts.length !== firstParts.length) {
-			return null;
-		}
-	}
-
-	return firstParts;
-}
-
-function variableIndexForTemplate(
-	pathParts: string[][],
-	entries: Array<{ variableSegment: string }>,
-): number | null {
-	const firstParts = consistentPathParts(pathParts);
-	if (!firstParts) {
-		return null;
-	}
-
-	const variableIndexes: number[] = [];
-	for (let index = 0; index < firstParts.length; index += 1) {
-		const expected = firstParts[index];
-		if (pathParts.some(parts => parts[index] !== expected)) {
-			variableIndexes.push(index);
-		}
-	}
-	if (variableIndexes.length !== 1) {
-		return null;
-	}
-
-	const [variableIndex] = variableIndexes;
-	if (variableIndex === undefined) {
-		return null;
-	}
-
-	for (const [index, entry] of entries.entries()) {
-		if (pathParts[index]?.[variableIndex] !== entry.variableSegment) {
-			return null;
-		}
-	}
-
-	return variableIndex;
-}
-
-function entryPathTemplate(
-	basePath: string,
-	entries: Array<{
-		absolutePath: string;
-		variableSegment: string;
-	}>,
-): string | null {
-	if (entries.length === 0) {
-		return null;
-	}
-
-	if (entries.length === 1) {
-		const [entry] = entries;
-		return entry?.absolutePath ?? null;
-	}
-
-	const pathParts = entries.map(entry => relativePathParts(basePath, entry.absolutePath));
-	const firstParts = consistentPathParts(pathParts);
-	if (!firstParts) {
-		return null;
-	}
-
-	const variableIndex = variableIndexForTemplate(pathParts, entries);
-	if (variableIndex === null) {
-		return null;
-	}
-
-	const templateParts = [...firstParts];
-	templateParts[variableIndex] = "{$name}";
-	return `${basePath}/${templateParts.join("/")}`;
-}
-
-function skillPathTemplate(section: SectionEntry, skills: SkillEntry[]): string | null {
-	return entryPathTemplate(
-		section.absolutePath,
-		skills.map(skill => ({
-			absolutePath: skill.absolutePath,
-			variableSegment: skill.name,
-		})),
-	);
-}
-
-function sectionDirectoryPath(section: SectionEntry): string {
-	return `${section.absolutePath}/`;
-}
 
 function sectionHasSkillContent(section: SectionEntry): boolean {
 	if (section.skills.length > 0) {
@@ -284,6 +178,7 @@ function createDocsBuckets(
 
 function createSkillSection(
 	section: SectionEntry,
+	topicName: string,
 	headingLevel: 3 | 4 | 5 | 6,
 ): TopicTemplateSkillSection | null {
 	const skills = collectOverviewSkills(section);
@@ -291,26 +186,23 @@ function createSkillSection(
 		return null;
 	}
 
-	const pathLine = skillPathTemplate(section, skills) ?? sectionDirectoryPath(section);
 	const metadata = metadataLines(section);
-	const lines = [heading(headingLevel, section.key)];
-	if (pathLine) {
-		lines.push(`Path: ${pathLine}`);
-	}
-	if (metadata.length > 0 || skills.length > 0) {
-		lines.push("");
-	}
-	lines.push(...metadata);
-	if (metadata.length > 0 && skills.length > 0) {
-		lines.push("");
-	}
-	lines.push(...skills.map(skill => printTopicSkillLine(skill)));
+	const lines = renderSkillList({
+		headingLevel,
+		metadata,
+		sectionKey: section.key,
+		sectionPath: section.absolutePath,
+		skills,
+		title: section.key,
+		topicName,
+	});
 	return {
 		text: lines.join("\n"),
 	};
 }
 
 function createSkillSections(
+	topicName: string,
 	contributions: TopicContribution[],
 	entryHeadingLevel: 3 | 4 | 5 | 6,
 ): TopicTemplateSkillSection[] {
@@ -322,7 +214,7 @@ function createSkillSections(
 				continue;
 			}
 
-			const skillSection = createSkillSection(section, entryHeadingLevel);
+			const skillSection = createSkillSection(section, topicName, entryHeadingLevel);
 			if (skillSection) {
 				sections.push(skillSection);
 			}
@@ -346,7 +238,7 @@ export function createTopicOverviewContext(
 		docs_buckets: createDocsBuckets(topic.contributions, maxDepth, entryHeadingLevel),
 		docs_heading_line: heading(sectionHeadingLevel, "Docs"),
 		guide_blocks: createGuideBlocks(topic.contributions),
-		skill_sections: createSkillSections(topic.contributions, entryHeadingLevel),
+		skill_sections: createSkillSections(topic.name, topic.contributions, entryHeadingLevel),
 		skills_heading_line: heading(sectionHeadingLevel, "Skills"),
 		title_line: heading(titleLevel, `${titlePrefix}${topic.title}`),
 		view: "overview",

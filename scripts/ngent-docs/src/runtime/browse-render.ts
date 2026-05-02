@@ -271,7 +271,9 @@ function printTopicView(topic: MergedTopic): void {
 	);
 }
 
-function printFocusedSection(sectionView: { key: string; sections: SectionEntry[] }): void {
+function printFocusedSection(
+	sectionView: { key: string; sections: SectionEntry[]; topicName: string },
+): void {
 	templateOutput.printRenderedTemplate(
 		commandTemplate.renderTopicTemplate(createFocusedContext(sectionView)),
 	);

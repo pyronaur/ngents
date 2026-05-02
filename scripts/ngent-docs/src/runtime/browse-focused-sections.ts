@@ -6,6 +6,7 @@ import browseContracts, {
 	type SkillEntry,
 } from "./browse-contracts.ts";
 import { isCompactFocusedSkillSection } from "./browse-focused-skills.ts";
+import { renderDirectSkill, renderSkillList } from "./browse-skill-render.ts";
 import type { TopicTemplateFocusedContext } from "./command-template.ts";
 import { groupedDocs } from "./docs-grouping.ts";
 
@@ -19,23 +20,10 @@ const {
 	sortedMarkdownEntries,
 } = browseContracts;
 
-function blockText(lines: string[]): string {
-	return lines.join("\n");
-}
-
-function directSkill(section: SectionEntry): SkillEntry | null {
-	const [skill] = section.skills;
-	if (!skill) {
-		return null;
-	}
-
-	return skill;
-}
-
 function sharedSectionTitle(sectionKey: string, sections: SectionEntry[]): string {
 	for (const section of sections) {
 		if (isCompactFocusedSkillSection(section)) {
-			const skill = directSkill(section);
+			const [skill] = section.skills;
 			if (skill) {
 				return skill.title ?? skill.name;
 			}
@@ -126,51 +114,11 @@ function collectSkills(section: SectionEntry, skills: SkillEntry[]): void {
 	}
 }
 
-function skillLines(sections: SectionEntry[]): string[] {
-	const skills: SkillEntry[] = [];
-	for (const section of sections) {
-		collectSkills(section, skills);
-	}
-
-	return skills
-		.sort((left, right) => left.relativePath.localeCompare(right.relativePath))
-		.map(skill => {
-			const description = normalizeInlineText(skill.hint) ?? normalizeInlineText(skill.description);
-			if (!description) {
-				return `$${skill.name}`;
-			}
-
-			return `$${skill.name} - ${description}`;
-		});
-}
-
-function appendCompactSkillBody(section: SectionEntry, lines: string[]): void {
-	const skill = directSkill(section);
-	if (!skill) {
-		return;
-	}
-
-	const description = normalizeInlineText(skill.description) ?? normalizeInlineText(skill.hint);
-	if (description) {
-		lines.push(description);
-	}
-	if (skill.error) {
-		lines.push(errorText(skill.error));
-	}
-	if (skill.referencePaths.length === 0) {
-		return;
-	}
-
-	if (description || skill.error) {
-		lines.push("");
-	}
-	lines.push(heading(3, "References"));
-	lines.push(...skill.referencePaths.map(referencePath => `- ${path.basename(referencePath)}`));
-}
-
-function mergedSectionLines(sections: SectionEntry[]): string[] {
+function mergedSectionLines(
+	sectionView: { key: string; sections: SectionEntry[]; topicName: string },
+): string[] {
 	const lines: string[] = [];
-	const metadataBlocks = sections
+	const metadataBlocks = sectionView.sections
 		.map(section => sectionMetadataLines(section))
 		.filter(block => block.length > 0);
 
@@ -181,7 +129,7 @@ function mergedSectionLines(sections: SectionEntry[]): string[] {
 		}
 	}
 
-	const docs = docsGroupLines(sections);
+	const docs = docsGroupLines(sectionView.sections);
 	if (docs.length > 0) {
 		if (lines.length > 0) {
 			lines.push("");
@@ -189,13 +137,22 @@ function mergedSectionLines(sections: SectionEntry[]): string[] {
 		lines.push(...docs);
 	}
 
-	const skills = skillLines(sections);
+	const skills: SkillEntry[] = [];
+	for (const section of sectionView.sections) {
+		collectSkills(section, skills);
+	}
 	if (skills.length > 0) {
 		if (lines.length > 0) {
 			lines.push("");
 		}
-		lines.push(heading(3, "Skills"));
-		lines.push(...skills);
+		lines.push(...renderSkillList({
+			description: true,
+			sectionKey: sectionView.key,
+			sectionPath: sectionView.sections[0]?.absolutePath ?? "",
+			skills,
+			title: "Skills",
+			topicName: sectionView.topicName,
+		}));
 	}
 
 	if (lines.length === 0) {
@@ -206,15 +163,13 @@ function mergedSectionLines(sections: SectionEntry[]): string[] {
 }
 
 export function createFocusedContext(
-	sectionView: { key: string; sections: SectionEntry[] },
+	sectionView: { key: string; sections: SectionEntry[]; topicName: string },
 ): TopicTemplateFocusedContext {
 	const sections = sectionView.sections.every(section => isCompactFocusedSkillSection(section))
-		? sectionView.sections.map(section => {
-			const lines: string[] = [];
-			appendCompactSkillBody(section, lines);
-			return { text: blockText(lines) };
-		})
-		: [{ text: blockText(mergedSectionLines(sectionView.sections)) }];
+		? sectionView.sections.map(section => ({
+			text: renderDirectSkill(section, sectionView.topicName).join("\n"),
+		}))
+		: [{ text: mergedSectionLines(sectionView).join("\n") }];
 
 	return {
 		sections,

@@ -152,6 +152,8 @@ Global docs collection metadata is cached for 1 hour.
 - Topic overviews keep docs as docs, keep skills as skills, and use directories only for grouping and navigation.
 - Topic overviews group docs by absolute owning directory path and render compact file lists.
 - Topic overviews expand nested doc directories up to depth 2.
+- Topic skill sections render `Path:` and `Open:` lines before skill entries.
+- Skill entries render the topic-relative skill directory selector, `$<skill.name>`, and optional hint or description.
 - Exact paths such as `docs/guides` or `hig-doctor/skills/hig-components-content` can be focused directly.
 
 ### Selector scope examples
@@ -274,6 +276,7 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 - Docs are discovered recursively inside a topic except below directories rooted at `SKILL.md`.
 - Skill directories do not suppress ordinary docs in ancestor or sibling paths.
 - A focused path that is exactly one root `SKILL.md` renders that skill directly.
+- Focused skill views render the exact `SKILL.md` `Path:` and the matching `docs topic <topic> <path>` `Open:` selector.
 - Focused ordinary paths can render direct docs and nested skill directories together.
 
 ## Examples

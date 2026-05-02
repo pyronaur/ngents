@@ -15,21 +15,24 @@ Adjacent concerns:
 
 ## Audience
 
-Reader = an agent loading the doc into context. "You" must refer to one perspective.
+Reader = an agent loading the doc into context.
 
 ## DRY
 
-Multiple definitions create stale forks. For shared concepts:
+Multiple definitions create stale forks.
 
-1. Pick the canonical home.
-2. Define it there.
-3. Reference elsewhere with a docs link (`!docs skills/docs/SKILL.md`).
+### Reference
 
-If a section grows past one concept, extract it.
+- Across docs: pick the canonical home, define it there, link from elsewhere with a docs link (`!docs skills/docs/SKILL.md`).
+- Within a doc: define a concept once. Subsequent mentions reference, not redefine.
 
-## Apply the principles
+### Token usage
 
-Docs are written for agents. `!docs concepts/agent-experience.md`
+Reader is an agent (`!docs concepts/agent-experience.md`); apply its principles.
+
+Be terse. Cut filler and weak qualifiers; prefer concrete verbs.
+
+E.g. "You should make use of the `rg` tool in order to perform searches across files" → "Use `rg` to search files."
 
 ## Iterative authoring
 

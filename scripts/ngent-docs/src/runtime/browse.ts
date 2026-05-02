@@ -183,6 +183,63 @@ async function resolveDirectDocsFile(
 	return resolveMergedDocsFile(sources, `docs/${where}`);
 }
 
+function topicMarkdownSelector(
+	where: string,
+	options: { allowImplicitExtension: boolean },
+): string | null {
+	if (isDocsFilesystemSelector(where) || where.startsWith("docs/")) {
+		return null;
+	}
+
+	const normalized = where.replaceAll("\\", "/").trim();
+	const segments = normalized.split("/").filter(segment => segment.length > 0);
+	if (segments.length < 2) {
+		return null;
+	}
+	if (segments.some(segment => segment === "." || segment === "..")) {
+		return null;
+	}
+	if (!options.allowImplicitExtension && !isDocsFileSelector(normalized)) {
+		return null;
+	}
+
+	const topicPath = normalized.endsWith(".md") ? normalized : `${normalized}.md`;
+	return `docs/topics/${topicPath}`;
+}
+
+async function resolveTopicMarkdownFile(
+	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
+	where: string,
+	options: { allowImplicitExtension: boolean },
+): Promise<string | null> {
+	const selector = topicMarkdownSelector(where, options);
+	if (!selector) {
+		return null;
+	}
+
+	return resolveMergedDocsFile(sources, selector);
+}
+
+async function docsFileViewForSelector(
+	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
+	where: string,
+	options: { allowImplicitTopicExtension: boolean },
+): Promise<DocsFileView | null> {
+	const directFilePath = await resolveDirectDocsFile(sources, where);
+	if (directFilePath) {
+		return docsFileViewForPath(directFilePath);
+	}
+
+	const topicMarkdownPath = await resolveTopicMarkdownFile(sources, where, {
+		allowImplicitExtension: options.allowImplicitTopicExtension,
+	});
+	if (topicMarkdownPath) {
+		return docsFileViewForPath(topicMarkdownPath);
+	}
+
+	return null;
+}
+
 async function resolveIndirectDocsView(
 	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
 	where: string,
@@ -209,6 +266,29 @@ async function resolveIndirectDocsView(
 	return docsBrowseViewForDirectory(directoryPath, where);
 }
 
+async function resolveIndirectDocsViewWithTopicFileFallback(
+	sources: Awaited<ReturnType<typeof discoverDocsSources>>,
+	where: string,
+	title: string,
+): Promise<DocsView> {
+	try {
+		return await resolveIndirectDocsView(sources, where, title);
+	} catch (error) {
+		if (!isBrowseSelectorNotFoundError(error)) {
+			throw error;
+		}
+
+		const fileView = await docsFileViewForSelector(sources, where, {
+			allowImplicitTopicExtension: true,
+		});
+		if (fileView) {
+			return fileView;
+		}
+
+		throw error;
+	}
+}
+
 async function docsEntriesForWhere(
 	currentDir: string,
 	where: string | null,
@@ -227,9 +307,11 @@ async function docsEntriesForWhere(
 		return docsBrowseViewForRoots(sources.globalDocsRoots, "global", title);
 	}
 
-	const directFilePath = await resolveDirectDocsFile(sources, where);
-	if (directFilePath) {
-		return docsFileViewForPath(directFilePath);
+	const fileView = await docsFileViewForSelector(sources, where, {
+		allowImplicitTopicExtension: false,
+	});
+	if (fileView) {
+		return fileView;
 	}
 
 	if (where.startsWith("docs/")) {
@@ -243,7 +325,7 @@ async function docsEntriesForWhere(
 		return docsBrowseViewForDirectory(directDirectoryPath, where);
 	}
 
-	return resolveIndirectDocsView(sources, where, title);
+	return resolveIndirectDocsViewWithTopicFileFallback(sources, where, title);
 }
 
 async function browseInventoryForCurrentDir(currentDir: string) {

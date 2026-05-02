@@ -411,6 +411,43 @@ test("docs bare topic selectors match docs topic when no registered docs overlap
 	);
 });
 
+test("docs bare topic path selectors open topic markdown files", async () => {
+	await withDocsCliWorkspace(
+		"docs-topic-root-file-selector-",
+		async ({ repoDir, env }) => {
+			await writeText(
+				topicDocsPath(repoDir, "agent-experience.md"),
+				[
+					"---",
+					"title: Agent Experience",
+					"summary: Build CLI surfaces for agents.",
+					"---",
+					"",
+					"# Agent Experience",
+					"",
+					"Design the command shape around agent use.",
+					"",
+				].join("\n"),
+			);
+
+			const withSuffix = await runDocsCli([`${TEST_TOPIC_NAME}/agent-experience.md`], {
+				cwd: repoDir,
+				env,
+			});
+			const withoutSuffix = await runDocsCli([`${TEST_TOPIC_NAME}/agent-experience`], {
+				cwd: repoDir,
+				env,
+			});
+
+			expect(withSuffix.exitCode).toBe(0);
+			expect(withoutSuffix.exitCode).toBe(0);
+			expect(withSuffix.stdout).toContain("# Doc: Agent Experience");
+			expect(withoutSuffix.stdout).toBe(withSuffix.stdout);
+		},
+		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
+	);
+});
+
 test("docs topic path focus keeps sibling docs outside nested skill paths", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-skills-",

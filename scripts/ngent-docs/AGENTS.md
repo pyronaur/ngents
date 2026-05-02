@@ -5,6 +5,11 @@ Do not introduce Bun runtime APIs into the package runtime or `bun:test` usage.
 Use npm commands for install and test verification.
 Run `npm test` before handoff when behavior changes.
 
+Selector routing has one source of truth. All `docs <where>` and
+`docs ls [where...]` selector decisions must go through
+`resolveDocsSelectorRoute`; callers may render returned routes, but must not
+pre-resolve topics, docs roots, files, or parked collections in parallel paths.
+
 # Agent Guidance
 
 ## Delivery Posture

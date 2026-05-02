@@ -105,6 +105,12 @@ Global docs collection metadata is cached for 1 hour.
 
 ## Browse behavior
 
+### Selector routing contract
+
+Selector routing has one source of truth.
+Both `docs <where>` and `docs ls [where...]` route selectors through the same resolver before rendering.
+Callers choose the selector mode, but they do not independently decide whether a selector is a topic, docs root, file, parked collection, or not-found case.
+
 ### `ls`
 
 `ls` browses docs only.

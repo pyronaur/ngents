@@ -5,9 +5,9 @@ import browseContracts, {
 } from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
+import { readParkedCollectionSelector } from "./browse-route.ts";
 import { discoverDocsSources } from "./browse-sources.ts";
 import { availableSectionKeys } from "./browse-topic-sections.ts";
-import { readParkedCollectionSelector } from "./browse.ts";
 
 const { normalizePath } = browseContracts;
 

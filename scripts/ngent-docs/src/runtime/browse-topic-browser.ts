@@ -4,8 +4,6 @@ import browseContracts, { type TopicIndexRow } from "./browse-contracts.ts";
 
 const {
 	compactDescription,
-	heading,
-	printLine,
 } = browseContracts;
 
 function printTopicDescription(
@@ -30,18 +28,6 @@ function renderTopicTableRow(
 	}`;
 }
 
-function renderTopicsTable(topics: TopicIndexRow[]): string {
-	if (topics.length === 0) {
-		return "- [no topics found]";
-	}
-
-	const widths = topicColumnWidths(topics);
-	return [
-		renderTopicTableHeader(topics),
-		...topics.map(topic => renderTopicTableRow(topic, widths)),
-	].join("\n");
-}
-
 export function renderTopicTableHeader(topics: TopicIndexRow[]): string {
 	const { titleWidth, topicWidth } = topicColumnWidths(topics);
 	return pc.bold(`${"TOPIC".padEnd(topicWidth)}  ${"TITLE".padEnd(titleWidth)}  DESCRIPTION`);
@@ -50,36 +36,4 @@ export function renderTopicTableHeader(topics: TopicIndexRow[]): string {
 export function rootHelpTopicLines(topics: TopicIndexRow[]): string[] {
 	const widths = topicColumnWidths(topics);
 	return topics.map(topic => renderTopicTableRow(topic, widths));
-}
-
-export function printScopedTopicBrowser(
-	topics: TopicIndexRow[],
-	options: {
-		title: string;
-		titleLevel?: 1 | 2;
-	},
-): void {
-	printLine(heading(options.titleLevel ?? 1, options.title));
-	if (topics.length === 0) {
-		printLine();
-		printLine("- [no topics found]");
-		return;
-	}
-
-	printLine();
-	for (const line of renderTopicsTable(topics).split("\n")) {
-		printLine(line);
-	}
-}
-
-export function printTopicBrowser(topics: TopicIndexRow[]): void {
-	printLine("Usage: docs topic [topic] [path]");
-	printLine();
-	printScopedTopicBrowser(topics, {
-		title: "Topics",
-		titleLevel: 2,
-	});
-	printLine();
-	printLine("docs topic foo - view foo about/index first");
-	printLine("docs topic foo bar/baz - focus one path inside the topic");
 }

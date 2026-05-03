@@ -4,19 +4,13 @@ import { expect, test } from "vitest";
 
 import { withTempDir, writeText } from "./helpers/fs.ts";
 
-import {
-	createCommandLiquidEngine,
-	type DocsTemplateContext,
-	type LsTemplateContext,
-	type ParkTemplateContext,
-	type QueryTemplateContext,
-	renderDocsTemplate,
-	renderLsTemplate,
-	renderParkTemplate,
-	renderQueryTemplate,
-	renderTopicTemplate,
-	type TopicTemplateContext,
-} from "../src/runtime/command-template.ts";
+import commandTemplate from "../src/runtime/command-template.ts";
+
+type DocsTemplateContext = Parameters<typeof commandTemplate.renderDocsTemplate>[0];
+type LsTemplateContext = Parameters<typeof commandTemplate.renderLsTemplate>[0];
+type ParkTemplateContext = Parameters<typeof commandTemplate.renderParkTemplate>[0];
+type QueryTemplateContext = Parameters<typeof commandTemplate.renderQueryTemplate>[0];
+type TopicTemplateContext = Parameters<typeof commandTemplate.renderTopicTemplate>[0];
 
 const docsContext: DocsTemplateContext = {
 	browse_heading_line: "### Browse",
@@ -70,9 +64,9 @@ const parkContext: ParkTemplateContext = {
 
 test("renderDocsTemplate fails with a clear error when the template file is missing", async () => {
 	await withTempDir("docs-command-template-missing-", async tempDir => {
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(() => renderDocsTemplate(docsContext, { engine })).toThrowError(
+		expect(() => commandTemplate.renderDocsTemplate(docsContext, { engine })).toThrowError(
 			"Failed to render command template \"screens/docs-root-help.md\":",
 		);
 	});
@@ -81,9 +75,9 @@ test("renderDocsTemplate fails with a clear error when the template file is miss
 test("renderDocsTemplate fails on Liquid syntax errors", async () => {
 	await withTempDir("docs-command-template-parse-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/docs-root-help.md"), "{% if show_docs_index %}");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(() => renderDocsTemplate(docsContext, { engine })).toThrowError(
+		expect(() => commandTemplate.renderDocsTemplate(docsContext, { engine })).toThrowError(
 			"Failed to render command template \"screens/docs-root-help.md\":",
 		);
 	});
@@ -92,9 +86,9 @@ test("renderDocsTemplate fails on Liquid syntax errors", async () => {
 test("renderDocsTemplate fails when a required variable is missing", async () => {
 	await withTempDir("docs-command-template-var-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/docs-root-help.md"), "{{ missing_var }}");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(() => renderDocsTemplate(docsContext, { engine })).toThrowError(
+		expect(() => commandTemplate.renderDocsTemplate(docsContext, { engine })).toThrowError(
 			"Failed to render command template \"screens/docs-root-help.md\": undefined variable: missing_var",
 		);
 	});
@@ -103,9 +97,9 @@ test("renderDocsTemplate fails when a required variable is missing", async () =>
 test("renderDocsTemplate fails on unknown filters", async () => {
 	await withTempDir("docs-command-template-filter-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/docs-root-help.md"), "{{ 'x' | missing_filter }}");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(() => renderDocsTemplate(docsContext, { engine })).toThrowError(
+		expect(() => commandTemplate.renderDocsTemplate(docsContext, { engine })).toThrowError(
 			"Failed to render command template \"screens/docs-root-help.md\": undefined filter: missing_filter",
 		);
 	});
@@ -115,9 +109,9 @@ test("renderDocsTemplate supports standard Liquid composition from the templates
 	await withTempDir("docs-command-template-render-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/docs-root-help.md"), "{% render shared.md %}");
 		await writeText(path.join(tempDir, "shared.md"), "Shared");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(renderDocsTemplate(docsContext, { engine })).toBe("Shared");
+		expect(commandTemplate.renderDocsTemplate(docsContext, { engine })).toBe("Shared");
 	});
 });
 
@@ -125,9 +119,9 @@ test("renderLsTemplate supports standard Liquid composition from the templates r
 	await withTempDir("docs-ls-template-render-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/ls-browser.md"), "{% render shared.md %}");
 		await writeText(path.join(tempDir, "shared.md"), "Shared");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(renderLsTemplate(lsContext, { engine })).toBe("Shared");
+		expect(commandTemplate.renderLsTemplate(lsContext, { engine })).toBe("Shared");
 	});
 });
 
@@ -135,9 +129,9 @@ test("renderTopicTemplate supports standard Liquid composition from the template
 	await withTempDir("docs-topic-template-render-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/topic-browser.md"), "{% render shared.md %}");
 		await writeText(path.join(tempDir, "shared.md"), "Shared");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(renderTopicTemplate(topicContext, { engine })).toBe("Shared");
+		expect(commandTemplate.renderTopicTemplate(topicContext, { engine })).toBe("Shared");
 	});
 });
 
@@ -145,9 +139,9 @@ test("renderQueryTemplate supports standard Liquid composition from the template
 	await withTempDir("docs-query-template-render-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/query-results.md"), "{% render shared.md %}");
 		await writeText(path.join(tempDir, "shared.md"), "Shared");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(renderQueryTemplate(queryContext, { engine })).toBe("Shared");
+		expect(commandTemplate.renderQueryTemplate(queryContext, { engine })).toBe("Shared");
 	});
 });
 
@@ -155,8 +149,8 @@ test("renderParkTemplate supports standard Liquid composition from the templates
 	await withTempDir("docs-park-template-render-", async tempDir => {
 		await writeText(path.join(tempDir, "screens/park-success.md"), "{% render shared.md %}");
 		await writeText(path.join(tempDir, "shared.md"), "Shared");
-		const engine = createCommandLiquidEngine(tempDir);
+		const engine = commandTemplate.createCommandLiquidEngine(tempDir);
 
-		expect(renderParkTemplate(parkContext, { engine })).toBe("Shared");
+		expect(commandTemplate.renderParkTemplate(parkContext, { engine })).toBe("Shared");
 	});
 });

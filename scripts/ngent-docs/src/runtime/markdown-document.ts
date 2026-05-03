@@ -4,22 +4,8 @@ import path from "node:path";
 import type { MarkdownDocument } from "./browse-contracts.ts";
 import browseParse from "./browse-parse.ts";
 
-function contentWithoutFrontMatter(content: string): string {
-	const normalized = content.replaceAll("\r\n", "\n");
-	if (!normalized.startsWith("---\n")) {
-		return normalized;
-	}
-
-	const endIndex = normalized.indexOf("\n---", 4);
-	if (endIndex === -1) {
-		return normalized;
-	}
-
-	return normalized.slice(endIndex + "\n---".length).replace(/^\n+/, "");
-}
-
 function parseMarkdownBody(content: string): string | null {
-	const lines = contentWithoutFrontMatter(content).split("\n");
+	const lines = browseParse.contentWithoutFrontMatter(content).split("\n");
 	let startIndex = 0;
 
 	while (startIndex < lines.length && (lines[startIndex]?.trim().length ?? 0) === 0) {

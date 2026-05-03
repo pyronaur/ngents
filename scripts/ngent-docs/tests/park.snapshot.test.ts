@@ -38,9 +38,7 @@ vi.mock("../src/runtime/update.ts", () => ({
 	runDocsUpdate: mockRunDocsUpdate,
 }));
 
-afterEach(() => {
-	vi.clearAllMocks();
-});
+afterEach(vi.clearAllMocks);
 
 test("docs park success output matches the current output", async () => {
 	mockStat.mockImplementation(async (candidatePath: string) => {

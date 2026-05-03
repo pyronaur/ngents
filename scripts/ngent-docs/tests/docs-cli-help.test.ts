@@ -54,51 +54,57 @@ async function runUrlFileFetchWithPreviousHash(
 	]);
 }
 
+function expectRootHelpCommandText(stdout: string): void {
+	expect(stdout).toContain("# docs");
+	expect(stdout).toContain(CANONICAL_QUERY_USAGE);
+	expect(stdout).not.toContain(STALE_QUERY_USAGE);
+	expect(stdout).not.toContain("docs park <name> [path]");
+	expect(stdout).toContain("docs topic [topic] [path]");
+	expect(stdout).toContain("docs <where>");
+	expect(stdout).toContain("docs ls [where...]");
+	expect(stdout).toContain(
+		"It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.",
+	);
+	expect(stdout).toContain(
+		"`file`, `file.md`, `docs/file`, `docs/file.md`, or `./docs/file.md`",
+	);
+	expect(stdout).toContain(
+		"a topic docs file like `concepts/agent-experience` or `concepts/agent-experience.md`",
+	);
+	expect(stdout).toContain("an explicit docs file path like `~/work/foo/docs/file.md`");
+	expect(stdout).toContain("docs ls docs/subdir");
+	expect(stdout).toContain("To read docs operation manual use `docs --ops-help`.");
+}
+
+function expectRootHelpDocsIndex(stdout: string, repoDir: string, homeDir: string): void {
+	const normalizedStdout = stdout.replaceAll("/private/var", "/var");
+	expect(stdout).toContain("qmd");
+	expect(stdout).toContain("local search docs");
+	expect(stdout).toMatch(
+		/ops\s+Ops Notes\s+This summary is intentionally longer than sixty-four characte\.\.\./,
+	);
+	expect(stdout).toContain("web-fetching.md - web browser tools");
+	expect(stdout).toContain(
+		"long-summary.md - This summary is intentionally longer than sixty-four characte...",
+	);
+	expect(normalizedStdout).toContain(`### ${path.join(repoDir, "docs")}/`);
+	expect(normalizedStdout).toContain(`### ${path.join(homeDir, ".ngents", "docs", "browser")}/`);
+	expect(stdout).toContain("cdp.md - Chrome CDP instructions");
+	expect(stdout).not.toContain(
+		"This is the long architecture summary that should stay out of compact listings.",
+	);
+	expect(stdout).not.toContain(
+		"This summary is intentionally longer than sixty-four characters so compact views must truncate it.",
+	);
+}
+
 test("bare docs renders compact markdown help with merged topics and docs", async () => {
 	await withDocsCliWorkspace("docs-root-help-", async ({ repoDir, homeDir, env }) => {
 		const result = await runDocsCli([], { cwd: repoDir, env });
-		const normalizedStdout = result.stdout.replaceAll("/private/var", "/var");
 
 		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toContain("# docs");
-		expect(result.stdout).toContain(CANONICAL_QUERY_USAGE);
-		expect(result.stdout).not.toContain(STALE_QUERY_USAGE);
-		expect(result.stdout).not.toContain("docs park <name> [path]");
-		expect(result.stdout).toContain("docs topic [topic] [path]");
-		expect(result.stdout).toContain("docs <where>");
-		expect(result.stdout).toContain("docs ls [where...]");
-		expect(result.stdout).toContain(
-			"It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.",
-		);
-		expect(result.stdout).toContain(
-			"`file`, `file.md`, `docs/file`, `docs/file.md`, or `./docs/file.md`",
-		);
-		expect(result.stdout).toContain(
-			"a topic docs file like `concepts/agent-experience` or `concepts/agent-experience.md`",
-		);
-		expect(result.stdout).toContain("an explicit docs file path like `~/work/foo/docs/file.md`");
-		expect(result.stdout).toContain("docs ls docs/subdir");
-		expect(result.stdout).toContain("To read docs operation manual use `docs --ops-help`.");
-		expect(result.stdout).toContain("qmd");
-		expect(result.stdout).toContain("local search docs");
-		expect(result.stdout).toMatch(
-			/ops\s+Ops Notes\s+This summary is intentionally longer than sixty-four characte\.\.\./,
-		);
-		expect(result.stdout).toContain("web-fetching.md - web browser tools");
-		expect(result.stdout).toContain(
-			"long-summary.md - This summary is intentionally longer than sixty-four characte...",
-		);
-		expect(normalizedStdout).toContain(`### ${path.join(repoDir, "docs")}/`);
-		expect(normalizedStdout).toContain(
-			`### ${path.join(homeDir, ".ngents", "docs", "browser")}/`,
-		);
-		expect(result.stdout).toContain("cdp.md - Chrome CDP instructions");
-		expect(result.stdout).not.toContain(
-			"This is the long architecture summary that should stay out of compact listings.",
-		);
-		expect(result.stdout).not.toContain(
-			"This summary is intentionally longer than sixty-four characters so compact views must truncate it.",
-		);
+		expectRootHelpCommandText(result.stdout);
+		expectRootHelpDocsIndex(result.stdout, repoDir, homeDir);
 	});
 });
 

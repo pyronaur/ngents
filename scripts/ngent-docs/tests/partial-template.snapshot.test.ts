@@ -2,10 +2,10 @@ import { fileURLToPath } from "node:url";
 
 import { expect, test } from "vitest";
 
-import { createCommandLiquidEngine } from "../src/runtime/command-template.ts";
+import commandTemplate from "../src/runtime/command-template.ts";
 
 const templatesDir = fileURLToPath(new URL("../templates", import.meta.url));
-const engine = createCommandLiquidEngine(templatesDir);
+const engine = commandTemplate.createCommandLiquidEngine(templatesDir);
 
 function normalize(text: string): string {
 	return text.replaceAll(/\r\n/g, "\n").replace(/^\n+/, "").replace(/\n+$/, "");

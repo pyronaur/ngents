@@ -94,10 +94,6 @@ function rootCommandNames(): string[] {
 		.filter(name => name.length > 0);
 }
 
-function isRootCommand(token: string): boolean {
-	return rootCommandNames().includes(token);
-}
-
 function isUnknownCommandError(error: CommanderError): boolean {
 	return error.code === "commander.unknownCommand"
 		|| error.message.startsWith("error: unknown command ");
@@ -111,7 +107,7 @@ async function readMultiTokenUnknownCommandRecovery(
 	if (!command || argv.length < 2) {
 		return null;
 	}
-	if (command.startsWith("-") || command === "help" || isRootCommand(command)) {
+	if (command.startsWith("-") || command === "help" || rootCommandNames().includes(command)) {
 		return null;
 	}
 	if (!isUnknownCommandError(error)) {
@@ -135,7 +131,7 @@ async function maybeRunRootSelectorFallback(argv: string[], projectDir: string):
 	}
 
 	const selector = argv[0]?.trim();
-	if (!selector || isRootCommand(selector)) {
+	if (!selector || rootCommandNames().includes(selector)) {
 		return false;
 	}
 

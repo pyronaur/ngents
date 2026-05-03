@@ -9,7 +9,5 @@ export const updateCommand = defineCommand({
 	description: "Refresh registered fetches, then the global docs QMD index and embeddings.",
 	usage: docsCommandUsage.update,
 	optionsSchema: z.object({}),
-	run: async () => {
-		await runDocsUpdate();
-	},
+	run: runDocsUpdate,
 });

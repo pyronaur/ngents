@@ -323,41 +323,42 @@ test(
 	"docs park rejects duplicate names and duplicate docs roots",
 	{ timeout: 15_000 },
 	async () => {
-	await withDocsCliWorkspace("docs-park-collisions-", async ({ tempDir, binDir, env }) => {
-		const projectDir = path.join(tempDir, "project");
-		const otherProjectDir = path.join(tempDir, "other-project");
-		const stateFile = path.join(tempDir, "qmd-state.tsv");
-		await seedFakeQmd(binDir);
-		await writeText(path.join(projectDir, "docs", "guide.md"), "# Guide\n");
-		await writeText(path.join(otherProjectDir, "docs", "guide.md"), "# Other Guide\n");
+		await withDocsCliWorkspace("docs-park-collisions-", async ({ tempDir, binDir, env }) => {
+			const projectDir = path.join(tempDir, "project");
+			const otherProjectDir = path.join(tempDir, "other-project");
+			const stateFile = path.join(tempDir, "qmd-state.tsv");
+			await seedFakeQmd(binDir);
+			await writeText(path.join(projectDir, "docs", "guide.md"), "# Guide\n");
+			await writeText(path.join(otherProjectDir, "docs", "guide.md"), "# Other Guide\n");
 
-		const first = await runDocsCli(["park", "nconf", projectDir], {
-			env: {
-				...env,
-				DOCS_TEST_QMD_STATE: stateFile,
-			},
-		});
-		expect(first.exitCode).toBe(0);
+			const first = await runDocsCli(["park", "nconf", projectDir], {
+				env: {
+					...env,
+					DOCS_TEST_QMD_STATE: stateFile,
+				},
+			});
+			expect(first.exitCode).toBe(0);
 
-		const duplicateName = await runDocsCli(["park", "nconf", otherProjectDir], {
-			env: {
-				...env,
-				DOCS_TEST_QMD_STATE: stateFile,
-			},
-		});
-		expect(duplicateName.exitCode).toBe(1);
-		expect(duplicateName.stderr).toContain("Docs collection already parked: nconf");
+			const duplicateName = await runDocsCli(["park", "nconf", otherProjectDir], {
+				env: {
+					...env,
+					DOCS_TEST_QMD_STATE: stateFile,
+				},
+			});
+			expect(duplicateName.exitCode).toBe(1);
+			expect(duplicateName.stderr).toContain("Docs collection already parked: nconf");
 
-		const duplicatePath = await runDocsCli(["park", "other", projectDir], {
-			env: {
-				...env,
-				DOCS_TEST_QMD_STATE: stateFile,
-			},
+			const duplicatePath = await runDocsCli(["park", "other", projectDir], {
+				env: {
+					...env,
+					DOCS_TEST_QMD_STATE: stateFile,
+				},
+			});
+			expect(duplicatePath.exitCode).toBe(1);
+			expect(duplicatePath.stderr).toContain("Docs root already parked as \"nconf\"");
 		});
-		expect(duplicatePath.exitCode).toBe(1);
-		expect(duplicatePath.stderr).toContain("Docs root already parked as \"nconf\"");
-	});
-});
+	},
+);
 
 test("docs park rejects invalid docs roots before mutating qmd", async () => {
 	await withDocsCliWorkspace("docs-park-invalid-", async ({ tempDir, binDir, env }) => {

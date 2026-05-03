@@ -13,15 +13,14 @@ import browseContracts, {
 	type TopicContribution,
 	type TopicIndexRow,
 } from "./browse-contracts.ts";
+import { listDocsEntries, listMarkdownEntries } from "./browse-discovery-docs.ts";
 import browseGuides from "./browse-guides.ts";
 import browseParse from "./browse-parse.ts";
 
 const {
 	EXCLUDED_DIRS,
 	hasHiddenOrExcludedSegment,
-	META_FILE,
 	normalizePath,
-	sameFileName,
 	toDisplayPath,
 	TOPICS_DIR,
 } = browseContracts;
@@ -119,106 +118,6 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 
 	return Array.from(roots).sort((a, b) => a.localeCompare(b));
 }
-async function listMarkdownEntries(directoryPath: string): Promise<MarkdownEntry[]> {
-	const entries = await readDirEntriesOrEmpty(directoryPath);
-	if (entries.length === 0) {
-		return [];
-	}
-
-	const result: MarkdownEntry[] = [];
-	for (const entry of entries) {
-		if (!entry.isFile() || !entry.name.endsWith(".md")) {
-			continue;
-		}
-		if (sameFileName(entry.name, META_FILE) || sameFileName(entry.name, "SKILL.md")) {
-			continue;
-		}
-		if (entry.name.startsWith(".") || hasHiddenOrExcludedSegment(entry.name)) {
-			continue;
-		}
-
-		const absolutePath = normalizePath(path.join(directoryPath, entry.name));
-		result.push(await readMarkdownEntryFromFile(absolutePath, entry.name));
-	}
-
-	return result.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
-}
-
-async function listDocsEntries(
-	directoryPath: string,
-	rootPath = directoryPath,
-): Promise<MarkdownEntry[]> {
-	const result: MarkdownEntry[] = [];
-	const entries = await readDirEntriesOrEmpty(directoryPath);
-	if (entries.length === 0) {
-		return result;
-	}
-	for (const entry of entries) {
-		if (!entry.name || entry.name.startsWith(".") || EXCLUDED_DIRS.has(entry.name)) {
-			continue;
-		}
-
-		const absolutePath = normalizePath(path.join(directoryPath, entry.name));
-		const relativePath = toDisplayPath(path.relative(rootPath, absolutePath));
-		if (hasHiddenOrExcludedSegment(relativePath)) {
-			continue;
-		}
-
-		if (entry.isDirectory()) {
-			if (normalizePath(directoryPath) === normalizePath(rootPath) && entry.name === TOPICS_DIR) {
-				continue;
-			}
-
-			result.push(...(await listDocsEntries(absolutePath, rootPath)));
-			continue;
-		}
-
-		if (!isMarkdownDocFile(entry)) {
-			continue;
-		}
-
-		result.push(await readMarkdownEntryFromFile(absolutePath, relativePath));
-	}
-
-	return result.sort((a, b) => a.absolutePath.localeCompare(b.absolutePath));
-}
-
-async function readDirEntries(directoryPath: string) {
-	try {
-		return await readdir(directoryPath, { withFileTypes: true });
-	} catch {
-		return null;
-	}
-}
-
-async function readDirEntriesOrEmpty(directoryPath: string) {
-	return (await readDirEntries(directoryPath)) ?? [];
-}
-
-function isMarkdownDocFile(entry: { isFile(): boolean; name: string }): boolean {
-	if (!entry.isFile() || !entry.name.endsWith(".md")) {
-		return false;
-	}
-
-	if (sameFileName(entry.name, META_FILE) || sameFileName(entry.name, "SKILL.md")) {
-		return false;
-	}
-
-	return true;
-}
-
-async function readMarkdownEntryFromFile(
-	absolutePath: string,
-	relativePath: string,
-): Promise<MarkdownEntry> {
-	const parsed = browseParse.parseMarkdownEntry(await readFile(absolutePath, "utf8"), relativePath);
-	return {
-		absolutePath,
-		relativePath,
-		...parsed,
-	};
-}
-
 async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
 	return listVisibleDirectories(path.join(docsRoot, TOPICS_DIR));
 }
@@ -420,6 +319,60 @@ async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
 	};
 }
 
+function appendSortedUnique(values: string[], value: string | null): void {
+	if (!value || values.includes(value)) {
+		return;
+	}
+
+	values.push(value);
+	values.sort((left, right) => left.localeCompare(right));
+}
+
+function registeredDocsRow(input: {
+	directoryName: string;
+	directoryPath: string;
+	qualifiedName: string | null;
+}): RegisteredDocsRow {
+	return {
+		name: input.directoryName,
+		absolutePaths: [input.directoryPath],
+		qualifiedNames: input.qualifiedName ? [input.qualifiedName] : [],
+	};
+}
+
+function addRegisteredDocsDirectory(
+	registeredDocsMap: Map<string, RegisteredDocsRow>,
+	input: {
+		directoryName: string;
+		directoryPath: string;
+		qualifiedName: string | null;
+	},
+): void {
+	const existing = registeredDocsMap.get(input.directoryName);
+	if (!existing) {
+		registeredDocsMap.set(input.directoryName, registeredDocsRow(input));
+		return;
+	}
+
+	appendSortedUnique(existing.absolutePaths, input.directoryPath);
+	appendSortedUnique(existing.qualifiedNames, input.qualifiedName);
+}
+
+async function addRegisteredDocsRoot(input: {
+	collectionNameByRoot: Map<string, string>;
+	docsRoot: string;
+	registeredDocsMap: Map<string, RegisteredDocsRow>;
+}): Promise<void> {
+	const collectionName = input.collectionNameByRoot.get(input.docsRoot) ?? null;
+	for (const directoryName of await listTopLevelDirectories(input.docsRoot)) {
+		addRegisteredDocsDirectory(input.registeredDocsMap, {
+			directoryName,
+			directoryPath: normalizePath(path.join(input.docsRoot, directoryName)),
+			qualifiedName: collectionName ? `${collectionName}/${directoryName}` : null,
+		});
+	}
+}
+
 async function buildBrowseInventory(sources: DocsSources): Promise<BrowseInventory> {
 	const index = await buildIndexData(sources.mergedDocsRoots);
 	const registeredDocsMap = new Map<string, RegisteredDocsRow>();
@@ -427,28 +380,7 @@ async function buildBrowseInventory(sources: DocsSources): Promise<BrowseInvento
 		sources.globalDocsCollections.map(collection => [collection.docsRoot, collection.name]),
 	);
 	for (const docsRoot of sources.mergedDocsRoots) {
-		for (const directoryName of await listTopLevelDirectories(docsRoot)) {
-			const directoryPath = normalizePath(path.join(docsRoot, directoryName));
-			const existing = registeredDocsMap.get(directoryName);
-			const collectionName = collectionNameByRoot.get(docsRoot) ?? null;
-			const qualifiedName = collectionName ? `${collectionName}/${directoryName}` : null;
-			if (!existing) {
-				registeredDocsMap.set(directoryName, {
-					name: directoryName,
-					absolutePaths: [directoryPath],
-					qualifiedNames: qualifiedName ? [qualifiedName] : [],
-				});
-				continue;
-			}
-			if (!existing.absolutePaths.includes(directoryPath)) {
-				existing.absolutePaths.push(directoryPath);
-				existing.absolutePaths.sort((left, right) => left.localeCompare(right));
-			}
-			if (qualifiedName && !existing.qualifiedNames.includes(qualifiedName)) {
-				existing.qualifiedNames.push(qualifiedName);
-				existing.qualifiedNames.sort((left, right) => left.localeCompare(right));
-			}
-		}
+		await addRegisteredDocsRoot({ collectionNameByRoot, docsRoot, registeredDocsMap });
 	}
 	return {
 		topics: index.topics,
@@ -456,10 +388,6 @@ async function buildBrowseInventory(sources: DocsSources): Promise<BrowseInvento
 			a.name.localeCompare(b.name)
 		),
 	};
-}
-
-async function readDocsEntriesUnder(directoryPath: string): Promise<MarkdownEntry[]> {
-	return listDocsEntries(directoryPath);
 }
 
 async function readMergedTopic(
@@ -495,6 +423,6 @@ export default {
 	buildIndexData,
 	discoverDocsRoots,
 	discoverRepoRoot,
-	readDocsEntriesUnder,
+	readDocsEntriesUnder: listDocsEntries,
 	readMergedTopic,
 };

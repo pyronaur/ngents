@@ -6,7 +6,7 @@ import path from "node:path";
 
 import { runtimeError } from "../core/errors.ts";
 
-export type CommandResult = {
+type CommandResult = {
 	exitCode: number;
 	stdout: string;
 	stderr: string;
@@ -61,6 +61,11 @@ async function resolveCommandPath(command: string): Promise<string | null> {
 	return null;
 }
 
+async function prepareReplacementTarget(targetPath: string): Promise<void> {
+	await rm(targetPath, { recursive: true, force: true });
+	await mkdir(path.dirname(targetPath), { recursive: true });
+}
+
 export function expandHomePath(value: string): string {
 	const homeDir = process.env.HOME;
 	if (!homeDir) {
@@ -104,14 +109,12 @@ export async function makeTempDir(prefix: string): Promise<string> {
 }
 
 export async function replaceDirectory(targetPath: string, sourcePath: string): Promise<void> {
-	await rm(targetPath, { recursive: true, force: true });
-	await mkdir(path.dirname(targetPath), { recursive: true });
+	await prepareReplacementTarget(targetPath);
 	await cp(sourcePath, targetPath, { force: true, recursive: true });
 }
 
 export async function replaceFile(targetPath: string, contents: Buffer | string): Promise<void> {
-	await rm(targetPath, { recursive: true, force: true });
-	await mkdir(path.dirname(targetPath), { recursive: true });
+	await prepareReplacementTarget(targetPath);
 	await writeFile(targetPath, contents);
 }
 

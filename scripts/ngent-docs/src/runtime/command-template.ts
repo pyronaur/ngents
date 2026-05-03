@@ -37,12 +37,12 @@ export type DocsTemplateDocsGroup = {
 	heading_line: string;
 };
 
-export type DocsTemplateTopicTable = {
+type DocsTemplateTopicTable = {
 	header_line: string;
 	row_lines: string[];
 };
 
-export type DocsTemplateExpandedDocsEntry = {
+type DocsTemplateExpandedDocsEntry = {
 	detail_lines: string[];
 	file_line: string;
 };
@@ -84,7 +84,7 @@ export type DocsTemplateOpsHelpContext = {
 	update_usage: string;
 };
 
-export type DocsTemplateCollectionSelectorContext = {
+type DocsTemplateCollectionSelectorContext = {
 	view: "collection_selector";
 	docs_groups: DocsTemplateExpandedDocsGroup[];
 	docs_title_line: string;
@@ -115,7 +115,7 @@ export type TopicTemplateOverviewContext = {
 	title_line: string;
 };
 
-export type DocsTemplateCombinedSelectorContext = {
+type DocsTemplateCombinedSelectorContext = {
 	view: "combined_selector";
 	docs_groups: DocsTemplateExpandedDocsGroup[];
 	docs_title_line: string;
@@ -123,7 +123,7 @@ export type DocsTemplateCombinedSelectorContext = {
 	topic_view: TopicTemplateOverviewContext;
 };
 
-export type DocsTemplateFileContext = {
+type DocsTemplateFileContext = {
 	view: "file";
 	body_text: string | null;
 	metadata_lines: string[];
@@ -131,21 +131,21 @@ export type DocsTemplateFileContext = {
 	title_line: string;
 };
 
-export type DocsTemplateContext =
+type DocsTemplateContext =
 	| DocsTemplateCollectionSelectorContext
 	| DocsTemplateCombinedSelectorContext
 	| DocsTemplateFileContext
 	| DocsTemplateOpsHelpContext
 	| DocsTemplateRootHelpContext;
 
-export type LsTemplateContext = {
+type LsTemplateContext = {
 	view: "browser";
 	docs_groups: DocsTemplateExpandedDocsGroup[];
 	title_line: string;
 	topic_hint_line: string | null;
 };
 
-export type TopicTemplateBrowserContext = {
+type TopicTemplateBrowserContext = {
 	view: "browser";
 	examples: string[];
 	title_line: string;
@@ -153,7 +153,7 @@ export type TopicTemplateBrowserContext = {
 	usage_line: string;
 };
 
-export type TopicTemplateScopedBrowserContext = {
+type TopicTemplateScopedBrowserContext = {
 	view: "scoped_browser";
 	title_line: string;
 	topic_table: DocsTemplateTopicTable;
@@ -165,7 +165,7 @@ export type TopicTemplateFocusedContext = {
 	title_line: string | null;
 };
 
-export type TopicTemplateContext =
+type TopicTemplateContext =
 	| TopicTemplateBrowserContext
 	| TopicTemplateFocusedContext
 	| TopicTemplateOverviewContext
@@ -182,14 +182,14 @@ export type QueryTemplateResultsContext = {
 	tip_line: string;
 };
 
-export type QueryTemplateStatusContext = {
+type QueryTemplateStatusContext = {
 	view: "status";
 	lines: string[];
 };
 
-export type QueryTemplateContext = QueryTemplateResultsContext | QueryTemplateStatusContext;
+type QueryTemplateContext = QueryTemplateResultsContext | QueryTemplateStatusContext;
 
-export type ParkTemplateContext = {
+type ParkTemplateContext = {
 	view: "success";
 	message_line: string;
 };
@@ -219,7 +219,7 @@ function renderTemplate<Context extends Record<string, unknown>>(
 	}
 }
 
-export function createCommandLiquidEngine(templatesDir = TEMPLATES_DIR): Liquid {
+function createCommandLiquidEngine(templatesDir = TEMPLATES_DIR): Liquid {
 	return new Liquid({
 		dynamicPartials: false,
 		extname: "",
@@ -232,35 +232,35 @@ export function createCommandLiquidEngine(templatesDir = TEMPLATES_DIR): Liquid 
 	});
 }
 
-export function renderDocsTemplate(
+function renderDocsTemplate(
 	context: DocsTemplateContext,
 	options: RenderOptions = {},
 ): string {
 	return renderTemplate(context, DOCS_SCREEN_TEMPLATE[context.view], options);
 }
 
-export function renderLsTemplate(
+function renderLsTemplate(
 	context: LsTemplateContext,
 	options: RenderOptions = {},
 ): string {
 	return renderTemplate(context, "screens/ls-browser.md", options);
 }
 
-export function renderTopicTemplate(
+function renderTopicTemplate(
 	context: TopicTemplateContext,
 	options: RenderOptions = {},
 ): string {
 	return renderTemplate(context, TOPIC_SCREEN_TEMPLATE[context.view], options);
 }
 
-export function renderQueryTemplate(
+function renderQueryTemplate(
 	context: QueryTemplateContext,
 	options: RenderOptions = {},
 ): string {
 	return renderTemplate(context, QUERY_SCREEN_TEMPLATE[context.view], options);
 }
 
-export function renderParkTemplate(
+function renderParkTemplate(
 	context: ParkTemplateContext,
 	options: RenderOptions = {},
 ): string {

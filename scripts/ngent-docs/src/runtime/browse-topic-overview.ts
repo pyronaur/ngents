@@ -251,8 +251,3 @@ export function renderTopicOverview(
 ): string {
 	return commandTemplate.renderTopicTemplate(createTopicOverviewContext(topic, options));
 }
-
-export default {
-	createTopicOverviewContext,
-	renderTopicOverview,
-};

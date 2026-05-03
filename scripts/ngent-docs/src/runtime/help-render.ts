@@ -84,7 +84,7 @@ function opsHelpTemplateContext(): DocsTemplateOpsHelpContext {
 	};
 }
 
-export function renderRootHelp(
+function renderRootHelp(
 	topics: TopicIndexRow[],
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
@@ -92,7 +92,7 @@ export function renderRootHelp(
 	return commandTemplate.renderDocsTemplate(rootHelpTemplateContext(topics, docs, options));
 }
 
-export function printRootHelp(
+function printRootHelp(
 	topics: TopicIndexRow[],
 	docs: MarkdownEntry[],
 	options: { includeDocsIndex: boolean },
@@ -100,11 +100,11 @@ export function printRootHelp(
 	templateOutput.printRenderedTemplate(renderRootHelp(topics, docs, options));
 }
 
-export function renderOpsHelp(): string {
+function renderOpsHelp(): string {
 	return commandTemplate.renderDocsTemplate(opsHelpTemplateContext());
 }
 
-export function printOpsHelp(): void {
+function printOpsHelp(): void {
 	templateOutput.printRenderedTemplate(renderOpsHelp());
 }
 

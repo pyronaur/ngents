@@ -17,9 +17,7 @@ vi.mock("../src/runtime/qmd.ts", () => ({
 	runQmd: mockRunQmd,
 }));
 
-afterEach(() => {
-	vi.clearAllMocks();
-});
+afterEach(vi.clearAllMocks);
 
 test("docs query results match the current output", async () => {
 	mockListQmdCollections.mockResolvedValueOnce([

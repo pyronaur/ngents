@@ -93,11 +93,11 @@ function createTopicIndexRow(topicName: string, guide: GuideMetadata): TopicInde
 	};
 }
 
-export function isSameOrDescendantPath(ancestorPath: string, candidatePath: string): boolean {
+function isSameOrDescendantPath(ancestorPath: string, candidatePath: string): boolean {
 	return candidatePath === ancestorPath || candidatePath.startsWith(`${ancestorPath}${POSIX_SEP}`);
 }
 
-export function guideDirectoriesForSkill(topicDir: string, skillFile: string): string[] {
+function guideDirectoriesForSkill(topicDir: string, skillFile: string): string[] {
 	const directories: string[] = [];
 	let currentDir = normalizePath(path.dirname(skillFile));
 
@@ -121,6 +121,8 @@ export function guideDirectoriesForSkill(topicDir: string, skillFile: string): s
 export default {
 	collectSkillHints,
 	createTopicIndexRow,
+	guideDirectoriesForSkill,
+	isSameOrDescendantPath,
 	mergeGuideDescriptions,
 	readGuideMetadata,
 };

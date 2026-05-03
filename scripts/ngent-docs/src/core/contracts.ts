@@ -1,13 +1,13 @@
 import type { Command } from "commander";
 import type { output, ZodType } from "zod";
 
-export type CommandRunContext<TOptions> = {
+type CommandRunContext<TOptions> = {
 	projectDir: string;
 	args: string[];
 	options: TOptions;
 };
 
-export type CommandPath = readonly [string, ...string[]];
+type CommandPath = readonly [string, ...string[]];
 
 export type CommandDefinition<TSchema extends ZodType = ZodType> = {
 	path: CommandPath;

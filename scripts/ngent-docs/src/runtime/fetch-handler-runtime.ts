@@ -6,6 +6,7 @@ import { mergeFetchedMarkdownFrontMatter } from "./fetch-frontmatter.ts";
 import {
 	makeTempDir,
 	replaceDirectory,
+	replaceFile,
 	runTransform,
 } from "./fetch-handler-support.ts";
 
@@ -32,12 +33,6 @@ async function copyTargetFile(targetPath: string, sourcePath: string): Promise<v
 	await rm(targetPath, { force: true, recursive: true });
 	await mkdir(path.dirname(targetPath), { recursive: true });
 	await copyFile(sourcePath, targetPath);
-}
-
-async function writeTargetFile(targetPath: string, contents: string): Promise<void> {
-	await rm(targetPath, { force: true, recursive: true });
-	await mkdir(path.dirname(targetPath), { recursive: true });
-	await writeFile(targetPath, contents);
 }
 
 async function mergeMarkdownFileTarget(input: {
@@ -72,7 +67,7 @@ async function materializeFileTarget(input: {
 	}
 
 	const incomingContent = await readFile(sourcePath, "utf8");
-	await writeTargetFile(input.targetPath, await mergeMarkdownFileTarget({
+	await replaceFile(input.targetPath, await mergeMarkdownFileTarget({
 		targetPath: input.targetPath,
 		incomingContent,
 	}));
@@ -159,7 +154,7 @@ async function materializeTransformOutput(input: {
 			targetPath: input.targetPath,
 			incomingContent: input.stdout,
 		});
-		await writeTargetFile(input.targetPath, contents);
+		await replaceFile(input.targetPath, contents);
 		return;
 	}
 	if (input.wroteStdout) {

@@ -45,13 +45,6 @@ async function readTopicOrFail(docsRoots: string[], requestedTopic: string): Pro
 	);
 }
 
-async function readTopicOrNull(
-	docsRoots: string[],
-	requestedTopic: string,
-): Promise<MergedTopic | null> {
-	return browseDiscovery.readMergedTopic(docsRoots, requestedTopic);
-}
-
 function matchingSections(topic: MergedTopic, requestedPath: string): SectionEntry[] {
 	const sections: SectionEntry[] = [];
 
@@ -95,7 +88,7 @@ async function printTopicOrParkedCollection(
 	docsRoots: string[],
 	requestedTopic: string,
 ): Promise<boolean> {
-	const topic = await readTopicOrNull(docsRoots, requestedTopic);
+	const topic = await browseDiscovery.readMergedTopic(docsRoots, requestedTopic);
 	if (topic) {
 		browseRender.printTopicView(topic);
 		return true;
@@ -110,17 +103,6 @@ async function printTopicOrParkedCollection(
 		title: `Topics: ${requestedTopic}`,
 	});
 	return true;
-}
-
-export async function readDocsTopicSelector(
-	currentDir: string,
-	requestedTopic: string,
-): Promise<MergedTopic | null> {
-	const sources = await discoverDocsSources(currentDir);
-	if (sources.mergedDocsRoots.length === 0) {
-		return null;
-	}
-	return readTopicOrNull(sources.mergedDocsRoots, requestedTopic);
 }
 
 export async function runDocsTopic(positionals: string[]): Promise<void> {

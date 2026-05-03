@@ -476,6 +476,7 @@ function parseSkillEntry(content: string, relativePath: string): SkillEntry {
 }
 
 export default {
+	contentWithoutFrontMatter,
 	hintMapField,
 	parseFrontMatter,
 	parseGuideBody,

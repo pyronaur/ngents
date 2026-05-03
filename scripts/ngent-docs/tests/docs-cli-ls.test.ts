@@ -1,5 +1,4 @@
-import { mkdir } from "node:fs/promises";
-import { realpath } from "node:fs/promises";
+import { mkdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "vitest";
 
@@ -12,6 +11,178 @@ import {
 	withDocsCliWorkspace,
 	writeText,
 } from "./helpers/docs-cli-fixture.ts";
+
+type CliResult = { exitCode: number | null; stdout: string; stderr: string };
+
+function expectSuccessfulResults(results: CliResult[]): void {
+	for (const result of results) {
+		expect(result.exitCode).toBe(0);
+	}
+}
+
+function expectFileSelectorResults(input: {
+	rootResult: CliResult;
+	bareResult: CliResult;
+	bareNoExtensionResult: CliResult;
+	globalBareResult: CliResult;
+	globalBareNoExtensionResult: CliResult;
+	globalPrefixedResult: CliResult;
+	globalPrefixedNoExtensionResult: CliResult;
+	lsResult: CliResult;
+	repoDir: string;
+	homeDir: string;
+}): void {
+	expectSuccessfulResults([
+		input.rootResult,
+		input.bareResult,
+		input.bareNoExtensionResult,
+		input.globalBareResult,
+		input.globalBareNoExtensionResult,
+		input.globalPrefixedResult,
+		input.globalPrefixedNoExtensionResult,
+		input.lsResult,
+	]);
+	expect(input.rootResult.stdout.trim()).toBe(input.lsResult.stdout.trim());
+	expect(input.bareResult.stdout.trim()).toBe(input.rootResult.stdout.trim());
+	expect(input.bareNoExtensionResult.stdout.trim()).toBe(input.rootResult.stdout.trim());
+	expect(input.globalBareResult.stdout.trim()).toBe(input.globalPrefixedResult.stdout.trim());
+	expect(input.globalBareNoExtensionResult.stdout.trim()).toBe(
+		input.globalPrefixedResult.stdout.trim(),
+	);
+	expect(input.globalPrefixedNoExtensionResult.stdout.trim()).toBe(
+		input.globalPrefixedResult.stdout.trim(),
+	);
+	expect(input.rootResult.stdout).toContain("# Doc: Web Fetching");
+	expect(input.globalBareResult.stdout).toContain("# Doc: Ngents Docs");
+	expect(input.rootResult.stdout.replaceAll("/private/var", "/var")).toContain(
+		`Path: ${path.join(input.repoDir, "docs", "web-fetching.md")}`,
+	);
+	expect(input.globalBareResult.stdout).toContain(
+		`Path: ${path.join(input.homeDir, ".ngents", "docs", "ngents-docs.md")}`,
+	);
+	expect(input.rootResult.stdout).toContain(
+		"Use browser tools when fetch/search is blocked by JavaScript pages.",
+	);
+	expect(input.rootResult.stdout).not.toContain("title: Web Fetching");
+}
+
+function expectMergedQualifiedBrowse(input: {
+	mergedLs: CliResult;
+	mergedRoot: CliResult;
+	repoDir: string;
+	homeDir: string;
+}): void {
+	expectSuccessfulResults([input.mergedLs, input.mergedRoot]);
+	expect(input.mergedLs.stdout.trim()).toBe(input.mergedRoot.stdout.trim());
+	expect(input.mergedLs.stdout).toContain(path.join(input.repoDir, "docs", "setup"));
+	expect(input.mergedLs.stdout).toContain(path.join(input.homeDir, ".ngents", "docs", "setup"));
+	expect(input.mergedLs.stdout).toContain("local-only.md");
+	expect(input.mergedLs.stdout).toContain("global-only.md");
+}
+
+function expectScopedQualifiedBrowse(input: {
+	qualifiedLs: CliResult;
+	qualifiedSplit: CliResult;
+	qualifiedCase: CliResult;
+	qualifiedRoot: CliResult;
+	repoDir: string;
+	homeDir: string;
+}): void {
+	expectSuccessfulResults([
+		input.qualifiedLs,
+		input.qualifiedSplit,
+		input.qualifiedCase,
+		input.qualifiedRoot,
+	]);
+	expect(input.qualifiedLs.stdout.trim()).toBe(input.qualifiedSplit.stdout.trim());
+	expect(input.qualifiedLs.stdout.trim()).toBe(input.qualifiedRoot.stdout.trim());
+	expect(input.qualifiedLs.stdout).toContain(path.join(input.homeDir, ".ngents", "docs", "setup"));
+	expect(input.qualifiedLs.stdout).toContain("global-only.md");
+	expect(input.qualifiedLs.stdout).not.toContain(path.join(input.repoDir, "docs", "setup"));
+	expect(input.qualifiedLs.stdout).not.toContain("local-only.md");
+	expect(input.qualifiedCase.stdout).toContain(
+		path.join(input.homeDir, ".ngents", "docs", "setup"),
+	);
+	expect(input.qualifiedCase.stdout).toContain("global-only.md");
+}
+
+function expectNestedQualifiedBrowse(
+	qualifiedNested: CliResult,
+	homeDir: string,
+): void {
+	expect(qualifiedNested.exitCode).toBe(0);
+	expect(qualifiedNested.stdout).toContain(
+		path.join(homeDir, ".ngents", "docs", "setup", "secrets"),
+	);
+	expect(qualifiedNested.stdout).toContain("secret.md");
+	expect(qualifiedNested.stdout).not.toContain("global-only.md");
+}
+
+function expectOverlappingRootResult(input: {
+	result: CliResult;
+	repoDir: string;
+	homeDir: string;
+}): void {
+	expect(input.result.exitCode).toBe(0);
+	expect(input.result.stdout).toContain("# Docs: browser");
+	expect(input.result.stdout).toContain("## Topic: browser");
+	expect(input.result.stdout).toContain(path.join(input.repoDir, "docs", "topics", "browser"));
+	expect(input.result.stdout).toContain("### Docs");
+	expect(input.result.stdout).not.toContain("#### extensive");
+	expect(input.result.stdout).toContain("## Docs: browser");
+	expect(input.result.stdout).toContain(`${path.join(input.repoDir, "docs", "browser")}/`);
+	expect(input.result.stdout).toContain(
+		`${path.join(input.homeDir, ".ngents", "docs", "browser")}/`,
+	);
+	expect(input.result.stdout).toContain("local-browser.md");
+	expect(input.result.stdout).toContain("extensive.md");
+	expect(input.result.stdout).toContain("cdp.md");
+}
+
+function expectOverlappingDocsOnlyResult(input: {
+	result: CliResult;
+	repoDir: string;
+	homeDir: string;
+}): void {
+	expect(input.result.exitCode).toBe(0);
+	expect(input.result.stdout).toContain("# Docs: browser");
+	expect(input.result.stdout).toContain("Topic available: docs topic browser");
+	expect(input.result.stdout).toContain(`${path.join(input.repoDir, "docs", "browser")}/`);
+	expect(input.result.stdout).toContain(
+		`${path.join(input.homeDir, ".ngents", "docs", "browser")}/`,
+	);
+	expect(input.result.stdout).not.toContain(path.join(input.repoDir, "docs", "topics", "browser"));
+}
+
+function expectOverlappingTopicOnlyResult(result: CliResult, repoDir: string): void {
+	expect(result.exitCode).toBe(0);
+	expect(result.stdout).toContain("# Topic: browser");
+	expect(result.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
+	expect(result.stdout).toContain("## Docs");
+	expect(result.stdout).not.toContain("---");
+	expect(result.stdout).not.toContain("### extensive");
+	expect(result.stdout).not.toContain(path.join(repoDir, "docs", "browser"));
+}
+
+function expectOverlappingBrowserResults(input: {
+	bareResult: CliResult;
+	docsOnlyResult: CliResult;
+	topicOnlyResult: CliResult;
+	repoDir: string;
+	homeDir: string;
+}): void {
+	expectOverlappingRootResult({
+		result: input.bareResult,
+		repoDir: input.repoDir,
+		homeDir: input.homeDir,
+	});
+	expectOverlappingDocsOnlyResult({
+		result: input.docsOnlyResult,
+		repoDir: input.repoDir,
+		homeDir: input.homeDir,
+	});
+	expectOverlappingTopicOnlyResult(input.topicOnlyResult, input.repoDir);
+}
 
 function expectDocsLsSelectorMiss(
 	result: { exitCode: number | null; stdout: string; stderr: string },
@@ -179,32 +350,18 @@ test("docs file selectors open a local markdown doc from root and ls browse", as
 			env,
 		});
 
-		expect(rootResult.exitCode).toBe(0);
-		expect(bareResult.exitCode).toBe(0);
-		expect(bareNoExtensionResult.exitCode).toBe(0);
-		expect(globalBareResult.exitCode).toBe(0);
-		expect(globalBareNoExtensionResult.exitCode).toBe(0);
-		expect(globalPrefixedResult.exitCode).toBe(0);
-		expect(globalPrefixedNoExtensionResult.exitCode).toBe(0);
-		expect(lsResult.exitCode).toBe(0);
-		expect(rootResult.stdout.trim()).toBe(lsResult.stdout.trim());
-		expect(bareResult.stdout.trim()).toBe(rootResult.stdout.trim());
-		expect(bareNoExtensionResult.stdout.trim()).toBe(rootResult.stdout.trim());
-		expect(globalBareResult.stdout.trim()).toBe(globalPrefixedResult.stdout.trim());
-		expect(globalBareNoExtensionResult.stdout.trim()).toBe(globalPrefixedResult.stdout.trim());
-		expect(globalPrefixedNoExtensionResult.stdout.trim()).toBe(globalPrefixedResult.stdout.trim());
-		expect(rootResult.stdout).toContain("# Doc: Web Fetching");
-		expect(globalBareResult.stdout).toContain("# Doc: Ngents Docs");
-		expect(rootResult.stdout.replaceAll("/private/var", "/var")).toContain(
-			`Path: ${path.join(repoDir, "docs", "web-fetching.md")}`,
-		);
-		expect(globalBareResult.stdout).toContain(
-			`Path: ${path.join(homeDir, ".ngents", "docs", "ngents-docs.md")}`,
-		);
-		expect(rootResult.stdout).toContain(
-			"Use browser tools when fetch/search is blocked by JavaScript pages.",
-		);
-		expect(rootResult.stdout).not.toContain("title: Web Fetching");
+		expectFileSelectorResults({
+			rootResult,
+			bareResult,
+			bareNoExtensionResult,
+			globalBareResult,
+			globalBareNoExtensionResult,
+			globalPrefixedResult,
+			globalPrefixedNoExtensionResult,
+			lsResult,
+			repoDir,
+			homeDir,
+		});
 	});
 });
 
@@ -381,34 +538,16 @@ test(
 				const qualifiedCase = await runDocsCli(["ls", "Local/setup"], { cwd: repoDir, env });
 				const qualifiedRoot = await runDocsCli(["local/setup"], { cwd: repoDir, env });
 
-				expect(mergedLs.exitCode).toBe(0);
-				expect(mergedRoot.exitCode).toBe(0);
-				expect(mergedLs.stdout.trim()).toBe(mergedRoot.stdout.trim());
-				expect(mergedLs.stdout).toContain(path.join(repoDir, "docs", "setup"));
-				expect(mergedLs.stdout).toContain(path.join(homeDir, ".ngents", "docs", "setup"));
-				expect(mergedLs.stdout).toContain("local-only.md");
-				expect(mergedLs.stdout).toContain("global-only.md");
-
-				expect(qualifiedLs.exitCode).toBe(0);
-				expect(qualifiedSplit.exitCode).toBe(0);
-				expect(qualifiedCase.exitCode).toBe(0);
-				expect(qualifiedRoot.exitCode).toBe(0);
-				expect(qualifiedLs.stdout.trim()).toBe(qualifiedSplit.stdout.trim());
-				expect(qualifiedLs.stdout.trim()).toBe(qualifiedRoot.stdout.trim());
-				expect(qualifiedLs.stdout).toContain(path.join(homeDir, ".ngents", "docs", "setup"));
-				expect(qualifiedLs.stdout).toContain("global-only.md");
-				expect(qualifiedLs.stdout).not.toContain(path.join(repoDir, "docs", "setup"));
-				expect(qualifiedLs.stdout).not.toContain("local-only.md");
-
-				expect(qualifiedNested.exitCode).toBe(0);
-				expect(qualifiedNested.stdout).toContain(
-					path.join(homeDir, ".ngents", "docs", "setup", "secrets"),
-				);
-				expect(qualifiedNested.stdout).toContain("secret.md");
-				expect(qualifiedNested.stdout).not.toContain("global-only.md");
-
-				expect(qualifiedCase.stdout).toContain(path.join(homeDir, ".ngents", "docs", "setup"));
-				expect(qualifiedCase.stdout).toContain("global-only.md");
+				expectMergedQualifiedBrowse({ mergedLs, mergedRoot, repoDir, homeDir });
+				expectScopedQualifiedBrowse({
+					qualifiedLs,
+					qualifiedSplit,
+					qualifiedCase,
+					qualifiedRoot,
+					repoDir,
+					homeDir,
+				});
+				expectNestedQualifiedBrowse(qualifiedNested, homeDir);
 			},
 			{ collectionName: "Local" },
 		);
@@ -505,35 +644,13 @@ test("docs browser shows both the topic and registered docs when names overlap",
 			const docsOnlyResult = await runDocsCli(["ls", "browser"], { cwd: repoDir, env });
 			const topicOnlyResult = await runDocsCli(["topic", "browser"], { cwd: repoDir, env });
 
-			expect(bareResult.exitCode).toBe(0);
-			expect(bareResult.stdout).toContain("# Docs: browser");
-			expect(bareResult.stdout).toContain("## Topic: browser");
-			expect(bareResult.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
-			expect(bareResult.stdout).toContain("### Docs");
-			expect(bareResult.stdout).not.toContain("#### extensive");
-			expect(bareResult.stdout).toContain("## Docs: browser");
-			expect(bareResult.stdout).toContain(`${path.join(repoDir, "docs", "browser")}/`);
-			expect(bareResult.stdout).toContain(`${path.join(homeDir, ".ngents", "docs", "browser")}/`);
-			expect(bareResult.stdout).toContain("local-browser.md");
-			expect(bareResult.stdout).toContain("extensive.md");
-			expect(bareResult.stdout).toContain("cdp.md");
-
-			expect(docsOnlyResult.exitCode).toBe(0);
-			expect(docsOnlyResult.stdout).toContain("# Docs: browser");
-			expect(docsOnlyResult.stdout).toContain("Topic available: docs topic browser");
-			expect(docsOnlyResult.stdout).toContain(`${path.join(repoDir, "docs", "browser")}/`);
-			expect(docsOnlyResult.stdout).toContain(
-				`${path.join(homeDir, ".ngents", "docs", "browser")}/`,
-			);
-			expect(docsOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "topics", "browser"));
-
-			expect(topicOnlyResult.exitCode).toBe(0);
-			expect(topicOnlyResult.stdout).toContain("# Topic: browser");
-			expect(topicOnlyResult.stdout).toContain(path.join(repoDir, "docs", "topics", "browser"));
-			expect(topicOnlyResult.stdout).toContain("## Docs");
-			expect(topicOnlyResult.stdout).not.toContain("---");
-			expect(topicOnlyResult.stdout).not.toContain("### extensive");
-			expect(topicOnlyResult.stdout).not.toContain(path.join(repoDir, "docs", "browser"));
+			expectOverlappingBrowserResults({
+				bareResult,
+				docsOnlyResult,
+				topicOnlyResult,
+				repoDir,
+				homeDir,
+			});
 		},
 	);
 });

@@ -18,7 +18,3 @@ export function isCompactFocusedSkillSection(section: SectionEntry): boolean {
 
 	return skill.relativePath === rootSkillRelativePath(section);
 }
-
-export default {
-	isCompactFocusedSkillSection,
-};

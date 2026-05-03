@@ -98,7 +98,7 @@ export type BrowseInventory = {
 	registeredDocs: RegisteredDocsRow[];
 };
 
-export type DocsIndexData = {
+type DocsIndexData = {
 	docs: MarkdownEntry[];
 };
 

@@ -48,7 +48,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object";
 }
 
-function normalizeStoredCommand(command: string, _projectDir: string): string {
+function normalizeStoredCommand(command: string): string {
 	const expandedCommand = expandHomePath(command);
 	if (path.isAbsolute(expandedCommand)) {
 		return normalizePath(expandedCommand);
@@ -82,11 +82,11 @@ function isBuiltinHandlerShorthand(
 	return Object.hasOwn(BUILTIN_HANDLER_SHORTHANDS, handler);
 }
 
-function normalizeHandlerReference(handler: string, projectDir: string): string {
+function normalizeHandlerReference(handler: string): string {
 	const builtinHandler = isBuiltinHandlerShorthand(handler)
 		? BUILTIN_HANDLER_SHORTHANDS[handler]
 		: handler;
-	return normalizeStoredCommand(builtinHandler, projectDir);
+	return normalizeStoredCommand(builtinHandler);
 }
 
 function manifestPathForDocsRoot(docsRoot: string): string {
@@ -470,10 +470,10 @@ export async function runDocsFetch(input: {
 	const nextEntry: FetchManifestEntry = {
 		source: input.source,
 		target: resolvedTarget.targetRelativePath,
-		handler: normalizeHandlerReference(input.handler, input.projectDir),
+		handler: normalizeHandlerReference(input.handler),
 		...(input.root ? { root: input.root } : {}),
 		...(input.transform
-			? { transform: normalizeStoredCommand(input.transform, input.projectDir) }
+			? { transform: normalizeStoredCommand(input.transform) }
 			: {}),
 		hash: input.force ? "" : (existingEntry?.hash ?? ""),
 	};

@@ -17,6 +17,44 @@ function fetchTargetPath(repoDir: string, ...segments: string[]): string {
 	return topicDocsPath(repoDir, TEST_TOPIC_NAME, ...segments);
 }
 
+function frontmatterTransformScript(): string {
+	return [
+		"#!/bin/sh",
+		"cat <<'EOF'",
+		"---",
+		"title: ''",
+		"short: 'Incoming short'",
+		"summary: ''",
+		"read_when: []",
+		"extra: 'keep me'",
+		"---",
+		"",
+		"# Fresh Body",
+		"",
+		"Updated content.",
+		"EOF",
+		"",
+	].join("\n");
+}
+
+function expectedMergedFrontmatterFile(): string {
+	return [
+		"---",
+		"title: Local title",
+		"short: Incoming short",
+		"summary: Local summary",
+		"read_when:",
+		"  - Local hint",
+		"extra: keep me",
+		"---",
+		"",
+		"# Fresh Body",
+		"",
+		"Updated content.",
+		"",
+	].join("\n");
+}
+
 test("docs fetch pipes a single staged input file to transform stdin", async () => {
 	await withDocsCliWorkspace("docs-fetch-transform-stdin-",
 		async ({ tempDir, repoDir, binDir, env }) => {
@@ -144,23 +182,7 @@ test("docs fetch merges local browse frontmatter for stdout file transforms", as
 			await writeExecutable(
 				binDir,
 				"stdout-frontmatter-transform",
-				[
-					"#!/bin/sh",
-					"cat <<'EOF'",
-					"---",
-					"title: ''",
-					"short: 'Incoming short'",
-					"summary: ''",
-					"read_when: []",
-					"extra: 'keep me'",
-					"---",
-					"",
-					"# Fresh Body",
-					"",
-					"Updated content.",
-					"EOF",
-					"",
-				].join("\n"),
+				frontmatterTransformScript(),
 			);
 
 			const result = await runDocsCli(
@@ -180,23 +202,7 @@ test("docs fetch merges local browse frontmatter for stdout file transforms", as
 			);
 
 			expect(result.exitCode).toBe(0);
-			expect(await readText(targetPath)).toBe(
-				[
-					"---",
-					"title: Local title",
-					"short: Incoming short",
-					"summary: Local summary",
-					"read_when:",
-					"  - Local hint",
-					"extra: keep me",
-					"---",
-					"",
-					"# Fresh Body",
-					"",
-					"Updated content.",
-					"",
-				].join("\n"),
-			);
+			expect(await readText(targetPath)).toBe(expectedMergedFrontmatterFile());
 		});
 });
 

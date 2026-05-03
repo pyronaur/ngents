@@ -5,6 +5,9 @@ import browseParse from "./browse-parse.ts";
 const { compactStrings } = browseContracts;
 
 const MERGED_FRONTMATTER_KEYS = ["title", "short", "summary", "read_when"] as const;
+const YAML_BOOLEAN_PATTERN = /^(?:true|false|yes|no|on|off)$/i;
+const YAML_NULL_PATTERN = /^(?:null|~)$/i;
+const YAML_NUMERIC_PATTERN = /^[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?$/;
 
 type MergedFrontMatterKey = (typeof MERGED_FRONTMATTER_KEYS)[number];
 
@@ -65,7 +68,9 @@ function cloneFrontMatterObject(values: FrontMatterObject): FrontMatterObject {
 	);
 }
 
-function hasMeaningfulFrontMatterValue(value: FrontMatterValue | undefined): boolean {
+function hasMeaningfulFrontMatterValue(
+	value: FrontMatterValue | undefined,
+): value is FrontMatterValue {
 	if (typeof value === "string") {
 		return value.trim().length > 0;
 	}
@@ -85,12 +90,12 @@ function mergedValueForKey(
 ): FrontMatterValue | undefined {
 	const incomingValue = incomingValues.get(key);
 	if (hasMeaningfulFrontMatterValue(incomingValue)) {
-		return cloneFrontMatterValue(incomingValue as FrontMatterValue);
+		return cloneFrontMatterValue(incomingValue);
 	}
 
 	const localValue = localValues.get(key);
 	if (hasMeaningfulFrontMatterValue(localValue)) {
-		return cloneFrontMatterValue(localValue as FrontMatterValue);
+		return cloneFrontMatterValue(localValue);
 	}
 
 	return undefined;
@@ -98,18 +103,6 @@ function mergedValueForKey(
 
 function quoteScalar(value: string): string {
 	return `'${value.replaceAll("'", "''")}'`;
-}
-
-function isYamlBooleanLike(value: string): boolean {
-	return /^(?:true|false|yes|no|on|off)$/i.test(value);
-}
-
-function isYamlNullLike(value: string): boolean {
-	return /^(?:null|~)$/i.test(value);
-}
-
-function isYamlNumericLike(value: string): boolean {
-	return /^[-+]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?$/.test(value);
 }
 
 function shouldQuoteScalar(value: string): boolean {
@@ -122,10 +115,13 @@ function shouldQuoteScalar(value: string): boolean {
 	if (value === "---" || value === "...") {
 		return true;
 	}
-	if (isYamlBooleanLike(value) || isYamlNullLike(value) || isYamlNumericLike(value)) {
+	if (
+		YAML_BOOLEAN_PATTERN.test(value) || YAML_NULL_PATTERN.test(value)
+		|| YAML_NUMERIC_PATTERN.test(value)
+	) {
 		return true;
 	}
-	if (/^[\-[\]{}#&*!|>'"%@`,]/.test(value)) {
+	if (/^[-[\]{}#&*!|>'"%@`,]/.test(value)) {
 		return true;
 	}
 	if (/^[?:](?:\s|$)/.test(value)) {
@@ -236,7 +232,3 @@ export function mergeFetchedMarkdownFrontMatter(input: {
 
 	return `${frontMatter}\n\n${incoming.body}`;
 }
-
-export default {
-	mergeFetchedMarkdownFrontMatter,
-};

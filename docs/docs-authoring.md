@@ -3,9 +3,7 @@ title: Docs Authoring
 short: Must read before writing docs.
 summary: Must read this doc before writing any documentation.
 read_when:
-  - Deciding whether a doc belongs in repo docs or local docs.
-  - Creating a new docs path and choosing between a single `.md` file or a directory.
-  - Organizing a topic path that needs a summary without a singleton `README.md`.
+  - Placing or structuring docs.
 ---
 
 Use repo docs for reusable, public-safe material.
@@ -25,3 +23,9 @@ Use local docs for private, machine-specific, or personal material that should n
 - Put local-only docs in `~/.n/local/docs`.
 - Keep public third-party references in repo docs when they are useful across machines or repos.
 - Keep local notes, secrets workflows, and machine-specific setup in local docs.
+
+## Frontmatter rules
+
+- `read_when` is a short loading trigger, not a list of related tasks.
+- Use one precise trigger unless distinct situations demand separate bullets.
+- Three or more genuine triggers means the doc probably needs to be split.

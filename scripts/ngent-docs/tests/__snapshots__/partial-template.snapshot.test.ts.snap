@@ -18,7 +18,8 @@ exports[`expanded docs group partial matches the current output in spaced mode 1
 exports[`expanded docs group partial matches the current output in tight mode 1`] = `
 "### /fixture/docs/architecture
  - main.md
-   First summary line. - reference.md
+   First summary line.
+ - reference.md
    Second summary line.
    Follow-up note."
 `;

@@ -28,10 +28,9 @@ Usually not meaningful by themselves:
 - different but equivalent path globs
 - project-specific directory names
 
-Follow this workflow to install lint tooling, update AGENTS.md through
-`$gatefile`, copy the shared
-baseline templates, adapt them to the repo, wire lint through Gatefile, and
-validate through `gate`.
+Follow this workflow to install lint tooling, copy the shared baseline
+templates, adapt them to the repo, wire lint through Gatefile, and verify the
+chosen Gatefile setup.
 
 Do not weaken lint rules. Do not add exclusions to hide lint violations. Do not
 raise duplication thresholds.
@@ -61,16 +60,7 @@ bun add -d dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhu
 npm install -D dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest oxlint-plugin-complexity@latest jscpd@latest knip@latest
 ```
 
-## 2) Update AGENTS.md Through Gatefile
-
-If the repo needs an `AGENTS.md` update, use `$gatefile`
-`references/guide-agents-file.md`.
-
-Do not add TypeScript/JavaScript lint policy prose here.
-Keep AGENTS focused on `gate`.
-Let Gatefile own the workflow wording and runtime branches.
-
-## 3) Copy Config Templates
+## 2) Copy Config Templates
 
 Copy the templates into the repo root:
 - `assets/templates/dprint.json` -> `dprint.json`
@@ -203,9 +193,9 @@ Do not call out:
 - Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.
 - `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
 
-## 4) Wire Lint Through Gatefile
+## 3) Wire Lint Through Gatefile
 
-Use Gatefile as the public validation surface. Agents should run `gate`.
+Use Gatefile as the public validation surface for lint routing.
 
 Required outcomes:
 - Add or update lint-related gate entries in `.gatefile.json5`.
@@ -240,9 +230,10 @@ Gatefile guidance:
   `guidance`, not in AGENTS prose or skill text. See
   `references/templates.md` for the pattern.
 
-## 5) Validate Through Gatefile
+## 4) Verify Gatefile Setup
 
-After setup, validate through the repo's Gatefile:
+During setup, verify that the repo's chosen Gatefile caller or integration
+routes the lint gates correctly. When directly checking CLI wiring, use:
 
 ```bash
 gate

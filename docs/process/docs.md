@@ -47,4 +47,6 @@ Build conceptual docs conversationally:
 - `title` — display title
 - `short` — one-line for compact indexes
 - `summary` — fuller description for browsing
-- `read_when` — triggers for loading this doc
+- `read_when` — short, precise loading trigger; not a task dump
+
+Use one `read_when` bullet by default. Add a second only when it names a distinct situation. If a doc needs three or more genuine triggers, split the doc.

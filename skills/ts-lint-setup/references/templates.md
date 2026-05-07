@@ -8,7 +8,7 @@ Templates live in `assets/templates/`:
 - `assets/templates/knip.json`
 
 Gatefile expectations:
-- Provide Gatefile-owned lint routing; agents should run `gate`.
+- Provide Gatefile-owned lint routing.
 - Consult `$gatefile` before changing `.gatefile.json5`.
 - Expose a normal lint gate key when the repo needs a lint-only validation path
   during setup.

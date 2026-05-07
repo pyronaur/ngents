@@ -15,6 +15,7 @@ import {
 	type FetchManifestEntry,
 } from "./fetch-contract.ts";
 import { expandHomePath } from "./fetch-handler-support.ts";
+import * as updateLog from "./update-log.ts";
 
 const { normalizePath } = browseContracts;
 
@@ -40,7 +41,7 @@ type RunFetchDefinition = {
 	docsRoot: string;
 	entry: FetchManifestEntry;
 };
-type ValidatedFetchDefinition = RunFetchDefinition & {
+export type ValidatedFetchDefinition = RunFetchDefinition & {
 	absoluteTargetPath: string;
 };
 
@@ -89,10 +90,6 @@ function normalizeHandlerReference(handler: string): string {
 	return normalizeStoredCommand(builtinHandler);
 }
 
-function manifestPathForDocsRoot(docsRoot: string): string {
-	return path.join(docsRoot, FETCH_MANIFEST_NAME);
-}
-
 async function fileExists(filePath: string): Promise<boolean> {
 	try {
 		await access(filePath);
@@ -115,25 +112,6 @@ function isFetchManifest(value: unknown): value is FetchManifest {
 	return entries.every(isFetchManifestEntry);
 }
 
-async function readFetchManifest(docsRoot: string): Promise<FetchManifest> {
-	const manifestPath = manifestPathForDocsRoot(docsRoot);
-	if (!(await fileExists(manifestPath))) {
-		return { entries: [] };
-	}
-
-	let parsed: unknown;
-	try {
-		parsed = JSON.parse(await readFile(manifestPath, "utf8"));
-	} catch {
-		throw runtimeError(`Invalid fetch manifest: ${manifestPath}`);
-	}
-
-	if (!isFetchManifest(parsed)) {
-		throw runtimeError(`Invalid fetch manifest: ${manifestPath}`);
-	}
-	return parsed;
-}
-
 function isFetchManifestEntry(value: unknown): value is FetchManifestEntry {
 	if (!isRecord(value)) {
 		return false;
@@ -144,14 +122,6 @@ function isFetchManifestEntry(value: unknown): value is FetchManifestEntry {
 		&& typeof value.hash === "string"
 		&& (value.root === undefined || typeof value.root === "string")
 		&& (value.transform === undefined || typeof value.transform === "string");
-}
-
-async function writeFetchManifest(docsRoot: string, manifest: FetchManifest): Promise<void> {
-	const manifestPath = manifestPathForDocsRoot(docsRoot);
-	const tempPath = `${manifestPath}.${process.pid}.${Date.now()}.tmp`;
-	await mkdir(docsRoot, { recursive: true });
-	await writeFile(tempPath, `${JSON.stringify(manifest, null, "\t")}\n`);
-	await rename(tempPath, manifestPath);
 }
 
 function isWithinDocsRoot(targetPath: string, docsRoot: string): boolean {
@@ -217,61 +187,6 @@ async function resolveFetchTarget(
 	return {
 		docsRoot: docsRoot.original,
 		targetRelativePath: targetRelativePath.length > 0 ? targetRelativePath : ".",
-	};
-}
-
-async function validateFetchEntryTarget(definition: RunFetchDefinition): Promise<
-	{
-		ok: true;
-		value: ValidatedFetchDefinition;
-	} | {
-		ok: false;
-		message: string;
-	}
-> {
-	const manifestTarget = definition.entry.target;
-	if (manifestTarget.length === 0 || manifestTarget === ".") {
-		return {
-			ok: false,
-			message:
-				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must be a docs path inside the root, got ${
-					manifestTarget || "<empty>"
-				}`,
-		};
-	}
-	if (path.isAbsolute(manifestTarget)) {
-		return {
-			ok: false,
-			message:
-				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must be relative, got ${manifestTarget}`,
-		};
-	}
-	if (hasTraversalSegment(manifestTarget)) {
-		return {
-			ok: false,
-			message:
-				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must not contain '..', got ${manifestTarget}`,
-		};
-	}
-
-	const canonicalDocsRoot = await canonicalizePath(definition.docsRoot);
-	const absoluteTargetPath = await canonicalizePath(
-		normalizePath(path.resolve(definition.docsRoot, manifestTarget)),
-	);
-	if (!isStrictlyWithinDocsRoot(absoluteTargetPath, canonicalDocsRoot)) {
-		return {
-			ok: false,
-			message:
-				`Skipping unsafe fetch entry in ${definition.docsRoot}: target resolves outside the docs root, got ${manifestTarget}`,
-		};
-	}
-
-	return {
-		ok: true,
-		value: {
-			...definition,
-			absoluteTargetPath,
-		},
 	};
 }
 
@@ -346,12 +261,13 @@ async function runFetchHandler(invocation: {
 		});
 		child.on("close", (exitCode) => {
 			if ((exitCode ?? 1) !== 0) {
-				reject(
-					runtimeError(
-						stderr.trim() || stdout.trim()
-							|| `Fetch handler failed: ${invocation.handler}`,
-					),
-				);
+				const message = stderr.trim() || stdout.trim()
+					|| `Fetch handler failed: ${invocation.handler}`;
+				if (/\bDOCS_FETCH_MISSING_SOURCE\b/.test(message)) {
+					reject(new MissingFetchSourceError(message));
+					return;
+				}
+				reject(runtimeError(message));
 				return;
 			}
 
@@ -369,7 +285,107 @@ async function runFetchHandler(invocation: {
 	});
 }
 
-function upsertManifestEntry(
+export class MissingFetchSourceError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "MissingFetchSourceError";
+	}
+}
+
+export function manifestPathForDocsRoot(docsRoot: string): string {
+	return path.join(docsRoot, FETCH_MANIFEST_NAME);
+}
+
+export function fetchEntryLabel(definition: RunFetchDefinition): string {
+	return `${definition.entry.target} <- ${definition.entry.source}`;
+}
+
+export async function readFetchManifest(docsRoot: string): Promise<FetchManifest> {
+	const manifestPath = manifestPathForDocsRoot(docsRoot);
+	if (!(await fileExists(manifestPath))) {
+		return { entries: [] };
+	}
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(await readFile(manifestPath, "utf8"));
+	} catch {
+		throw runtimeError(`Invalid fetch manifest: ${manifestPath}`);
+	}
+
+	if (!isFetchManifest(parsed)) {
+		throw runtimeError(`Invalid fetch manifest: ${manifestPath}`);
+	}
+	return parsed;
+}
+
+export async function writeFetchManifest(
+	docsRoot: string,
+	manifest: FetchManifest,
+): Promise<void> {
+	const manifestPath = manifestPathForDocsRoot(docsRoot);
+	const tempPath = `${manifestPath}.${process.pid}.${Date.now()}.tmp`;
+	await mkdir(docsRoot, { recursive: true });
+	await writeFile(tempPath, `${JSON.stringify(manifest, null, "\t")}\n`);
+	await rename(tempPath, manifestPath);
+}
+
+export async function validateFetchEntryTarget(definition: RunFetchDefinition): Promise<
+	{
+		ok: true;
+		value: ValidatedFetchDefinition;
+	} | {
+		ok: false;
+		message: string;
+	}
+> {
+	const manifestTarget = definition.entry.target;
+	if (manifestTarget.length === 0 || manifestTarget === ".") {
+		return {
+			ok: false,
+			message:
+				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must be a docs path inside the root, got ${
+					manifestTarget || "<empty>"
+				}`,
+		};
+	}
+	if (path.isAbsolute(manifestTarget)) {
+		return {
+			ok: false,
+			message:
+				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must be relative, got ${manifestTarget}`,
+		};
+	}
+	if (hasTraversalSegment(manifestTarget)) {
+		return {
+			ok: false,
+			message:
+				`Skipping unsafe fetch entry in ${definition.docsRoot}: target must not contain '..', got ${manifestTarget}`,
+		};
+	}
+
+	const canonicalDocsRoot = await canonicalizePath(definition.docsRoot);
+	const absoluteTargetPath = await canonicalizePath(
+		normalizePath(path.resolve(definition.docsRoot, manifestTarget)),
+	);
+	if (!isStrictlyWithinDocsRoot(absoluteTargetPath, canonicalDocsRoot)) {
+		return {
+			ok: false,
+			message:
+				`Skipping unsafe fetch entry in ${definition.docsRoot}: target resolves outside the docs root, got ${manifestTarget}`,
+		};
+	}
+
+	return {
+		ok: true,
+		value: {
+			...definition,
+			absoluteTargetPath,
+		},
+	};
+}
+
+export function upsertManifestEntry(
 	manifest: FetchManifest,
 	nextEntry: FetchManifestEntry,
 ): FetchManifest {
@@ -379,9 +395,11 @@ function upsertManifestEntry(
 	return { entries };
 }
 
-async function runFetchDefinition(
+export async function runFetchDefinition(
 	definition: ValidatedFetchDefinition,
+	logPrefix = "docs fetch",
 ): Promise<FetchManifestEntry> {
+	updateLog.fetchStart(logPrefix, fetchEntryLabel(definition));
 	const nextHash = await runFetchHandler({
 		handler: definition.entry.handler,
 		docsRoot: definition.docsRoot,
@@ -395,6 +413,8 @@ async function runFetchDefinition(
 				: undefined,
 		},
 	});
+	const status = nextHash === definition.entry.hash ? "unchanged" : "updated";
+	updateLog.fetchStatus(logPrefix, status, fetchEntryLabel(definition));
 
 	return {
 		...definition.entry,
@@ -402,7 +422,7 @@ async function runFetchDefinition(
 	};
 }
 
-async function listFetchDefinitions(projectDir: string): Promise<RunFetchDefinition[]> {
+export async function listFetchDefinitions(projectDir: string): Promise<RunFetchDefinition[]> {
 	const sources = await discoverDocsSources(projectDir);
 	const definitions: RunFetchDefinition[] = [];
 
@@ -423,28 +443,6 @@ async function listFetchDefinitions(projectDir: string): Promise<RunFetchDefinit
 		}
 		return left.entry.target.localeCompare(right.entry.target);
 	});
-}
-
-export async function runRegisteredFetches(
-	projectDir: string,
-): Promise<{ skippedUnsafeEntries: string[] }> {
-	const definitions = await listFetchDefinitions(projectDir);
-	const skippedUnsafeEntries: string[] = [];
-	for (const definition of definitions) {
-		const validatedDefinition = await validateFetchEntryTarget(definition);
-		if (!validatedDefinition.ok) {
-			skippedUnsafeEntries.push(validatedDefinition.message);
-			console.error(validatedDefinition.message);
-			continue;
-		}
-		const manifest = await readFetchManifest(definition.docsRoot);
-		const updatedEntry = await runFetchDefinition(validatedDefinition.value);
-		await writeFetchManifest(definition.docsRoot, upsertManifestEntry(manifest, updatedEntry));
-	}
-
-	return {
-		skippedUnsafeEntries,
-	};
 }
 
 export async function runDocsFetch(input: {

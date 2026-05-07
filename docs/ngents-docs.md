@@ -243,6 +243,8 @@ Result output includes:
 `update` refreshes the same global QMD index that `docs query` reads.
 
 It runs registered fetches first, then `qmd update`, then `qmd embed`.
+Registered fetches run concurrently within each docs root and log progress to stderr.
+HTTP 404 responses from the built-in URL fetch handler are logged and skipped; the rest of the update continues.
 
 Use it when the global docs library changed and `query` needs a refreshed index.
 

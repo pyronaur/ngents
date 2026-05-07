@@ -89,9 +89,13 @@ async function readHeadValidators(source: string): Promise<{
 async function downloadHttpSource(source: string, destinationPath: string): Promise<void> {
 	const result = await runExternalCommand({
 		command: "curl",
-		args: ["-fsSL", "--compressed", source, "-o", destinationPath],
+		args: ["-fsSL", "--compressed", source, "-o", destinationPath, "--write-out", "%{http_code}"],
 	});
 	if (result.exitCode !== 0) {
+		const statusCode = result.stdout.trim().match(/(\d{3})$/)?.[1];
+		if (statusCode === "404") {
+			throw new Error(`DOCS_FETCH_MISSING_SOURCE status=404 source=${source}`);
+		}
 		throw new Error(result.stderr.trim() || result.stdout.trim() || `Failed to fetch ${source}`);
 	}
 }

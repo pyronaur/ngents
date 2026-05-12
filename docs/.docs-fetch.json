@@ -11,7 +11,7 @@
 			"target": "topics/app/guidelines/swift-api-design-guidelines.md",
 			"handler": "docs-url-file-fetch",
 			"transform": "html-md",
-			"hash": "1cdc16646b54e68bba3c8b336ba1b772b47358613fa24329bfa3d3d06757f23f"
+			"hash": "5e7b550cdca0946f12806fb3fa2e7d91c69fe8b6e70d2c793c99b510b678b788"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",
@@ -25,7 +25,7 @@
 			"target": "topics/app/skills/maestro/references",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/maestro-import.sh",
-			"hash": "1544e6cfa9d2591d966f5a52e79cbec7250d68db759a68d5916dabbf086305dd"
+			"hash": "40f7e7fcece1ef2a115153405df792ea94d4c84fcecb35f21c4a35010227098f"
 		},
 		{
 			"source": "https://github.com/TimBroddin/app-store-aso-skill",

@@ -17,6 +17,20 @@ Adjacent concerns:
 
 Reader = an agent loading the doc into context.
 
+## Current reality only
+
+Documentation documents what is.
+
+Do not use docs as:
+
+- a plan;
+- a log;
+- a changelog;
+- a record of what was;
+- a proposal for what will be.
+
+If reality changes, update the doc to the new current reality. Remove obsolete state instead of preserving history inline.
+
 ## DRY
 
 Multiple definitions create stale forks.

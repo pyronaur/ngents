@@ -9,12 +9,15 @@ read_when:
 
 # Docs Rendering
 
-This document covers normal successful, human-facing output for:
-
 - `docs`
 - `docs <selector>`
 - `docs topic [topic] [path]`
 - `docs ls [selector...]`
+
+Placeholders:
+
+- `{{USAGE}}` stands for the stable usage line printed before the content shape.
+- `{{ROOT_COMMAND_BLURB}}` stands for the root command-discovery prose between the overview and the topic/docs indexes.
 
 ## Selector precedence
 
@@ -28,6 +31,8 @@ Root selectors resolve in this order:
 4. registered docs root name -> **Docs Group**
 5. docs file, docs directory, collection-qualified directory, workspace docs path, or topic markdown file -> **Document Detail** or **Docs Group**
 
+After collection/topic/composite precedence, a single root selector falls through to the same docs/file routing used by `docs ls`. Root selector fallback accepts one selector value only; `docs foo bar` is not a successful root selector.
+
 ### `docs topic [topic] [path]`
 
 Topic selectors resolve in this order:
@@ -38,6 +43,7 @@ Topic selectors resolve in this order:
 4. two values where the first value is an exact topic and the second is a topic path -> **Topic Focus** or **Topic Skill Detail**
 
 A topic wins over a collection for `docs topic <name>`. A collection wins over a topic for `docs <name>`.
+The special topic name `.` is a valid merged global topic selector.
 
 ### `docs ls [selector...]`
 
@@ -53,13 +59,17 @@ Any slash-separated `docs ls` selector can be supplied as one argument or split 
 
 ## Rendering outcomes
 
-### Root Command Index
+### 1. Root Command Index
 
 Commands:
 
 - `docs`
 - `docs --init`
 - `docs -i`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs`
 
 Shape with docs index:
 
@@ -72,6 +82,8 @@ docs organizes project local and global documentation optimized for information 
 ## Overview & Organization
 - All topics & docs are kept in and organized in `docs` directories
 
+{{ROOT_COMMAND_BLURB}}
+
 ## Topics
 TOPIC    TITLE        DESCRIPTION
 foo-bar  Foo Bar      Foo-bar operating model.
@@ -83,9 +95,53 @@ api      API          Foo-bar API topic.
 - reference.md - Foo-bar reference.
 ```
 
-### Global Topic Index
+Shape with no docs index:
+
+```text
+{{USAGE}}
+
+# docs
+docs organizes project local and global documentation optimized for information quality.
+
+## Overview & Organization
+- All topics & docs are kept in and organized in `docs` directories
+
+{{ROOT_COMMAND_BLURB}}
+
+## Topics
+TOPIC    TITLE        DESCRIPTION
+foo-bar  Foo Bar      Foo-bar operating model.
+api      API          Foo-bar API topic.
+```
+
+Shape with no topics:
+
+```text
+{{USAGE}}
+
+# docs
+docs organizes project local and global documentation optimized for information quality.
+
+## Overview & Organization
+- All topics & docs are kept in and organized in `docs` directories
+
+{{ROOT_COMMAND_BLURB}}
+
+## Topics
+- [no topics found]
+
+## Docs
+### /repo/docs/foo-bar/
+- guide.md - Foo-bar guide.
+```
+
+### 2. Global Topic Index
 
 Commands:
+
+- `docs topic`
+
+Actual command demonstrating the richest real form on this machine:
 
 - `docs topic`
 
@@ -99,6 +155,9 @@ Shape:
 TOPIC    TITLE        DESCRIPTION
 foo-bar  Foo Bar      Foo-bar operating model.
 api      API          Foo-bar API topic.
+
+docs topic foo - view foo about/index first
+docs topic foo bar/baz - focus one path inside the topic
 ```
 
 Shape with no topics:
@@ -109,14 +168,18 @@ Shape with no topics:
 ## Topics
 
 - [no topics found]
+
+docs topic foo - view foo about/index first
+docs topic foo bar/baz - focus one path inside the topic
 ```
 
-### Topic Mixed Overview
+### 3. Topic Mixed Overview
 
 Commands:
 
 - `docs topic <topic>`
 - `docs topic <nested-topic>`
+- `docs topic .`
 - `docs <topic>` when `<topic>` resolves to a topic and not a collection or topic/docs composite
 - `docs <nested-topic>` when `<nested-topic>` resolves to a topic and not a collection or topic/docs composite
 
@@ -124,8 +187,13 @@ Examples:
 
 - `docs topic foo-bar`
 - `docs topic foo-bar/api`
+- `docs topic .`
 - `docs foo-bar`
 - `docs foo-bar/api`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs topic asc`
 
 Shape:
 
@@ -187,6 +255,20 @@ Open: docs topic foo-bar api/{$directory}
 - api-review: $foo-bar-api-review - Review foo-bar API behavior.
 ```
 
+Shape with docs only:
+
+```text
+# Topic: Foo Bar
+
+## Docs
+
+### /repo/docs/topics/foo-bar/
+  guide.md - Foo-bar guide.
+
+### /repo/docs/topics/foo-bar/api/
+  endpoints.md - Foo-bar API endpoints.
+```
+
 Shape with non-templateable skills:
 
 ```text
@@ -211,17 +293,25 @@ Shape with no guide, docs, or skills:
 # Topic: Foo Bar
 ```
 
-### Topic Focus
+### 4. Topic Focus
 
 Commands:
 
 - `docs topic <topic> <subtree>`
 - `docs topic <topic> <nested-subtree>`
+- `docs topic <nested-topic> <subtree>`
+- `docs topic . <subtree>`
 
 Examples:
 
 - `docs topic foo-bar api`
 - `docs topic foo-bar api/guides`
+- `docs topic foo-bar/api guides`
+- `docs topic . foo-bar/api`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs topic asc aso`
 
 Shape:
 
@@ -245,6 +335,27 @@ Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
 Open: docs topic foo-bar api/api-review
 
 - api-review: $foo-bar-api-review - Review foo-bar API behavior.
+```
+
+Shape with metadata only:
+
+```text
+## Foo Bar API
+
+Focused guide first paragraph from `api/.docs.md`.
+Need focused foo-bar API guidance.
+```
+
+Shape with docs only:
+
+```text
+## Foo Bar API
+
+### /repo/docs/topics/foo-bar/api/
+  endpoints.md - Foo-bar API endpoints.
+
+### /repo/docs/topics/foo-bar/api/guides/
+  retry.md - Foo-bar retry guide.
 ```
 
 Shape with non-templateable nested skills:
@@ -271,17 +382,25 @@ Shape with no focused entries:
 [no section entries found]
 ```
 
-### Topic Skill Detail
+### 5. Topic Skill Detail
 
 Commands:
 
 - `docs topic <topic> <skill-dir>` when `<skill-dir>` is a topic path containing one direct `SKILL.md`
 - `docs topic <topic> <nested-skill-dir>` when `<nested-skill-dir>` is a nested topic path containing one direct `SKILL.md`
+- `docs topic <nested-topic> <skill-dir>` when `<skill-dir>` is inside the nested topic
+- `docs topic . <nested-skill-dir>` when the special `.` topic contains the nested skill path
 
 Examples:
 
 - `docs topic foo-bar api-review`
 - `docs topic foo-bar api/skills/api-review`
+- `docs topic foo-bar/api api-review`
+- `docs topic . foo-bar/api/api-review`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs topic app hig-doctor/skills/hig-components-controls`
 
 Shape:
 
@@ -308,7 +427,44 @@ Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
 Open: docs topic foo-bar api/api-review
 ```
 
-### Topic Document Detail
+Shape with merged direct skill blocks:
+
+```text
+## foo-bar-api-review
+
+Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
+Open: docs topic foo-bar api/api-review
+
+Review local foo-bar API behavior.
+
+### References
+
+- checklist.md
+
+Path: /repo-global/docs/topics/foo-bar/api/api-review/SKILL.md
+Open: docs topic foo-bar api/api-review
+
+Review shared foo-bar API behavior.
+
+### References
+
+- examples.md
+```
+
+Shape with parse error metadata:
+
+```text
+## foo-bar-api-review
+
+Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
+Open: docs topic foo-bar api/api-review
+
+[Invalid frontmatter: expected mapping]
+```
+
+### 6. Topic Document Detail
+
+Uses the **Document Detail** renderer; all **Document Detail** shapes apply.
 
 Commands:
 
@@ -328,6 +484,10 @@ Examples:
 - `docs foo-bar/api/endpoints`
 - `docs foo-bar/api/endpoints.md`
 - `docs ls foo-bar/api/endpoints`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs asc/publishing-guide`
 
 Shape:
 
@@ -357,7 +517,7 @@ Foo-bar guide summary.
 Read when: Need to understand foo-bar behavior.
 ```
 
-### Collection Topic Index
+### 7. Collection Topic Index
 
 Commands:
 
@@ -366,6 +526,10 @@ Commands:
 Examples:
 
 - `docs topic foo-bar`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs topic ngents`
 
 Shape:
 
@@ -385,7 +549,7 @@ Shape with no topics:
 - [no topics found]
 ```
 
-### Collection Composite
+### 8. Collection Composite
 
 Commands:
 
@@ -394,6 +558,10 @@ Commands:
 Examples:
 
 - `docs foo-bar`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs ngents`
 
 Shape with topics and docs:
 
@@ -450,15 +618,21 @@ Shape with no topics and no docs:
 ## Docs: foo-bar
 ```
 
-### Topic and Docs Composite
+### 9. Topic and Docs Composite
 
 Commands:
 
+- `docs .`
 - `docs <name>` when `<name>` resolves to both a topic and a registered docs root, and not a collection
 
 Examples:
 
+- `docs .`
 - `docs foo-bar`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs .`
 
 Shape:
 
@@ -502,7 +676,7 @@ Read when: Need reusable foo-bar API checks.
    Foo-bar docs-root guide.
 ```
 
-### Docs Group
+### 10. Docs Group
 
 Commands:
 
@@ -514,10 +688,14 @@ Scope selectors:
 
 Root docs selectors:
 
+- `docs global`
 - `docs <docs-root>` when it is not a topic, collection, or topic/docs composite
 - `docs <docs-root>/<subtree>` when it resolves to a registered docs subtree, not an exact nested topic, and not a directory containing only `SKILL.md`
+- `docs docs`
 - `docs docs/<subtree>`
+- `docs ./docs`
 - `docs ./docs/<subtree>`
+- `docs <explicit-docs-directory-path>`
 - `docs <explicit-docs-path>`
 - `docs <workspace-path-containing-docs>`
 
@@ -526,9 +704,12 @@ List docs selectors:
 - `docs ls <docs-root>`
 - `docs ls <docs-root>/<subtree>`
 - `docs ls <docs-root> <subtree>`
+- `docs ls docs`
 - `docs ls docs/<subtree>`
 - `docs ls docs <subtree>`
+- `docs ls ./docs`
 - `docs ls ./docs/<subtree>`
+- `docs ls <explicit-docs-directory-path>`
 - `docs ls <explicit-docs-path>`
 - `docs ls <workspace-path-containing-docs>`
 
@@ -544,11 +725,18 @@ Examples:
 - `docs ls`
 - `docs ls .`
 - `docs ls global`
+- `docs global`
 - `docs ls foo-bar`
 - `docs ls foo-bar/api`
+- `docs docs`
+- `docs ./docs`
 - `docs ls docs/foo-bar`
 - `docs ngents/bun`
 - `docs ls ngents bun`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs ls local`
 
 Shape:
 
@@ -586,7 +774,7 @@ Shape without topic hint:
    Foo-bar docs-root guide.
 ```
 
-### Document Detail
+### 11. Document Detail
 
 Commands:
 
@@ -594,35 +782,39 @@ Root docs file selectors:
 
 - `docs <file>`
 - `docs <file.md>`
-- `docs <directory-containing-only-SKILL.md>`
+- `docs <skill-only-dir>`
 - `docs docs/<file>`
 - `docs docs/<file.md>`
-- `docs ./docs/<file>`
 - `docs ./docs/<file.md>`
 - `docs <docs-root>/<file>`
 - `docs <docs-root>/<file.md>`
-- `docs <docs-root>/<directory-containing-only-SKILL.md>`
+- `docs <docs-root>/<skill-only-dir>`
 - `docs <docs-root>/<subtree>/<file>`
 - `docs <docs-root>/<subtree>/<file.md>`
 - `docs <explicit-markdown-path>`
+- `docs <collection>/<skill-only-dir>`
+- `docs <collection>/<subtree>/<skill-only-dir>`
 
 List docs file selectors:
 
 - `docs ls <file>`
 - `docs ls <file.md>`
-- `docs ls <directory-containing-only-SKILL.md>`
+- `docs ls <skill-only-dir>`
 - `docs ls docs/<file>`
 - `docs ls docs/<file.md>`
 - `docs ls docs <file>`
-- `docs ls ./docs/<file>`
 - `docs ls ./docs/<file.md>`
 - `docs ls <docs-root>/<file>`
 - `docs ls <docs-root>/<file.md>`
-- `docs ls <docs-root>/<directory-containing-only-SKILL.md>`
+- `docs ls <docs-root> <file>`
+- `docs ls <docs-root> <file.md>`
+- `docs ls <docs-root>/<skill-only-dir>`
 - `docs ls <docs-root>/<subtree>/<file>`
 - `docs ls <docs-root>/<subtree>/<file.md>`
 - `docs ls <docs-root> <subtree> <file>`
 - `docs ls <explicit-markdown-path>`
+- `docs ls <collection>/<skill-only-dir>`
+- `docs ls <collection>/<subtree>/<skill-only-dir>`
 
 Examples:
 
@@ -633,6 +825,10 @@ Examples:
 - `docs foo-bar/api/endpoints.md`
 - `docs ls guide`
 - `docs ls foo-bar/api/endpoints.md`
+
+Actual command demonstrating the richest real form on this machine:
+
+- `docs ngents-docs`
 
 Shape:
 
@@ -652,11 +848,46 @@ Full markdown body.
 Detailed foo-bar content.
 ```
 
+Shape with metadata only:
+
+```text
+# Doc: Foo Bar Guide
+Path: /repo/docs/foo-bar/guide.md
+
+Foo-bar guide summary.
+Read when: Need to understand foo-bar behavior.
+```
+
+Shape with body only:
+
+```text
+# Doc: Foo Bar Guide
+Path: /repo/docs/foo-bar/guide.md
+
+Full markdown body.
+
+## Deep section
+
+Detailed foo-bar content.
+```
+
+Shape with parse error metadata:
+
+```text
+# Doc: guide.md
+Path: /repo/docs/foo-bar/guide.md
+
+[Invalid frontmatter: expected mapping]
+
+Full markdown body.
+```
+
 ## Explicit non-permutations
 
 These are not successful topic/collection rendering permutations:
 
 - `docs <topic>/<subtree>` is not topic focus; it is an exact nested topic, topic markdown file, or docs selector.
 - `docs ls <topic>` is not topic overview; use `docs topic <topic>` for topic output.
-- `docs <collection>/<file.md>` and `docs ls <collection>/<file.md>` are not collection document detail routes; collection-qualified selectors browse directories.
+- `docs <collection>/<file>`, `docs <collection>/<file.md>`, `docs ls <collection>/<file>`, and `docs ls <collection>/<file.md>` are not collection document detail routes; collection-qualified file selectors are not successful, but collection-qualified directories are.
 - `docs topic <collection> <path>` is not collection focus; topic focus requires the first value to resolve to a topic.
+- `docs foo bar` is not a successful root selector; use one slash-separated selector such as `docs foo/bar` or use `docs ls foo bar`.

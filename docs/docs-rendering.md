@@ -60,9 +60,6 @@ Commands:
 - `docs`
 - `docs --init`
 - `docs -i`
-- `docs -h`
-- `docs --help`
-- `docs help`
 
 Shape with docs index:
 
@@ -84,52 +81,6 @@ api      API          Foo-bar API topic.
 ### /repo/docs/foo-bar/
 - guide.md - Foo-bar guide.
 - reference.md - Foo-bar reference.
-```
-
-Shape with no docs index:
-
-Rendered by:
-
-- `docs -h`
-- `docs --help`
-- `docs help`
-
-```text
-{{USAGE}}
-
-# docs
-docs organizes project local and global documentation optimized for information quality.
-
-## Overview & Organization
-- All topics & docs are kept in and organized in `docs` directories
-
-## Topics
-TOPIC    TITLE        DESCRIPTION
-foo-bar  Foo Bar      Foo-bar operating model.
-```
-
-### Topic Command Help
-
-Commands:
-
-- `docs topic --help`
-- `docs topic <topic> --help`
-- `docs topic <topic> <path> --help`
-- `docs help topic`
-
-Shape:
-
-```text
-{{USAGE}}
-
-Browse merged local and global topics.
-
-Arguments:
-  topic   Topic to open.
-  path    Path to focus within the topic.
-
-Options:
-  --help  Display help for command.
 ```
 
 ### Global Topic Index
@@ -551,30 +502,6 @@ Read when: Need reusable foo-bar API checks.
    Foo-bar docs-root guide.
 ```
 
-### List Command Help
-
-Commands:
-
-- `docs ls --help`
-- `docs ls <selector...> --help`
-- `docs help ls`
-
-Shape:
-
-```text
-{{USAGE}}
-
-Browse local and global docs directories.
-
-Arguments:
-  where   Optional docs selector segments, path, or parked name: `.`, `global`,
-          `./docs/...`, `docs/...`, `<docs-root>/<subpath>`, `local/setup`,
-          `~/work/foo`, or `local`.
-
-Options:
-  --help  Display help for command.
-```
-
 ### Docs Group
 
 Commands:
@@ -733,4 +660,3 @@ These are not successful topic/collection rendering permutations:
 - `docs ls <topic>` is not topic overview; use `docs topic <topic>` for topic output.
 - `docs <collection>/<file.md>` and `docs ls <collection>/<file.md>` are not collection document detail routes; collection-qualified selectors browse directories.
 - `docs topic <collection> <path>` is not collection focus; topic focus requires the first value to resolve to a topic.
-- `docs topic -h` and `docs ls -h` are not successful help aliases; use `--help`.

@@ -9,8 +9,6 @@ read_when:
 # Docs Writing Process
 
 Adjacent concerns:
-
-- Placement, repo vs local, file/dir layout: `!docs docs-authoring.md`
 - The `docs` CLI: `!docs ngents-docs.md`
 
 ## Audience

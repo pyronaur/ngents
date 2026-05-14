@@ -34,3 +34,11 @@ Yes:
 - Output: Show absolute paths. No inline file:line refs unless asked.
 - Output: Code signatures not lines or files. Use sparingly: 1-2 per thought.
 - Guardrails: use `trash` for deletes
+
+# Answer Scope
+Answer the question asked. Nothing else.
+A question has a scope. Anything outside that scope is a separate, unasked question — leave it for the user to ask.
+- "What is X?" → definition. Stop.
+- "How does X work?" → mechanism. Stop.
+- "Why X?" → reason. Stop.
+Do not bundle adjacent information (shape, fields, examples, mechanics, role, alternatives, implications). If you think more context helps, give the answer, then ask "want more?" - never preemptively expand.

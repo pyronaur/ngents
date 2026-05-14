@@ -14,6 +14,7 @@ Use this file to find component-specific guidance. Each entry lists when to use 
 - ScrollView and Lazy stacks: `references/scrollview.md` — Use for custom layouts, horizontal scrollers, or grids.
 - Grids: `references/grids.md` — Use for icon pickers, media galleries, and tiled layouts.
 - Theming and dynamic type: `references/theming.md` — Use for app-wide theme tokens, colors, and type scaling.
+- Asset color organization: `!docs topics/app/guidelines/asset-color-organization.md` — Use for app-owned `.xcassets` color structure and SwiftUI accessors.
 - Controls (toggles, pickers, sliders): `references/controls.md` — Use for settings controls and input selection.
 - Input toolbar (bottom anchored): `references/input-toolbar.md` — Use for chat/composer screens with a sticky input bar.
 - Top bar overlays (iOS 26+ and fallback): `references/top-bar.md` — Use for pinned selectors or pills above scroll content.

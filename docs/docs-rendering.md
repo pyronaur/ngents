@@ -67,7 +67,7 @@ Commands:
 - `docs --init`
 - `docs -i`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs`
 
@@ -141,7 +141,7 @@ Commands:
 
 - `docs topic`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs topic`
 
@@ -191,7 +191,7 @@ Examples:
 - `docs foo-bar`
 - `docs foo-bar/api`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs topic asc`
 
@@ -309,9 +309,10 @@ Examples:
 - `docs topic foo-bar/api guides`
 - `docs topic . foo-bar/api`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs topic asc aso`
+- `docs topic app hig-doctor`
 
 Shape:
 
@@ -398,7 +399,7 @@ Examples:
 - `docs topic foo-bar/api api-review`
 - `docs topic . foo-bar/api/api-review`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs topic app hig-doctor/skills/hig-components-controls`
 
@@ -485,7 +486,7 @@ Examples:
 - `docs foo-bar/api/endpoints.md`
 - `docs ls foo-bar/api/endpoints`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs asc/publishing-guide`
 
@@ -527,9 +528,9 @@ Examples:
 
 - `docs topic foo-bar`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
-- `docs topic ngents`
+- `docs topic local`
 
 Shape:
 
@@ -559,9 +560,9 @@ Examples:
 
 - `docs foo-bar`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
-- `docs ngents`
+- `docs local`
 
 Shape with topics and docs:
 
@@ -630,7 +631,7 @@ Examples:
 - `docs .`
 - `docs foo-bar`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
 - `docs .`
 
@@ -734,9 +735,10 @@ Examples:
 - `docs ngents/bun`
 - `docs ls ngents bun`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
-- `docs ls local`
+- `docs ls pi`
+- `docs ls global`
 
 Shape:
 
@@ -826,9 +828,9 @@ Examples:
 - `docs ls guide`
 - `docs ls foo-bar/api/endpoints.md`
 
-Actual command demonstrating the richest real form on this machine:
+Actual command(s) demonstrating the richest real form on this machine:
 
-- `docs ngents-docs`
+- `docs zod/schemas`
 
 Shape:
 

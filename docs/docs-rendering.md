@@ -73,7 +73,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape with docs index:
 
-```text
+```md
 {{USAGE}}
 
 # docs
@@ -97,7 +97,7 @@ api      API          Foo-bar API topic.
 
 Shape with no docs index:
 
-```text
+```md
 {{USAGE}}
 
 # docs
@@ -116,7 +116,7 @@ api      API          Foo-bar API topic.
 
 Shape with no topics:
 
-```text
+```md
 {{USAGE}}
 
 # docs
@@ -147,7 +147,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 {{USAGE}}
 
 ## Topics
@@ -162,7 +162,7 @@ docs topic foo bar/baz - focus one path inside the topic
 
 Shape with no topics:
 
-```text
+```md
 {{USAGE}}
 
 ## Topics
@@ -197,7 +197,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 # Foo Bar Local Guide
 
 Foo-bar local topic guide body from `.docs.md`.
@@ -232,7 +232,7 @@ Read when: Need reusable foo-bar API checks.
 
 Shape with guide only:
 
-```text
+```md
 # Foo Bar Guide
 
 Foo-bar topic guide body from `.docs.md`.
@@ -243,7 +243,7 @@ Read when: Need foo-bar guidance.
 
 Shape with skills only:
 
-```text
+```md
 # Topic: Foo Bar
 
 ## Skills
@@ -257,7 +257,7 @@ Open: docs topic foo-bar api/{$directory}
 
 Shape with docs only:
 
-```text
+```md
 # Topic: Foo Bar
 
 ## Docs
@@ -271,7 +271,7 @@ Shape with docs only:
 
 Shape with non-templateable skills:
 
-```text
+```md
 # Topic: Foo Bar
 
 ## Skills
@@ -289,7 +289,7 @@ Read when: Need reusable foo-bar API checks.
 
 Shape with no guide, docs, or skills:
 
-```text
+```md
 # Topic: Foo Bar
 ```
 
@@ -315,7 +315,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 ## Foo Bar API
 
 Focused guide first paragraph from `api/.docs.md`.
@@ -339,7 +339,7 @@ Open: docs topic foo-bar api/api-review
 
 Shape with metadata only:
 
-```text
+```md
 ## Foo Bar API
 
 Focused guide first paragraph from `api/.docs.md`.
@@ -348,7 +348,7 @@ Need focused foo-bar API guidance.
 
 Shape with docs only:
 
-```text
+```md
 ## Foo Bar API
 
 ### /repo/docs/topics/foo-bar/api/
@@ -360,7 +360,7 @@ Shape with docs only:
 
 Shape with non-templateable nested skills:
 
-```text
+```md
 ## Foo Bar API
 
 Focused guide first paragraph from `api/.docs.md`.
@@ -376,7 +376,7 @@ Focused guide first paragraph from `api/.docs.md`.
 
 Shape with no focused entries:
 
-```text
+```md
 ## Foo Bar API
 
 [no section entries found]
@@ -404,7 +404,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 ## foo-bar-api-review
 
 Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
@@ -420,7 +420,7 @@ Review foo-bar API behavior.
 
 Shape with metadata only:
 
-```text
+```md
 ## foo-bar-api-review
 
 Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
@@ -429,7 +429,7 @@ Open: docs topic foo-bar api/api-review
 
 Shape with merged direct skill blocks:
 
-```text
+```md
 ## foo-bar-api-review
 
 Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
@@ -453,7 +453,7 @@ Review shared foo-bar API behavior.
 
 Shape with parse error metadata:
 
-```text
+```md
 ## foo-bar-api-review
 
 Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
@@ -491,7 +491,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 # Doc: Foo Bar Guide
 Path: /repo/docs/topics/foo-bar/guide.md
 
@@ -509,7 +509,7 @@ Detailed foo-bar content.
 
 Shape with metadata only:
 
-```text
+```md
 # Doc: Foo Bar Guide
 Path: /repo/docs/topics/foo-bar/guide.md
 
@@ -533,7 +533,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 # Topics: foo-bar
 
 TOPIC    TITLE        DESCRIPTION
@@ -543,7 +543,7 @@ mobile   Mobile       Foo-bar mobile topic.
 
 Shape with no topics:
 
-```text
+```md
 # Topics: foo-bar
 
 - [no topics found]
@@ -565,7 +565,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape with topics and docs:
 
-```text
+```md
 # Docs: foo-bar
 
 ## Topics: foo-bar
@@ -587,7 +587,7 @@ mobile   Mobile       Foo-bar mobile topic.
 
 Shape with docs only:
 
-```text
+```md
 # Docs: foo-bar
 
 ## Docs: foo-bar
@@ -599,7 +599,7 @@ Shape with docs only:
 
 Shape with topics only:
 
-```text
+```md
 # Docs: foo-bar
 
 ## Topics: foo-bar
@@ -612,7 +612,7 @@ api      API          Foo-bar API topic.
 
 Shape with no topics and no docs:
 
-```text
+```md
 # Docs: foo-bar
 
 ## Docs: foo-bar
@@ -636,7 +636,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 # Docs: foo-bar
 
 Use `docs topic foo-bar <path>` to focus one path inside the topic.
@@ -740,7 +740,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 # Docs: foo-bar
 Topic available: docs topic foo-bar
 
@@ -758,7 +758,7 @@ Topic available: docs topic foo-bar
 
 Shape with no docs:
 
-```text
+```md
 # Docs: foo-bar
 
 - [no docs found]
@@ -766,7 +766,7 @@ Shape with no docs:
 
 Shape without topic hint:
 
-```text
+```md
 # Docs: foo-bar
 
 ## /repo/docs/foo-bar/
@@ -832,7 +832,7 @@ Actual command demonstrating the richest real form on this machine:
 
 Shape:
 
-```text
+```md
 # Doc: Foo Bar Guide
 Path: /repo/docs/foo-bar/guide.md
 
@@ -850,7 +850,7 @@ Detailed foo-bar content.
 
 Shape with metadata only:
 
-```text
+```md
 # Doc: Foo Bar Guide
 Path: /repo/docs/foo-bar/guide.md
 
@@ -860,7 +860,7 @@ Read when: Need to understand foo-bar behavior.
 
 Shape with body only:
 
-```text
+```md
 # Doc: Foo Bar Guide
 Path: /repo/docs/foo-bar/guide.md
 
@@ -873,7 +873,7 @@ Detailed foo-bar content.
 
 Shape with parse error metadata:
 
-```text
+```md
 # Doc: guide.md
 Path: /repo/docs/foo-bar/guide.md
 

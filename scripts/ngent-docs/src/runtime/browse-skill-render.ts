@@ -12,6 +12,7 @@ type SkillListOptions = {
 	sectionKey: string;
 	sectionPath: string;
 	skills: SkillEntry[];
+	namedOnly?: boolean;
 	title?: string;
 	topicName: string;
 };
@@ -20,9 +21,6 @@ type TemplateEntry = { parts: string[]; variable: string };
 
 function selector(skill: SkillEntry): string {
 	return skill.relativePath.replace(/\/SKILL\.md$/u, "");
-}
-function directory(skill: SkillEntry): string {
-	return path.basename(selector(skill));
 }
 function template(entries: TemplateEntry[]): string[] | null {
 	const first = entries[0]?.parts;
@@ -47,7 +45,7 @@ function template(entries: TemplateEntry[]): string[] | null {
 	}
 
 	const parts = [...first];
-	parts[variableIndex] = "{$directory}";
+	parts[variableIndex] = "{$name}";
 	return parts;
 }
 function skillPath(base: string, skills: SkillEntry[]): string | null {
@@ -62,7 +60,7 @@ function skillPath(base: string, skills: SkillEntry[]): string | null {
 		}
 		entries.push({
 			parts: skill.absolutePath.slice(base.length + 1).split("/").filter(Boolean),
-			variable: directory(skill),
+			variable: skill.name,
 		});
 	}
 
@@ -77,7 +75,7 @@ function skillOpen(topicName: string, skills: SkillEntry[]): string | null {
 
 	const parts = template(skills.map(skill => ({
 		parts: selector(skill).split("/").filter(Boolean),
-		variable: directory(skill),
+		variable: skill.name,
 	})));
 	return parts ? `docs topic ${topicName} ${parts.join("/")}` : null;
 }
@@ -94,12 +92,20 @@ function sorted(skills: SkillEntry[]): SkillEntry[] {
 function metaLine(label: "Open" | "Path", value: string): string {
 	return pc.gray(`${label}: ${value}`);
 }
+function skillName(name: string): string {
+	return pc.bold(pc.white(`$${name}`));
+}
 function skillLine(skill: SkillEntry, options: SkillListOptions): string {
 	const description = options.description
 		? normalizeInlineText(skill.hint) ?? normalizeInlineText(skill.description)
-		: normalizeInlineText(skill.hint);
-	const line = `- ${displaySelector(options.sectionKey, skill)}: $${skill.name}`;
-	return description ? `${line} - ${description}` : line;
+		: normalizeInlineText(skill.hint) ?? normalizeInlineText(skill.description);
+	const line = options.namedOnly
+		? `- ${skillName(skill.name)}`
+		: `- ${displaySelector(options.sectionKey, skill)}: $${skill.name}`;
+	if (!description) {
+		return line;
+	}
+	return options.namedOnly ? `${line}\n  ${pc.gray(description)}` : `${line} - ${description}`;
 }
 function fallbackSkillLines(options: SkillListOptions): string[] {
 	return sorted(options.skills).flatMap(skill => [
@@ -123,11 +129,15 @@ export function renderSkillList(options: SkillListOptions): string[] {
 		return lines;
 	}
 
-	lines.push(metaLine("Path", pathLine), metaLine("Open", openLine), "");
+	lines.push(metaLine("Path", pathLine), metaLine("Open", openLine));
+	if (pathLine.includes("{$name}") || openLine.includes("{$name}")) {
+		lines.push(pc.gray("{$name} = entry name without leading $"));
+	}
+	lines.push("");
 	if (options.metadata && options.metadata.length > 0) {
 		lines.push(...options.metadata, "");
 	}
-	lines.push(...skills.map(skill => skillLine(skill, options)));
+	lines.push(...skills.map(skill => skillLine(skill, { ...options, namedOnly: true })));
 	return lines;
 }
 

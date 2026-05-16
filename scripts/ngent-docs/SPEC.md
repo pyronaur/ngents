@@ -305,10 +305,11 @@ Current decisions:
 - Docs render as compact buckets grouped by absolute owning directory path.
 - Topic-root docs and nested docs use the same compact bucket format.
 - Skill sections print `Path:` and `Open:` before the skill entries.
-- Skill section `Path:` and `Open:` lines use a `{$directory}` template when
-  multiple sibling skills share the same shape.
-- Skill overview entries print the topic-relative skill directory selector,
-  `$<skill.name>`, and an optional hint.
+- Skill section `Path:` and `Open:` lines use a `{$name}` template when multiple
+  sibling skills share the same shape and the variable segment equals the skill name.
+- Templateable skill sections print `{$name} = entry name without leading $`.
+- Skill overview entries print `$<skill.name>` and an optional hint or description
+  on an indented next line.
 - Skill group metadata can include summary, `readWhen`, and parse error.
 - Mixed directories that contain nested skills are classified under `Skills` in
   the root overview.

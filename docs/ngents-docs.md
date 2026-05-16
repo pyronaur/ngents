@@ -159,7 +159,8 @@ Callers choose the selector mode, but they do not independently decide whether a
 - Topic overviews group docs by absolute owning directory path and render compact file lists.
 - Topic overviews expand nested doc directories up to depth 2.
 - Topic skill sections render `Path:` and `Open:` lines before skill entries.
-- Skill entries render the topic-relative skill directory selector, `$<skill.name>`, and optional hint or description.
+- Templateable topic skill sections use `{$name}` in `Path:` and `Open:` lines, followed by `{$name} = entry name without leading $`.
+- Skill entries render `$<skill.name>` and put optional hint or description text on an indented next line.
 - Exact paths such as `docs/guides` or `hig-doctor/skills/hig-components-content` can be focused directly.
 
 ### Selector scope examples

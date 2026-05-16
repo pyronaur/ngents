@@ -196,9 +196,8 @@ test("docs topic overview renders root-level skill hints by directory path", asy
 			const result = await runDocsCli(["topic", TEST_TOPIC_NAME], { cwd: repoDir, env });
 
 			expect(result.exitCode).toBe(0);
-			expect(result.stdout).toContain(
-				"$display-name-from-frontmatter - Hint matched by skill directory path.",
-			);
+			expect(result.stdout).toContain("- $display-name-from-frontmatter");
+			expect(result.stdout).toContain("  Hint matched by skill directory path.");
 		},
 		{ seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
 	);

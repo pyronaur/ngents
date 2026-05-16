@@ -26,7 +26,8 @@ Use this subtree before falling back to broader references.
 Path: /fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/SKILL.md
 Open: docs topic platform pattern-library/skills/content-cards
 
-- skills/content-cards: $content-cards - Review content card structures and their supporting references.
+- $content-cards
+  Review content card structures and their supporting references.
 "
 `;
 
@@ -88,7 +89,8 @@ Read when: Need reusable machine docs.
 Path: /fixture/repo/docs/topics/platform/pattern-library/skills/content-cards/SKILL.md
 Open: docs topic platform pattern-library/skills/content-cards
 
-- skills/content-cards: $content-cards
+- $content-cards
+  Review content card structures and their supporting references.
 
 ### workflow-agent
 Path: /fixture/repo/docs/topics/platform/workflow-agent/SKILL.md
@@ -96,7 +98,8 @@ Open: docs topic platform workflow-agent
 
 Workflow skill.
 
-- workflow-agent: $workflow-agent - Workflow-first checks.
+- $workflow-agent
+  Workflow-first checks.
 "
 `;
 

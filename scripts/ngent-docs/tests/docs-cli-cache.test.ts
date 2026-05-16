@@ -187,7 +187,7 @@ test("docs query uses cached collection metadata and still runs a fresh qmd quer
 test("docs update invalidates the collection metadata cache after a successful refresh",
 	async () => {
 		await withDocsCliWorkspace("docs-cache-update-invalidate-",
-			async ({ tempDir, homeDir, binDir, env }) => {
+			async ({ tempDir, repoDir, homeDir, binDir, env }) => {
 				const logFile = path.join(tempDir, "qmd.log");
 				await seedFakeQmd(binDir);
 				await seedQmdCollectionsCache(homeDir, {
@@ -196,6 +196,7 @@ test("docs update invalidates the collection metadata cache after a successful r
 				});
 
 				const result = await runDocsCli(["update"], {
+					cwd: repoDir,
 					env: {
 						...env,
 						DOCS_TEST_QMD_LOG: logFile,
@@ -253,6 +254,7 @@ test("docs park adds a named collection and refreshes the index", async () => {
 		);
 
 		const parkResult = await runDocsCli(["park", "nconf", projectDir], {
+			cwd: projectDir,
 			env: {
 				...env,
 				DOCS_TEST_QMD_LOG: logFile,
@@ -282,6 +284,7 @@ test("docs park allows ngents as a normal collection name", async () => {
 		await writeText(path.join(projectDir, "docs", "guide.md"), "# Guide\n");
 
 		const result = await runDocsCli(["park", "ngents", projectDir], {
+			cwd: projectDir,
 			env: {
 				...env,
 				DOCS_TEST_QMD_STATE: stateFile,
@@ -332,6 +335,7 @@ test(
 			await writeText(path.join(otherProjectDir, "docs", "guide.md"), "# Other Guide\n");
 
 			const first = await runDocsCli(["park", "nconf", projectDir], {
+				cwd: projectDir,
 				env: {
 					...env,
 					DOCS_TEST_QMD_STATE: stateFile,

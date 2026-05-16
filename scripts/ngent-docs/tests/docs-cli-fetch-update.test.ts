@@ -617,11 +617,12 @@ test("docs fetch keeps the prior stored hash when the handler fails", async () =
 });
 
 test("docs update runs qmd update then embed for the docs index", async () => {
-	await withDocsCliWorkspace("docs-update-", async ({ tempDir, binDir, env }) => {
+	await withDocsCliWorkspace("docs-update-", async ({ tempDir, repoDir, binDir, env }) => {
 		const logFile = path.join(tempDir, "qmd.log");
 		await seedFakeQmd(binDir);
 
 		const result = await runDocsCli(["update"], {
+			cwd: repoDir,
 			env: {
 				...env,
 				DOCS_TEST_QMD_LOG: logFile,
@@ -642,24 +643,26 @@ test("docs update runs qmd update then embed for the docs index", async () => {
 }, 15_000);
 
 test("docs update stops before embed when qmd update fails", async () => {
-	await withDocsCliWorkspace("docs-update-fail-update-", async ({ tempDir, binDir, env }) => {
-		const logFile = path.join(tempDir, "qmd.log");
-		await seedFakeQmd(binDir);
+	await withDocsCliWorkspace("docs-update-fail-update-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const logFile = path.join(tempDir, "qmd.log");
+			await seedFakeQmd(binDir);
 
-		const result = await runDocsCli(["update"], {
-			env: {
-				...env,
-				DOCS_TEST_QMD_FAIL_UPDATE: "1",
-				DOCS_TEST_QMD_LOG: logFile,
-			},
-		});
+			const result = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env: {
+					...env,
+					DOCS_TEST_QMD_FAIL_UPDATE: "1",
+					DOCS_TEST_QMD_LOG: logFile,
+				},
+			});
 
-		expect(result.exitCode).toBe(1);
-		expect(result.stderr).toContain("fake update failure");
-		const logContents = await readFile(logFile, "utf8");
-		expect(logContents).toContain("--index ngents-docs update");
-		expect(logContents).not.toContain("--index ngents-docs embed");
-	}, {
+			expect(result.exitCode).toBe(1);
+			expect(result.stderr).toContain("fake update failure");
+			const logContents = await readFile(logFile, "utf8");
+			expect(logContents).toContain("--index ngents-docs update");
+			expect(logContents).not.toContain("--index ngents-docs embed");
+		}, {
 		seedLocalDocsRepo: false,
 		seedGlobalDocsHome: false,
 		seedGlobalDocsIndex: false,
@@ -667,25 +670,27 @@ test("docs update stops before embed when qmd update fails", async () => {
 }, 15_000);
 
 test("docs update fails when qmd embed fails after a successful update", async () => {
-	await withDocsCliWorkspace("docs-update-fail-embed-", async ({ tempDir, binDir, env }) => {
-		const logFile = path.join(tempDir, "qmd.log");
-		await seedFakeQmd(binDir);
+	await withDocsCliWorkspace("docs-update-fail-embed-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const logFile = path.join(tempDir, "qmd.log");
+			await seedFakeQmd(binDir);
 
-		const result = await runDocsCli(["update"], {
-			env: {
-				...env,
-				DOCS_TEST_QMD_FAIL_EMBED: "1",
-				DOCS_TEST_QMD_LOG: logFile,
-			},
-		});
+			const result = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env: {
+					...env,
+					DOCS_TEST_QMD_FAIL_EMBED: "1",
+					DOCS_TEST_QMD_LOG: logFile,
+				},
+			});
 
-		expect(result.exitCode).toBe(1);
-		expect(result.stdout).toContain("Updating fake index");
-		expect(result.stderr).toContain("fake embed failure");
-		const logContents = await readFile(logFile, "utf8");
-		expect(logContents).toContain("--index ngents-docs update");
-		expect(logContents).toContain("--index ngents-docs embed");
-	}, {
+			expect(result.exitCode).toBe(1);
+			expect(result.stdout).toContain("Updating fake index");
+			expect(result.stderr).toContain("fake embed failure");
+			const logContents = await readFile(logFile, "utf8");
+			expect(logContents).toContain("--index ngents-docs update");
+			expect(logContents).toContain("--index ngents-docs embed");
+		}, {
 		seedLocalDocsRepo: false,
 		seedGlobalDocsHome: false,
 		seedGlobalDocsIndex: false,

@@ -221,13 +221,15 @@ Read when: Need shared foo-bar guidance.
 ## Skills
 
 ### API Skills
-Path: /repo/docs/topics/foo-bar/api/{$directory}/SKILL.md
-Open: docs topic foo-bar api/{$directory}
+Path: /repo/docs/topics/foo-bar/api/{$name}/SKILL.md
+Open: docs topic foo-bar api/{$name}
+{$name} = entry name without leading $
 
 Foo-bar API skill section summary.
 Read when: Need reusable foo-bar API checks.
 
-- api-review: $foo-bar-api-review - Review foo-bar API behavior.
+- $foo-bar-api-review
+  Review foo-bar API behavior.
 ```
 
 Shape with guide only:
@@ -249,10 +251,12 @@ Shape with skills only:
 ## Skills
 
 ### API Skills
-Path: /repo/docs/topics/foo-bar/api/{$directory}/SKILL.md
-Open: docs topic foo-bar api/{$directory}
+Path: /repo/docs/topics/foo-bar/api/{$name}/SKILL.md
+Open: docs topic foo-bar api/{$name}
+{$name} = entry name without leading $
 
-- api-review: $foo-bar-api-review - Review foo-bar API behavior.
+- $foo-bar-api-review
+  Review foo-bar API behavior.
 ```
 
 Shape with docs only:
@@ -335,7 +339,8 @@ Need shared focused foo-bar API guidance.
 Path: /repo/docs/topics/foo-bar/api/api-review/SKILL.md
 Open: docs topic foo-bar api/api-review
 
-- api-review: $foo-bar-api-review - Review foo-bar API behavior.
+- $foo-bar-api-review
+  Review foo-bar API behavior.
 ```
 
 Shape with metadata only:
@@ -667,7 +672,8 @@ Open: docs topic foo-bar api-review
 Foo-bar API skill workflows.
 Read when: Need reusable foo-bar API checks.
 
-- api-review: $foo-bar-api-review - Review foo-bar behavior.
+- $foo-bar-api-review
+  Review foo-bar behavior.
 
 
 ## Docs: foo-bar

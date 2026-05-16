@@ -113,6 +113,6 @@
 			"scripts/ngent-docs/{bin,src,tests,templates}/**/*",
 			"scripts/ngent-docs/tsconfig.json",
 		],
-		run: "vitest run",
+		run: "vitest run --fileParallelism=false",
 	},
 }

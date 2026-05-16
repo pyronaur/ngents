@@ -1,0 +1,6 @@
+interface:
+  display_name: "Pi Extensions"
+  short_description: "Find Pi packages and extensions locally"
+  default_prompt: "Use $pi-extensions to find Pi extensions matching my request."
+policy:
+  allow_implicit_invocation: false

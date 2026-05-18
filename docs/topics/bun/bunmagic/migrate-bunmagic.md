@@ -191,7 +191,7 @@ Track these before building anything:
 
 Keep the minimum backward-reference set while migration is active:
 
-- `docs/topics/bunmagic/bunmagic-101.md`
+- `docs/topics/bun/bunmagic/bunmagic-101.md`
 - any narrowly useful migration notes that still answer real rewrite questions
 
 Trim or archive granular Bunmagic docs after this playbook absorbs their remaining value.

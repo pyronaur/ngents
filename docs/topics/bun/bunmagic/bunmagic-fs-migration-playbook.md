@@ -46,6 +46,6 @@ read_when:
 ## Source-of-Truth References
 
 - `docs/topics/bun/file-system-compact.md`
-- `docs/topics/bunmagic/saf-to-native.md`
+- `docs/topics/bun/bunmagic/saf-to-native.md`
 - Bun docs: `https://bun.sh/docs/runtime/file-io`
 - Node docs: `https://nodejs.org/api/fs.html`

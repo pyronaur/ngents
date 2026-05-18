@@ -15,7 +15,7 @@ It links a directory, indexes its top-level files, and lets you run them as comm
 
 `bmt` stands for `Bunmagic Version Two`. It is still in development, and it is how we manage scripts on this machine.
 
-If you are moving older Bunmagic scripts to `bmt`, use `docs/topics/bunmagic/migrate-bunmagic.md`.
+If you are moving older Bunmagic scripts to `bmt`, use `docs/topics/bun/bunmagic/migrate-bunmagic.md`.
 
 ## Demo
 

@@ -20,9 +20,9 @@ For Bunmagic v2 usage and docs read: `docs/bmt.md`
 # Old Bunmagic 101 Reference:
 
 - Archived Documentation: `docs/.archive/bunmagic/`
-- SAF migration: `docs/topics/bunmagic/saf-to-native.md`
+- SAF migration: `docs/topics/bun/bunmagic/saf-to-native.md`
 - Native Bun/Node FS compact reference: `docs/topics/bun/file-system-compact.md`
-- Advanced arg parsing: `docs/topics/bunmagic/advanced-argv.md`
+- Advanced arg parsing: `docs/topics/bun/bunmagic/advanced-argv.md`
 
 ## First-Hop CLI Commands
 - `bunmagic list` - show scripts already available on this machine.
@@ -99,7 +99,7 @@ if (exists && (await stat(filePath)).isFile()) {
 }
 ```
 
-Migration details: `docs/topics/bunmagic/saf-to-native.md`
+Migration details: `docs/topics/bun/bunmagic/saf-to-native.md`
 
 ## Prompts and UI
 - `ack(question: string, defaultOption?: "y" | "n"): boolean`

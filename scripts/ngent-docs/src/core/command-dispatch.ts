@@ -119,21 +119,26 @@ async function readMultiTokenUnknownCommandRecovery(
 	});
 	return [
 		error.message.trim(),
-		"`docs <where>` accepts one selector.",
+		"`docs <where>` could not open that selector.",
 		`Use \`docs query ${argv.join(" ")}\` to search by multiple terms.`,
 		rootHelp,
 	].join("\n\n");
 }
 
 async function maybeRunRootSelectorFallback(argv: string[], projectDir: string): Promise<boolean> {
-	if (argv.length !== 1) {
+	if (argv.length === 0) {
 		return false;
 	}
 
-	const selector = argv[0]?.trim();
-	if (!selector || rootCommandNames().includes(selector)) {
+	const command = argv[0]?.trim();
+	if (!command || command.startsWith("-") || rootCommandNames().includes(command)) {
 		return false;
 	}
+	const selectorParts = argv.map(argument => argument.trim());
+	if (selectorParts.some(argument => argument.length === 0)) {
+		return false;
+	}
+	const selector = selectorParts.join("/");
 
 	try {
 		await runDocsRootSelector(projectDir, selector);
@@ -141,6 +146,9 @@ async function maybeRunRootSelectorFallback(argv: string[], projectDir: string):
 	} catch (error) {
 		if (!isBrowseSelectorNotFoundError(error)) {
 			throw error;
+		}
+		if (argv.length > 1) {
+			return false;
 		}
 
 		throw runtimeError(await renderRootSelectorNotFound(projectDir, selector, rootCommandNames()));

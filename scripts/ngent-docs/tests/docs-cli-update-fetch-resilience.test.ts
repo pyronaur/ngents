@@ -93,7 +93,7 @@ test("docs update runs registered fetches in the same docs root concurrently", a
 			});
 
 			expect(result.exitCode).toBe(0);
-			expect(result.stderr).toMatch(/\u001b\[/u);
+			expect(result.stderr).toContain("\u001b[");
 			expect(await readText(fetchTargetPath(repoDir, "alpha", "source.txt"))).toBe(
 				"https://example.com/alpha\n",
 			);

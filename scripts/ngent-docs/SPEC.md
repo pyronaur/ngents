@@ -148,23 +148,24 @@ Current decisions:
 - Bare `docs` renders browse-first root help and includes the docs index.
 - `docs --help`, `docs -h`, and `docs help` render the same browse-first help
   shape without the docs index.
-- Unknown multi-token root input stays a usage failure.
-- That recovery path explains that `docs <where>` accepts one selector,
-  suggests the exact `docs query <terms...>` rerun command, and appends the
-  same browse-first root help shape as `docs --help`.
+- Unknown multi-token root input is tried first as a slash-joined root selector,
+  then stays a usage failure when that selector is not found.
+- That recovery path suggests the exact `docs query <terms...>` rerun command
+  and appends the same browse-first root help shape as `docs --help`.
 - Browse-first root help does not explain `park`, `fetch`, or `update` beyond a
   one-line pointer to `docs --ops-help`.
 - `docs --ops-help` renders the operations manual for `park`, `fetch`, and
   `update`.
 
-### Single-Token Root Selector Fallback
+### Root Selector Fallback
 
 This path runs before Commander command parsing.
 
 Current decisions:
 
-- Fallback applies only when the argv shape is exactly one token.
-- Fallback does not run when the token is a real root command name.
+- Fallback applies when argv starts with a non-command token.
+- Multiple selector tokens are joined with `/` before resolution.
+- Fallback does not run when the first token is a real root command name.
 - Resolution order is:
   1. parked collection by name
   2. overlapping topic plus registered docs selector

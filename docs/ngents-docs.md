@@ -92,14 +92,15 @@ Global docs collection metadata is cached for 1 hour.
 - `docs --help` prints the same browse-first Markdown help without the docs index.
 - `docs help` prints the same browse-first Markdown help without the docs index.
 - Regular root help ends with `To read docs operation manual use \`docs --ops-help\`.`
-- In the root help `Browse` section, `docs <where>` is documented as the single-token fallback surface and `docs ls [where]` as the docs-only browse surface.
+- In the root help `Browse` section, `docs <where>` is documented as the root selector surface and `docs ls [where]` as the docs-only browse surface.
 - `docs --ops-help` prints the operations manual for `park`, `fetch`, and `update`.
 - In the compact docs index, each docs root is grouped under its own level-3 path heading.
 - `docs help <command>` prints Commander command usage.
 - `docs <command> --help` prints usage for that command.
-- `docs <where>` opens a topic, a registered docs root, or a browse selector when `<where>` is a single non-command token.
+- `docs <where>` opens a topic, a registered docs root, or a browse selector when the input starts with a non-command token.
+- Multi-token root input such as `docs pi pi-current-config` is tried as a slash-joined selector before command parsing.
 - Unknown multi-token root input such as `docs maestro ios ui` stays a usage failure and does not auto-run `query`.
-- That recovery path explains that `docs <where>` accepts one selector, prints the exact `docs query <terms...>` command to rerun, and then prints the same browse-first root help shape as `docs --help`.
+- That recovery path prints the exact `docs query <terms...>` command to rerun, and then prints the same browse-first root help shape as `docs --help`.
 - Successful docs browse views render with `Docs` titles.
 - Successful topic views render with `Topic:` titles.
 
@@ -132,16 +133,16 @@ Callers choose the selector mode, but they do not independently decide whether a
 
 ### Bare root selector fallback
 
-`docs <where>` resolves a single non-command token in a more helpful order.
+`docs <where>` resolves non-command selector input in a more helpful order.
 
-- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, `<docs-root>/<file.md>` selectors, `<parked-collection>/<docs-root[/subpath]>` selectors, explicit docs paths, and workspace paths that contain `docs/`.
+- It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, split selector tokens such as `docs pi pi-current-config`, `<docs-root>/<file.md>` selectors, `<parked-collection>/<docs-root[/subpath]>` selectors, explicit docs paths, and workspace paths that contain `docs/`.
 - Root command names still win, so `docs topic` and `docs query` keep their command behavior.
 - Parked collection names win before topics.
 - Bare parked collection selectors show that collection's topics and docs together.
 - When an exact topic name and an exact registered docs name overlap, it renders the topic first and the matching docs subtree after it.
 - Registered docs names reuse the same merged subtree behavior as `docs ls docs/<name>`.
 - Qualified parked-collection selectors are docs-only and do not render topic views.
-- When the token is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
+- When the selector is neither a command, topic, nor registered docs selector, it prints the command list plus the same browse inventory used by `docs ls`.
 
 ### `topic`
 
@@ -168,7 +169,9 @@ Callers choose the selector mode, but they do not independently decide whether a
 - `docs local` shows the parked `local` collection topics and docs together.
 - `docs ls local` shows only the parked `local` collection docs.
 - `docs local/setup` shows only the `setup` subtree from the parked `local` collection.
+- `docs local setup` is equivalent to `docs local/setup`.
 - `docs architecture/decisions` shows only the `decisions` subtree from the merged registered `architecture` docs root.
+- `docs architecture decisions` is equivalent to `docs architecture/decisions`.
 - `docs architecture/main.md` renders the first matching file from the merged registered `architecture` docs root, preferring local over global when both exist.
 - `docs ls local setup` is equivalent to `docs ls local/setup`.
 - `docs topic local` shows only the parked `local` collection topics.

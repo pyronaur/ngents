@@ -698,15 +698,17 @@ test("single-token root selectors open topics and registered docs", async () => 
 	);
 });
 
-test("single-token root selectors open registered docs subpaths", async () => {
+test("root selectors open registered docs subpaths", async () => {
 	await withDocsCliWorkspace(
 		"docs-root-selector-registered-doc-subpath-",
 		async ({ repoDir, homeDir, env }) => {
 			await seedArchitectureDecisions(repoDir, homeDir);
 
 			const result = await runDocsCli(["architecture/decisions"], { cwd: repoDir, env });
+			const splitResult = await runDocsCli(["architecture", "decisions"], { cwd: repoDir, env });
 
 			expect(result.exitCode).toBe(0);
+			expect(splitResult.stdout).toBe(result.stdout);
 			expect(result.stdout).toContain("# Docs: architecture/decisions");
 			expect(result.stdout).toContain(
 				`${path.join(repoDir, "docs", "architecture", "decisions")}/`,
@@ -720,7 +722,7 @@ test("single-token root selectors open registered docs subpaths", async () => {
 	);
 });
 
-test("single-token root selectors open registered docs markdown files", async () => {
+test("root selectors open registered docs markdown files", async () => {
 	await withDocsCliWorkspace(
 		"docs-root-selector-registered-doc-file-",
 		async ({ repoDir, env }) => {
@@ -728,8 +730,13 @@ test("single-token root selectors open registered docs markdown files", async ()
 				cwd: repoDir,
 				env,
 			});
+			const splitResult = await runDocsCli(["architecture", "local-only.md"], {
+				cwd: repoDir,
+				env,
+			});
 
 			expect(result.exitCode).toBe(0);
+			expect(splitResult.stdout).toBe(result.stdout);
 			expect(result.stdout).toContain("# Doc: Local Architecture Notes");
 			expect(result.stdout.replaceAll("/private/var", "/var")).toContain(
 				`Path: ${path.join(repoDir, "docs", "architecture", "local-only.md")}`,

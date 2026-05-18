@@ -31,7 +31,7 @@ Root selectors resolve in this order:
 4. registered docs root name -> **Docs Group**
 5. docs file, docs directory, collection-qualified directory, workspace docs path, or topic markdown file -> **Document Detail** or **Docs Group**
 
-After collection/topic/composite precedence, a single root selector falls through to the same docs/file routing used by `docs ls`. Root selector fallback accepts one selector value only; `docs foo bar` is not a successful root selector.
+After collection/topic/composite precedence, a root selector falls through to the same docs/file routing used by `docs ls`. Multiple root selector tokens are joined with `/`, so `docs foo bar` is equivalent to `docs foo/bar` when that selector exists.
 
 ### `docs topic [topic] [path]`
 
@@ -898,4 +898,4 @@ These are not successful topic/collection rendering permutations:
 - `docs ls <topic>` is not topic overview; use `docs topic <topic>` for topic output.
 - `docs <collection>/<file>`, `docs <collection>/<file.md>`, `docs ls <collection>/<file>`, and `docs ls <collection>/<file.md>` are not collection document detail routes; collection-qualified file selectors are not successful, but collection-qualified directories are.
 - `docs topic <collection> <path>` is not collection focus; topic focus requires the first value to resolve to a topic.
-- `docs foo bar` is not a successful root selector; use one slash-separated selector such as `docs foo/bar` or use `docs ls foo bar`.
+- `docs foo bar` is a root selector for `foo/bar`; it is not a topic focus route.

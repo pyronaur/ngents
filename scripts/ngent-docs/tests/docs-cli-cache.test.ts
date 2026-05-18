@@ -392,7 +392,7 @@ test("multi-token unknown commands show recovery help with the proper commands",
 	expect(result.stderr).toContain(
 		"Use `docs query maestro ios ui test screenshots runner` to search by multiple terms.",
 	);
-	expect(result.stderr).toContain("`docs <where>` accepts one selector.");
+	expect(result.stderr).toContain("`docs <where>`");
 	expect(result.stderr).toContain("# docs");
 	expect(result.stderr).toContain("docs <where>");
 	expect(result.stderr).toContain("docs ls [where...]");

@@ -13,7 +13,7 @@ docs organizes project local and global documentation optimized for information 
 docs <where>
 {{ ls_usage }}
 
-`docs <where>` accepts one non-command selector.
+`docs <where>` accepts a non-command selector.
 It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.
 
 `{{ ls_command }} [where...]` browses docs only.
@@ -35,6 +35,7 @@ Examples
 docs <topic>
 docs <docs-root>
 docs local/setup
+docs local setup
 docs ./docs/file.md
 {{ ls_command }} .
 {{ ls_command }} local setup

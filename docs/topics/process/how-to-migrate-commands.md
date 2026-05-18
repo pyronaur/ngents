@@ -30,8 +30,8 @@ Do not assume that a command migration uses Bunmagic.
 Read:
 
 - `docs/bmt.md`
-- `docs/bunmagic/migrate-bunmagic.md`
-- `docs/bunmagic/single-script-v1-to-v2-playbook.md`
+- `docs/topics/bunmagic/migrate-bunmagic.md`
+- `docs/topics/bunmagic/single-script-v1-to-v2-playbook.md`
 
 Use this path when the command will be exposed through Bunmagic or `bmt`.
 

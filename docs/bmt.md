@@ -15,7 +15,7 @@ It links a directory, indexes its top-level files, and lets you run them as comm
 
 `bmt` stands for `Bunmagic Version Two`. It is still in development, and it is how we manage scripts on this machine.
 
-If you are moving older Bunmagic scripts to `bmt`, use `docs/bunmagic/migrate-bunmagic.md`.
+If you are moving older Bunmagic scripts to `bmt`, use `docs/topics/bunmagic/migrate-bunmagic.md`.
 
 ## Demo
 
@@ -131,10 +131,10 @@ await $`git status --short`;
 ```
 
 For shell usage, prefer Bun Shell over custom process wrappers.
-Reference: `docs/bun/bun-shell.md`
+Reference: `docs/topics/bun/bun-shell.md`
 
 For file reads, writes, and filesystem operations, prefer Bun and Node-native APIs.
-Reference: `docs/bun/file-system-compact.md`
+Reference: `docs/topics/bun/file-system-compact.md`
 
 ## Command Metadata
 
@@ -176,8 +176,8 @@ Treat script directories as normal package-owned code:
 
 For recommended package and API choices, start here:
 
-- `docs/bun/bun-shell.md`
-- `docs/bun/file-system-compact.md`
+- `docs/topics/bun/bun-shell.md`
+- `docs/topics/bun/file-system-compact.md`
 
 ## Debugging
 

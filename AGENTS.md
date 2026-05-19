@@ -28,6 +28,17 @@ Yes:
 
 # Agent Protocol
 
+## Auto-Correct Questions
+
+> There are no right answers to wrong questions.
+Understand Intent: On short questions/suggestions/requests please understand the intent first. Most precise answer often is not the most correct answer for the intent.
+
+### Answer Intent Format:
+💭 _<rephrased clarified question>_
+<answer>
+
+
+
 ## Conversation
 - Get Context: run `docs` for docs index
 - Read: Inspect silently. Do not print, quote, summarize, or paste file contents.

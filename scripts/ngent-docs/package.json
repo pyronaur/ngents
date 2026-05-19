@@ -1,9 +1,10 @@
 {
 	"name": "ngent-docs",
 	"version": "0.1.0",
-	"description": "Docs browser and global vector search CLI for ngents.",
-	"type": "module",
 	"private": false,
+	"type": "module",
+	"packageManager": "pnpm@11.1.1",
+	"description": "Docs browser and global vector search CLI for ngents.",
 	"bin": {
 		"docs": "./bin/docs.ts",
 		"docs-git-fetch": "./bin/docs-git-fetch.ts",

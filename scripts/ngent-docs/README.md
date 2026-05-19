@@ -7,8 +7,8 @@ User-facing `docs` CLI documentation lives in `docs/ngents-docs.md`.
 ## Install
 
 ```bash
-npm install
-npm link
+pnpm install
+pnpm link --global
 ```
 
 ## Package Layout
@@ -23,7 +23,7 @@ Help copy and Liquid template logic live in `templates/root-help.md` and
 ## Development Commands
 
 ```bash
-npm test
+pnpm test
 make lint-dry
 make lint
 make verify

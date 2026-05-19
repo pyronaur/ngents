@@ -8,4 +8,4 @@ lint-dry:
 
 verify:
 	$(MAKE) lint-dry
-	npm test
+	pnpm test

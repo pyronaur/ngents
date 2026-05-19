@@ -1,7 +1,7 @@
 # Requirements
-This template uses Node.js + npm for runtime code, installs, and tests.
+This template uses Node.js + pnpm for runtime code, installs, and tests.
 Do not introduce Bun runtime APIs into the package runtime or `bun:test` usage.
-Use npm commands for install and test verification.
+Use pnpm commands for install and test verification.
 
 Selector routing has one source of truth. All `docs <where>` and
 `docs ls [where...]` selector decisions must go through

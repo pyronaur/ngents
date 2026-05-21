@@ -1,6 +1,15 @@
-# Communication rule nr.1
-I am an experienced software engineer. No need for deep explanation unless I specifically ask.
-Default to the shortest natural reply that fully answers the request; do not add extra explanation, structure, examples, caveats, or summaries unless I ask, and if more detail might help: nested bullet list.
+# AGENTS.md
+`!text` implies run command: `text`
+
+## Rules
+- Get Context: `!docs` docs index
+- Read: Inspect silently. Do not print, quote, summarize, or paste file contents.
+- Output: Show absolute paths. No inline `file:line` refs unless asked.
+- Guardrails: `!trash` to delete
+
+## Communication rule nr.1
+I am an experienced software engineer. Answer directly without providing extra context.
+Default to the shortest natural reply that answers the request; do not add extra explanation, structure, examples, caveats, or summaries.
 I see all the code you write, avoid superflous summarization in text.
 
 Drop: intro (exactly right, not quite, maybe)
@@ -20,33 +29,13 @@ Yes:
 > Auth middleware bug: Token expiry check uses < not <=.\n## Fix: ...:
 
 ## Clarity
-- On Mistake I: admit it immediately so that we can correct it
+- On Mistake I: admit immediately so that we can correct it
 - No Friction: Hiding information and hedging is unnecessary friction.
 - Don't be protective of your actions and answer honestly
 - On Simple Questions: Short Answers
 - On Questions: Only answer what was asked without explaining surrounding details
 
-# Agent Protocol
-
-## Auto-Correct Questions
-
-> There are no right answers to wrong questions.
-Understand Intent: On short questions/suggestions/requests please understand the intent first. Most precise answer often is not the most correct answer for the intent.
-
-### Answer Intent Format:
-💭 _<rephrased clarified question>_
-<answer>
-
-
-
-## Conversation
-- Get Context: run `docs` for docs index
-- Read: Inspect silently. Do not print, quote, summarize, or paste file contents.
-- Output: Show absolute paths. No inline file:line refs unless asked.
-- Output: Code signatures not lines or files. Use sparingly: 1-2 per thought.
-- Guardrails: use `trash` for deletes
-
-# Answer Scope
+## Answer Scope
 Answer the question asked. Nothing else.
 A question has a scope. Anything outside that scope is a separate, unasked question — leave it for the user to ask.
 - For any bounded question, give the direct answer and stop. Do not append hedging, caveats, qualifications, examples, or terminology unless explicitly asked.
@@ -54,3 +43,11 @@ A question has a scope. Anything outside that scope is a separate, unasked quest
 - "How does X work?" → mechanism. Stop.
 - "Why X?" → reason. Stop.
 Do not bundle adjacent information (shape, fields, examples, mechanics, role, alternatives, implications). If you think more context helps, give the answer, then ask "want more?" - never preemptively expand.
+
+### Auto-Correct Questions
+> There are no right answers to wrong questions.
+If: Imprecise question and you must make an assumption to answer.
+Then: Think about the intent, then rephrase the question to clarify what you are answering.
+Template:
+> 💭 _<rephrased clarified question>_
+> <answer>

@@ -32,7 +32,11 @@
 					{
 						"args": "after-used",
 						"vars": "all",
-						"caughtErrors": "all"
+						"caughtErrors": "all",
+						"fix": {
+							"imports": "safe-fix",
+							"variables": "suggestion"
+						}
 					}
 				],
 				"max-depth": ["error", { "max": 3 }],
@@ -57,7 +61,13 @@
 				"eslint/no-useless-concat": "error",
 				"unicorn/prefer-array-flat-map": "error",
 				"unicorn/no-abusive-eslint-disable": "error",
-				"complexity/complexity": "error",
+				"complexity/complexity": [
+					"error",
+					{
+						"cyclomatic": 10,
+						"cognitive": 10
+					}
+				],
 				"typescript/no-wrapper-object-types": "error",
 				"typescript/no-restricted-types": [
 					"error",
@@ -93,9 +103,15 @@
 				"**/tests/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}"
 			],
 			"rules": {
-				"max-depth": ["error", { "max": 4 }],
-				"max-params": ["error", { "max": 5 }],
-				"max-lines": ["error", { "max": 750 }]
+				"max-lines": ["error", { "max": 800 }],
+				"max-lines-per-function": "off",
+				"complexity/complexity": [
+					"error",
+					{
+						"cyclomatic": 15,
+						"cognitive": 20
+					}
+				]
 			}
 		}
 	]

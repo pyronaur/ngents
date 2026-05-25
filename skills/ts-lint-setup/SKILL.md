@@ -33,7 +33,7 @@ templates, adapt them to the repo, wire lint through Gatefile, and verify the
 chosen Gatefile setup.
 
 Do not weaken lint rules. Do not add exclusions to hide lint violations. Do not
-raise duplication thresholds.
+raise source or test duplication thresholds.
 Lint scope must target real TypeScript/JavaScript source code. When a repo has
 tests, tests should be linted too, but test scope may use separate config/rules
 from runtime source. Temporary files, weak sources (for example JSON), and
@@ -67,6 +67,7 @@ Copy the templates into the repo root:
 - `assets/templates/.oxlintrc.json` -> `.oxlintrc.json`
 - `assets/templates/.jscpd.json` -> `.jscpd.json`
 - `assets/templates/.jscpd.tests.json` -> `.jscpd.tests.json` when the repo has tests
+- `assets/templates/.jscpd.schemas.json` -> `.jscpd.schemas.json` when the repo uses schemas
 - `assets/templates/knip.json` -> `knip.json`
 
 See `references/templates.md` for allowed tweaks.
@@ -78,6 +79,14 @@ Mandatory config expectations:
 - Tests are linted when the repo has tests.
 - Runtime source and tests may use separate config or rule values when that
   improves signal. Keep that separation explicit.
+- Group TypeScript/JavaScript files into explicit lint buckets based on the
+  repo's layout and risk profile:
+- main shipped source
+- tests
+- dev-only scripts and small utilities
+- any other project-specific bucket
+- Every real TypeScript/JavaScript file belongs to a bucket unless the project
+  explicitly accepts a documented exception with user approval.
 - Exclude temporary directories, weak sources (for example JSON), and compiled
   output directories.
 - In multi-language repos, keep this lint policy scoped to TypeScript/JavaScript
@@ -97,7 +106,7 @@ Mandatory config expectations:
 - `typescript/no-import-type-side-effects`
 - `import/no-duplicates`
 - `import/no-self-import`
-- Oxlint enforces `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all" }]`.
+- Oxlint enforces `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all", "fix": { "imports": "safe-fix", "variables": "suggestion" } }]`.
 - Do not add unused-binding ignore-pattern escapes without explicit user
   approval.
 - Oxlint enforces the strict `max-*` guardrails:
@@ -108,6 +117,16 @@ Mandatory config expectations:
 - `max-statements: 32`
 - `max-nested-callbacks: 3`
 - `max-classes-per-file: 1` (ignore expressions)
+- Oxlint test overrides keep:
+- `max-depth: 3`
+- `max-params: 3`
+- `max-lines: 800`
+- built-in `max-lines-per-function: off` because it counts `describe(...)`
+  suite callbacks as functions and cannot distinguish suite containers from
+  test cases
+- `complexity/complexity` with `cyclomatic: 15` and `cognitive: 20`
+  suite callbacks, enforce smaller `test(...)`/`it(...)` callbacks, and keep
+  local test helper functions bounded.
 - Oxlint enforces `curly: all` and `no-else-return` (no `else` after `return`).
 - Oxlint enforces inhuman rules:
 - `inhuman/require-guard-clauses`
@@ -124,7 +143,8 @@ Mandatory config expectations:
 - `eslint/no-useless-concat`
 - `unicorn/prefer-array-flat-map`
 - `unicorn/no-abusive-eslint-disable`
-- Oxlint enforces `complexity/complexity`.
+- Oxlint enforces `complexity/complexity` with `cyclomatic: 10` and
+  `cognitive: 10`.
 - Oxlint enforces banned-type rules:
 - `typescript/no-wrapper-object-types`
 - `typescript/no-restricted-types` for:
@@ -146,6 +166,14 @@ Mandatory config expectations:
 - `threshold: 0`
 - `minTokens: 60`
 - `minLines: 7`
+- If the project uses schemas such as Zod, Effect Schema, TypeBox, or another
+  runtime schema library, define schemas in dedicated schema files and check
+  schema duplication separately.
+- `jscpd` schema config keeps:
+- `threshold: 2`
+- `mode: strict`
+- `minTokens: 20`
+- `minLines: 3`
 - Knip runs in production mode and treats shipped runtime code as the dead-code
   boundary.
 - Knip keeps `entry` minimal, sets `includeEntryExports: true`, and uses
@@ -191,7 +219,10 @@ Do not call out:
 - Banned-type rules: Push code away from vague placeholder types and toward
   specific shapes, generics, and explicit callable signatures.
 - Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.
-- `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
+- source/test `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
+- schema-specific duplication: A low nonzero threshold can focus review on
+  repeated contract shapes without treating every small schema fragment as a
+  source duplicate.
 
 ## 3) Wire Lint Through Gatefile
 
@@ -201,6 +232,8 @@ Required outcomes:
 - Add or update lint-related gate entries in `.gatefile.json5`.
 - Keep lint scope ownership in lint config files, not in AGENTS prose.
 - Prefer running the concrete lint commands directly in Gatefile.
+- Mutating format/lint gates are allowed when that is the repo convention.
+  Validate the intended behavior instead of forcing read-only check commands.
 - Only use an existing repo entrypoint when it is already the real
   source-of-truth command for that proof, not a wrapper added just for Gatefile.
 - Do not add custom orchestrators such as `.lint/run.ts`.
@@ -263,6 +296,8 @@ entry points. Always update these values per repo:
 - `knip.json` `project` explicit runtime source globs. Do not point it at
   `tsconfig.json`.
 - `jscpd` source/test `path` or equivalent scope fields
+- `jscpd` schema `path`, `pattern`, or equivalent scope fields when the project
+  uses schema files
 - Any ignore patterns for known generated artifacts
 - Lint include/ignore patterns to match the repo's source and test layout while
   excluding tmp/weak sources/compiled output
@@ -272,7 +307,7 @@ entry points. Always update these values per repo:
 
 ## Guardrails
 
-- Never raise duplication thresholds.
+- Never raise source/test duplication thresholds.
 - Never add exclusions to hide lint complaints.
 - Never disable lint rules without explicit user approval.
 - Never silently blur runtime-source and test scopes. If tests are linted, use

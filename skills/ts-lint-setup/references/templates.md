@@ -5,6 +5,7 @@ Templates live in `assets/templates/`:
 - `assets/templates/.oxlintrc.json`
 - `assets/templates/.jscpd.json`
 - `assets/templates/.jscpd.tests.json`
+- `assets/templates/.jscpd.schemas.json`
 - `assets/templates/knip.json`
 
 Gatefile expectations:
@@ -18,9 +19,14 @@ Gatefile expectations:
 - Only use an existing repo entrypoint when it is already the real
   source-of-truth command for that proof, not a wrapper added just for
   Gatefile.
-- Keep lint command targets as `.` and control scope only through lint config
+- Prefer lint command targets as `.` and control scope through lint config
   files (`dprint.json`, `.oxlintrc.json`, `.jscpd.json`,
-  `.jscpd.tests.json`).
+  `.jscpd.tests.json`, `.jscpd.schemas.json`).
+- Command path arguments are acceptable only when they match the documented
+  lint buckets and do not silently exclude real TypeScript/JavaScript files.
+- Mutating format/lint gates are allowed when that is the repo convention.
+  Validate the intended mutating behavior instead of replacing it with a
+  check-only command.
 - Build one selector per gate. Do not reuse one broad match list across
   multiple lint gates.
 - Match only files whose changed content can change that exact gate's result on
@@ -57,8 +63,10 @@ Allowed tweaks:
   it to hide lint violations).
 - Update source/test globs and config placement to match the repo structure.
 - Update `jscpd` source/test scope fields to match the repo layout.
+- When a project uses schemas, update `jscpd` schema scope fields to match the
+  dedicated schema-file layout.
 - Keep Oxlint type-aware wiring intact when type-aware rules are enabled.
-- Keep `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all" }]`.
+- Keep `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all", "fix": { "imports": "safe-fix", "variables": "suggestion" } }]`.
 - Do not add unused-binding ignore-pattern escapes unless the user explicitly
   approves a real exception.
 
@@ -76,13 +84,14 @@ run: {
 ```
 
 Disallowed tweaks without user approval:
-- Raising duplication thresholds.
+- Raising source/test duplication thresholds.
 - Disabling or silencing lint rules.
 - Adding underscore-name or ignore-pattern escapes for unused bindings.
 - Adding exclusions to hide lint violations.
 - Removing `--type-aware` or `oxlint-tsgolint` when type-aware rules are
   enabled.
-- Moving lint scope control out of config files into script path arguments.
+- Moving lint scope into command path arguments in a way that hides real
+  TypeScript/JavaScript files from the intended lint bucket.
 - Silently mixing test policy into runtime-source config instead of using
   explicit test config or test-specific overrides.
 - Adding repo-specific file names or ignores to the shared templates.

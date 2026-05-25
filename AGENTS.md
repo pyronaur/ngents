@@ -1,5 +1,5 @@
 # AGENTS.md
-`!text` implies run command: `text`
+- In docs: `!foo -h` is used to indicate CLI command: `foo -h`
 
 ## Rules
 - Get Context: `!docs` docs index

@@ -24,7 +24,7 @@ Resolve the base directory from the `CODEX_HOME` environment variable before ass
 Example on this machine:
 
 ```toml
-/Users/n14/.agents/config.toml
+~/.agents/config.toml
 ```
 
 Project-scoped overrides can live at:

@@ -7,7 +7,7 @@
 - [Recommended Fix Patterns](#recommended-fix-patterns)
 
 ## Toolbar & Navigation Pitfalls
-- Reference implementation: `/Users/n14/Projects/iOS/landmarks-ios-liquid-glass` (native back button + toolbar items).
+- Reference implementation: `~/Projects/iOS/landmarks-ios-liquid-glass` (native back button + toolbar items).
 - **System nav bar still exists even when hidden**: `.toolbarBackground(.hidden, for: .navigationBar)` hides the background, not the bar itself. The bar can still intercept taps in the leading region.
 - **Custom back buttons in toolbars** can render inconsistent glass states (square/rounded artifacts) because toolbar sizing and press states differ from normal buttons.
 - **Match Apple samples**: Landmarks uses the native system back button, not a custom glass button.

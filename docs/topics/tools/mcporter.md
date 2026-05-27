@@ -45,7 +45,7 @@ mcporter call 'https://developers.openai.com/mcp.search_openai_docs(query: "code
 If you need the server regularly, persist it explicitly instead of treating discovery as configuration:
 
 ```bash
-mcporter list https://developers.openai.com/mcp --schema --persist /Users/n14/.mcporter/mcporter.json --yes
+mcporter list https://developers.openai.com/mcp --schema --persist ~/.mcporter/mcporter.json --yes
 ```
 
 ## Notes

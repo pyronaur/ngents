@@ -103,7 +103,9 @@ async function downloadHttpSource(source: string, destinationPath: string): Prom
 async function downloadFileUrl(source: URL, destinationPath: string): Promise<string> {
 	const localPath = decodeURIComponent(source.pathname);
 	if (!(await pathExists(localPath))) {
-		throw new Error(`Source file not found: ${localPath}`);
+		throw new Error(
+			`DOCS_FETCH_MISSING_SOURCE protocol=file source=${source.href} path=${localPath}`,
+		);
 	}
 	await copyFile(localPath, destinationPath);
 	return localPath;

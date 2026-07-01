@@ -384,8 +384,7 @@ generate_installation_and_requirements() {
   append_section "$body_file" "$README" "Requirements"
   append_section "$body_file" "$README" "Installation"
   append_section "$body_file" "$README" "Model Configuration"
-  append_section "$body_file" "$SKILL" "Status Check"
-  append_section "$body_file" "$SKILL" "Setup"
+  append_section "$body_file" "$SKILL" "Setup and maintenance"
 }
 
 generate_cli() {
@@ -423,9 +422,9 @@ generate_query_syntax() {
   local body_file="$1"
   : > "$body_file"
   append_section "$body_file" "$SYNTAX" "QMD Query Syntax"
-  append_section "$body_file" "$SKILL" "Query Types"
-  append_section "$body_file" "$SKILL" "Query Craft"
-  append_section "$body_file" "$SKILL" "Collection Filtering"
+  append_section "$body_file" "$SKILL" "Pick the right search mode"
+  append_section "$body_file" "$SKILL" "Query craft"
+  append_section "$body_file" "$SKILL" "Discover what is indexed"
   strip_section "$body_file" "MCP/HTTP API"
 }
 

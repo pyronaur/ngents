@@ -1,4 +1,5 @@
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { expect, test } from "vitest";
 
 import { runDocsCli } from "./helpers/cli.ts";
@@ -139,5 +140,39 @@ test("docs update skips HTTP 404 fetches and still refreshes qmd", async () => {
 					"\"hash\": \"hash-old\"",
 				);
 			});
+		});
+}, 15_000);
+
+test("docs update skips missing file fetches and still refreshes qmd", async () => {
+	await withDocsCliWorkspace("docs-update-fetch-missing-file-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const logFile = path.join(tempDir, "qmd.log");
+			const sourceUrl = pathToFileURL(path.join(tempDir, "missing.md")).href;
+			await seedFakeQmd(binDir);
+			await writeFetchManifest(repoDir, [
+				{
+					source: sourceUrl,
+					target: `topics/${TEST_TOPIC_NAME}/missing-local.md`,
+					handler: "docs-url-file-fetch",
+					hash: "hash-old",
+				},
+			]);
+
+			const result = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_QMD_LOG: logFile,
+				}),
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(result.stderr).toContain("DOCS_FETCH_MISSING_SOURCE");
+			expect(result.stderr).toContain(sourceUrl);
+			expect(await readText(fetchManifestPath(repoDir))).toContain(
+				"\"hash\": \"hash-old\"",
+			);
+			const logContents = await readText(logFile);
+			expect(logContents).toContain("--index ngents-docs update");
+			expect(logContents).toContain("--index ngents-docs embed");
 		});
 }, 15_000);

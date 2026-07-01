@@ -1,4 +1,4 @@
-import { access, lstat, readdir, readFile, stat } from "node:fs/promises";
+import { access, lstat, readdir, readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 
 import browseContracts, {
@@ -89,13 +89,16 @@ async function discoverRepoRoot(startDir: string): Promise<string | null> {
 	}
 }
 async function discoverDocsRoots(rootDir: string): Promise<string[]> {
-	const roots = new Set<string>();
+	const roots = new Map<string, string>();
 
 	const maybeAdd = async (candidate: string) => {
 		if (!(await isDirectory(candidate))) {
 			return;
 		}
-		roots.add(normalizePath(candidate));
+		const canonicalPath = normalizePath(await realpath(candidate));
+		if (!roots.has(canonicalPath)) {
+			roots.set(canonicalPath, normalizePath(candidate));
+		}
 	};
 
 	await maybeAdd(path.join(rootDir, "docs"));
@@ -113,10 +116,10 @@ async function discoverDocsRoots(rootDir: string): Promise<string[]> {
 			await maybeAdd(path.join(rootDir, entry.name, "docs"));
 		}
 	} catch {
-		return Array.from(roots).sort((a, b) => a.localeCompare(b));
+		return Array.from(roots.values()).sort((a, b) => a.localeCompare(b));
 	}
 
-	return Array.from(roots).sort((a, b) => a.localeCompare(b));
+	return Array.from(roots.values()).sort((a, b) => a.localeCompare(b));
 }
 async function listTopLevelTopics(docsRoot: string): Promise<string[]> {
 	return listVisibleDirectories(path.join(docsRoot, TOPICS_DIR));

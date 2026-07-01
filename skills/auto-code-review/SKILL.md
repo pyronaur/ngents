@@ -13,16 +13,9 @@ Use the helper:
 bun ~/.ngents/skills/auto-code-review/scripts/codex-review.ts
 ```
 
-It runs `codex review --uncommitted` with no timeout, writes the full transcript to `.tmp/work/$PI_WORKS_SLUG/review/rNNN.md`, and prints only the extracted final review. If `PI_WORKS_SLUG` is unavailable, it falls back to the repo basename.
+It accepts no arguments. It runs `codex review --uncommitted` with no timeout, writes the full transcript to `.tmp/work/$PI_WORKS_SLUG/review/rNNN.md`, and prints only the extracted final review.
 
-For non-default review targets:
-
-```sh
-bun ~/.ngents/skills/auto-code-review/scripts/codex-review.ts --base main
-bun ~/.ngents/skills/auto-code-review/scripts/codex-review.ts --commit <sha>
-```
-
-Override the review workspace only when needed with `--workspace <slug>` or `--workspace-dir .tmp/work/<slug>`.
+`PI_WORKS_SLUG` must be set. pi-works owns the review workspace selection.
 
 ## Review Loop
 
@@ -40,8 +33,7 @@ Override the review workspace only when needed with `--workspace <slug>` or `--w
 Fallback without the helper:
 
 ```sh
-review_slug="${PI_WORKS_SLUG:-$(basename "$PWD")}"
-mkdir -p ".tmp/work/$review_slug/review"
-codex review --uncommitted > ".tmp/work/$review_slug/review/rNNN.md" 2>&1
-bun ~/.ngents/skills/auto-code-review/scripts/codex-review.ts --extract-file ".tmp/work/$review_slug/review/rNNN.md"
+: "${PI_WORKS_SLUG:?PI_WORKS_SLUG is required}"
+mkdir -p ".tmp/work/$PI_WORKS_SLUG/review"
+codex review --uncommitted > ".tmp/work/$PI_WORKS_SLUG/review/rNNN.md" 2>&1
 ```

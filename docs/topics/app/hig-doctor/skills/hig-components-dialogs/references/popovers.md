@@ -1,16 +1,16 @@
 ---
 title: "Popovers | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/popovers
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/popovers.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Popovers
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/popovers#Best-practices)
+## Best practices
 
 **Use a popover to expose a small amount of information or functionality.**
 
@@ -36,13 +36,13 @@ source: https://developer.apple.com/design/human-interface-guidelines/popovers
 
 **Avoid using a popover to show a warning.**
 
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/popovers#Platform-considerations)
+## Platform considerations
 
-### [iOS, iPadOS](https://developer.apple.com/design/human-interface-guidelines/popovers#iOS-iPadOS)
+### iOS, iPadOS
 
 **Avoid displaying popovers in compact views.**
 
-### [macOS](https://developer.apple.com/design/human-interface-guidelines/popovers#macOS)
+### macOS
 
   * Attached popover 
   * Detached popover 
@@ -50,12 +50,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/popovers
 **Consider letting people detach a popover.**
 
 **Make minimal appearance changes to a detached popover.**
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/popovers#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/popovers#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/popovers#Developer-documentation)
 
 ---
 

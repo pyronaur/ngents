@@ -1,8 +1,18 @@
 import { describe, test, expect } from "bun:test";
 import { detectPatterns, RULE_COUNT } from "./patterns";
 
-test("rule count is 300+", () => {
-  expect(RULE_COUNT).toBeGreaterThanOrEqual(300);
+// Exact-count guard. The rule count is quoted verbatim in user-facing docs, so
+// it must not drift silently. When you intentionally add or remove rules, bump
+// the number here AND in every doc spot below (search the repo for the old count):
+//   - README.md (root)
+//   - AGENTS.md (root)
+//   - .claude-plugin/marketplace.json (plugin description)
+//   - website/components/AuditDemo.tsx (the "same N rules" copy)
+//   - demos/remotion-hig-doctor/README.md
+//   - demos/remotion-hig-doctor/src/data/report-data.json ("totalRules")
+const EXPECTED_RULE_COUNT = 348;
+test(`rule count is exactly ${EXPECTED_RULE_COUNT}`, () => {
+  expect(RULE_COUNT).toBe(EXPECTED_RULE_COUNT);
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -526,5 +536,177 @@ describe("file filter isolation", () => {
     const code = `<input bind:value={name} />`;
     const matches = detectPatterns(code, "Form.vue");
     expect(matches.filter(m => m.pattern === "Svelte bind:value").length).toBe(0);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// NO FALSE POSITIVES — correct code must stay quiet.
+// These guard the negative-attribute rules whose original lookbehind/lookahead
+// form matched tags that DID have the attribute (e.g. <img alt> flagged as
+// "missing alt"). Without these, that class of bug is invisible to the suite.
+// ════════════════════════════════════════════════════════════════
+describe("no false positives — negative-attribute rules", () => {
+  test("does NOT flag an <img> that has alt", () => {
+    const matches = detectPatterns(`<img src="logo.png" alt="Company logo" />`, "Hero.tsx");
+    expect(matches.some(m => m.pattern === "missing alt")).toBe(false);
+  });
+  test("flags an <img> with no alt", () => {
+    const matches = detectPatterns(`<img src="logo.png" />`, "Hero.tsx");
+    expect(matches.some(m => m.pattern === "missing alt" && m.type === "concern")).toBe(true);
+  });
+  test("does NOT flag a <div onClick> that has role (role after onClick)", () => {
+    const matches = detectPatterns(`<div onClick={go} role="button" tabIndex={0}>Go</div>`, "Btn.tsx");
+    expect(matches.some(m => m.pattern === "div with onClick no role")).toBe(false);
+  });
+  test("does NOT flag a <span onClick> that has role (role before onClick)", () => {
+    const matches = detectPatterns(`<span role="button" onClick={go}>Go</span>`, "Btn.tsx");
+    expect(matches.some(m => m.pattern === "span with onClick no role")).toBe(false);
+  });
+  test("does NOT flag an <svg> with role/aria", () => {
+    const matches = detectPatterns(`<svg role="img" aria-label="Menu" viewBox="0 0 24 24"></svg>`, "Icon.tsx");
+    expect(matches.some(m => m.pattern === "svg without a11y")).toBe(false);
+  });
+  test("flags a bare <svg> with no a11y", () => {
+    const matches = detectPatterns(`<svg viewBox="0 0 24 24"></svg>`, "Icon.tsx");
+    expect(matches.some(m => m.pattern === "svg without a11y" && m.type === "concern")).toBe(true);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// COMMENT & STRING HANDLING — rules must not fire on commented-out code
+// or prose, but must still fire on real code (and not truncate at // inside
+// string literals such as URLs).
+// ════════════════════════════════════════════════════════════════
+describe("comment & string handling", () => {
+  test("ignores a pattern inside a line comment", () => {
+    const matches = detectPatterns(`// example: <img src="x" /> has no alt`, "notes.tsx");
+    expect(matches.some(m => m.pattern === "missing alt")).toBe(false);
+  });
+  test("ignores autoplay mentioned in a block comment", () => {
+    const matches = detectPatterns(`/* never set autoplay on <video> */\nconst x = 1;`, "Player.tsx");
+    expect(matches.some(m => m.pattern === "autoplay media")).toBe(false);
+  });
+  test("ignores markup inside an HTML comment", () => {
+    const matches = detectPatterns(`<!-- <img src="x"> <video autoplay></video> -->`, "page.html");
+    expect(matches.some(m => m.pattern === "missing alt")).toBe(false);
+    expect(matches.some(m => m.pattern === "autoplay media")).toBe(false);
+  });
+  test("still flags autoplay in real markup", () => {
+    const matches = detectPatterns(`<video autoplay src="v.mp4"></video>`, "Player.tsx");
+    expect(matches.some(m => m.pattern === "autoplay media" && m.type === "concern")).toBe(true);
+  });
+  test("preserves https:// inside a string (does not truncate the line at //)", () => {
+    const matches = detectPatterns(`<a href="https://example.com/x">read more</a>`, "Links.tsx");
+    expect(matches.some(m => m.pattern === "ambiguous link text")).toBe(true);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// REGRESSION — audit hardening: multi-line tags, child-aware rules,
+// file-level signals, and the severity downgrades. Each test below maps to a
+// confirmed false positive / false negative the per-line engine produced.
+// ════════════════════════════════════════════════════════════════
+describe("regression — multi-line tags & child-aware rules", () => {
+  // "video without track" used to fire on EVERY <video> — even captioned ones —
+  // because its lookahead was bounded to the opening tag and never saw <track>.
+  test("does NOT flag a <video> with a <track> child (single line)", () => {
+    const matches = detectPatterns(`<video controls src="v.mp4"><track kind="captions" src="c.vtt" /></video>`, "Player.tsx");
+    expect(matches.some(m => m.pattern === "video without track")).toBe(false);
+  });
+  test("does NOT flag a multi-line <video> with a <track> child", () => {
+    const code = `<video controls src="v.mp4">\n  <track kind="captions" src="c.vtt" srcLang="en" />\n</video>`;
+    expect(detectPatterns(code, "Player.tsx").some(m => m.pattern === "video without track")).toBe(false);
+  });
+  test("flags a <video> with no <track> child", () => {
+    expect(detectPatterns(`<video controls src="v.mp4"></video>`, "Player.tsx")
+      .some(m => m.pattern === "video without track" && m.type === "concern")).toBe(true);
+  });
+
+  // Per-line matching structurally missed tags whose attributes wrap across lines.
+  test("flags a multi-line <img> with no alt", () => {
+    const code = `<img\n  src="hero.png"\n  width={640}\n/>`;
+    expect(detectPatterns(code, "Hero.tsx").some(m => m.pattern === "missing alt" && m.type === "concern")).toBe(true);
+  });
+  test("does NOT flag a multi-line <img> that has alt", () => {
+    const code = `<img\n  src="hero.png"\n  alt="A hero"\n/>`;
+    expect(detectPatterns(code, "Hero.tsx").some(m => m.pattern === "missing alt")).toBe(false);
+  });
+  test("flags a multi-line bare <svg>", () => {
+    const code = `<svg\n  viewBox="0 0 24 24"\n  fill="none"\n>`;
+    expect(detectPatterns(code, "Icon.tsx").some(m => m.pattern === "svg without a11y" && m.type === "concern")).toBe(true);
+  });
+  test("reports the line where a multi-line tag starts", () => {
+    const code = `const x = 1;\n<img\n  src="hero.png"\n/>`;
+    const matches = detectPatterns(code, "Hero.tsx").filter(m => m.pattern === "missing alt");
+    expect(matches[0]?.line).toBe(2);
+  });
+
+  // autoPlay={false} is the accessible default and must not be flagged.
+  test("does NOT flag autoPlay={false}", () => {
+    expect(detectPatterns(`<video autoPlay={false} src="v.mp4" />`, "Player.tsx")
+      .some(m => m.pattern === "autoplay media")).toBe(false);
+  });
+  test("flags a bare autoPlay (JSX boolean true)", () => {
+    expect(detectPatterns(`<video autoPlay src="v.mp4" />`, "Player.tsx")
+      .some(m => m.pattern === "autoplay media" && m.type === "concern")).toBe(true);
+  });
+  test("flags lowercase autoplay (HTML)", () => {
+    expect(detectPatterns(`<video autoplay src="v.mp4"></video>`, "page.html")
+      .some(m => m.pattern === "autoplay media" && m.type === "concern")).toBe(true);
+  });
+});
+
+describe("regression — file-level & comment handling", () => {
+  // hover-without-focus is now a file-level signal: it fires only when a
+  // stylesheet has :hover styles but no :focus anywhere — not on every block.
+  test("does NOT flag :hover when the file also defines :focus", () => {
+    const code = `.btn:hover {\n  background: blue;\n}\n.btn:focus {\n  outline: 2px solid;\n}`;
+    expect(detectPatterns(code, "buttons.css").some(m => m.pattern === "hover without focus")).toBe(false);
+  });
+  test("flags a stylesheet with :hover but no :focus, exactly once", () => {
+    const code = `.a:hover { color: red; }\n.b:hover { color: blue; }`;
+    expect(detectPatterns(code, "buttons.css").filter(m => m.pattern === "hover without focus").length).toBe(1);
+  });
+  test("treats :focus-visible as satisfying the focus requirement", () => {
+    const code = `.btn:hover { color: red; }\n.btn:focus-visible { outline: 2px solid; }`;
+    expect(detectPatterns(code, "buttons.css").some(m => m.pattern === "hover without focus")).toBe(false);
+  });
+
+  // `//` is not a comment in plain CSS; a protocol-relative url(//…) must not
+  // swallow the rest of the line (which previously hid concerns after it).
+  test("does not treat // as a comment in plain CSS (protocol-relative url)", () => {
+    const code = `.logo {\n  background: url(//cdn.example.com/x.png);\n  color: #ffffff;\n}`;
+    expect(detectPatterns(code, "logo.css").some(m => m.pattern === "hardcoded hex in CSS")).toBe(true);
+  });
+  test("still treats // as a comment in SCSS", () => {
+    const code = `// color: #ffffff;\n.x { color: red; }`;
+    expect(detectPatterns(code, "a.scss").some(m => m.pattern === "hardcoded hex in CSS")).toBe(false);
+  });
+});
+
+describe("regression — Swift @State matcher & severity downgrades", () => {
+  // The matcher was written backwards (var … @State) so it never fired; it now
+  // matches the real `@State var` order and skips private / @StateObject.
+  test("flags a non-private @State var", () => {
+    expect(detectPatterns(`@State var counter = 0`, "V.swift")
+      .some(m => m.pattern === "non-private @State" && m.type === "concern" && m.category === "patterns")).toBe(true);
+  });
+  test("does NOT flag @State private var", () => {
+    expect(detectPatterns(`@State private var name = ""`, "V.swift")
+      .some(m => m.pattern === "non-private @State")).toBe(false);
+  });
+  test("does NOT flag @StateObject", () => {
+    expect(detectPatterns(`@StateObject var vm = VM()`, "V.swift")
+      .some(m => m.pattern === "non-private @State")).toBe(false);
+  });
+
+  // The three heuristics that fire on common, often-fine code stay concerns but
+  // at moderate severity, so they don't trip a `--fail-on serious` gate.
+  test("Image / onTapGesture / hover concerns are moderate, not serious", () => {
+    const swift = detectPatterns(`Image(systemName: "star")\nText("Hi").onTapGesture { go() }`, "V.swift");
+    expect(swift.find(m => m.pattern === "Image without a11y")?.severity).toBe("moderate");
+    expect(swift.find(m => m.pattern === "onTapGesture without traits")?.severity).toBe("moderate");
+    const css = detectPatterns(`.a:hover { color: red; }`, "x.css");
+    expect(css.find(m => m.pattern === "hover without focus")?.severity).toBe("moderate");
   });
 });

@@ -1,16 +1,16 @@
 ---
 title: "Designing for games | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/designing-for-games
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/designing-for-games.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Designing for games
 
-## [Jump into gameplay](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Jump-into-gameplay)
+## Jump into gameplay
 
 **Let people play as soon as installation completes.**
 
@@ -20,7 +20,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/designing-
 
 **Defer requests until the right time.**
 
-## [Look stunning on every display](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Look-stunning-on-every-display)
+## Look stunning on every display
 
 **Make sure text is always legible.**
 
@@ -34,7 +34,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/designing-
 
 **Design for the full-screen experience.**
 
-## [Enable intuitive interactions](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Enable-intuitive-interactions)
+## Enable intuitive interactions
 
 **Support each platform’s default interaction method.**
 
@@ -42,7 +42,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/designing-
 
 **Offer touch-based game controls that embrace the touchscreen experience on iPhone and iPad.**
 
-## [Welcome everyone](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Welcome-everyone)
+## Welcome everyone
 
 **Prioritize perceivability.**
 
@@ -62,7 +62,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/designing-
 
 **Avoid stereotypes in your stories and characters.**
 
-## [Adopt Apple technologies](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Adopt-Apple-technologies)
+## Adopt Apple technologies
 
 **Integrate Game Center to help players discover your game across their devices and connect with their friends.**
 
@@ -73,16 +73,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/designing-
 **Use Spatial Audio to immerse players in your game’s soundscape.**
 
 **Take advantage of Apple technologies to enable unique gameplay mechanics.**
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Developer-documentation)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Videos)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/designing-for-games#Change-log)
 
 ---
 

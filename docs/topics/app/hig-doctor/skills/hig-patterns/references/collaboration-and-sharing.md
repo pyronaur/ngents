@@ -1,16 +1,16 @@
 ---
 title: "Collaboration and sharing | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Collaboration and sharing
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Best-practices)
+## Best practices
 
 **Place the Share button in a convenient location, like a toolbar, to make it easy for people to start sharing or collaborating.**
 
@@ -27,22 +27,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/collaborat
 **If it makes sense in your app, customize the title of the modal view’s collaboration-management button.**
 
 **Consider posting collaboration event notifications in Messages.**
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Platform-considerations)
-
-### [visionOS](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#visionOS)
-
-### [watchOS](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#watchOS)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Developer-documentation)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Videos)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/collaboration-and-sharing#Change-log)
 
 ---
 

@@ -1,16 +1,16 @@
 ---
 title: "Panels | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/panels
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/panels.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Panels
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/panels#Best-practices)
+## Best practices
 
 **Use a panel to give people quick access to important controls or information related to the content they’re working with.**
 
@@ -28,7 +28,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/panels
 
 **Refer to panels by title in your interface and in help documentation.**
 
-## [HUD-style panels](https://developer.apple.com/design/human-interface-guidelines/panels#HUD-style-panels)
+## HUD-style panels
 
 **Prefer standard panels.**
 
@@ -43,14 +43,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/panels
 **Use color sparingly in HUDs.**
 
 **Keep HUDs small.**
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/panels#Platform-considerations)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/panels#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/panels#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/panels#Developer-documentation)
 
 ---
 

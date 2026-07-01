@@ -1,16 +1,16 @@
 ---
 title: "Scroll views | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/scroll-views
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/scroll-views.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Scroll views
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Best-practices)
+## Best practices
 
 **Support default scrolling gestures and keyboard shortcuts.**
 
@@ -32,7 +32,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/scroll-vie
 
 **If you support zoom, set appropriate maximum and minimum scale values.**
 
-## [Scroll edge effects](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Scroll-edge-effects)
+## Scroll edge effects
 
   * Use a [`soft`](https://developer.apple.com/documentation/SwiftUI/ScrollEdgeEffectStyle/soft) edge effect in most cases, especially in iOS and iPadOS, to provide a subtle transition that works well for toolbars and interactive elements like buttons.
 
@@ -42,37 +42,27 @@ source: https://developer.apple.com/design/human-interface-guidelines/scroll-vie
 
 **Apply one scroll edge effect per view.**
 
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Platform-considerations)
+## Platform considerations
 
-### [iOS, iPadOS](https://developer.apple.com/design/human-interface-guidelines/scroll-views#iOS-iPadOS)
+### iOS, iPadOS
 
 **Consider showing a page control when a scroll view is in page-by-page mode.**
 
-### [macOS](https://developer.apple.com/design/human-interface-guidelines/scroll-views#macOS)
+### macOS
 
 **If necessary, use small or mini scroll bars in a panel.**
 
-### [tvOS](https://developer.apple.com/design/human-interface-guidelines/scroll-views#tvOS)
-
-### [visionOS](https://developer.apple.com/design/human-interface-guidelines/scroll-views#visionOS)
+### visionOS
 
 **If necessary, account for the size of the scroll indicator.**
 
-### [watchOS](https://developer.apple.com/design/human-interface-guidelines/scroll-views#watchOS)
+### watchOS
 
 **Prefer vertically scrolling content.**
 
 **Use tab views to provide page-by-page scrolling.**
 
 **When displaying paged content, consider limiting the content of an individual page to a single screen height.**
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Developer-documentation)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/scroll-views#Change-log)
 
 ---
 

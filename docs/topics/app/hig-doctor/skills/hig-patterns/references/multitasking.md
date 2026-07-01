@@ -1,16 +1,16 @@
 ---
 title: "Multitasking | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/multitasking
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/multitasking.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Multitasking
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/multitasking#Best-practices)
+## Best practices
 
 **Pause activities that require people’s attention or active participation when they switch away.**
 
@@ -24,33 +24,15 @@ source: https://developer.apple.com/design/human-interface-guidelines/multitaski
 
 **Use notifications sparingly.**
 
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/multitasking#Platform-considerations)
+## Platform considerations
 
-### [iOS](https://developer.apple.com/design/human-interface-guidelines/multitasking#iOS)
-
-### [iPadOS](https://developer.apple.com/design/human-interface-guidelines/multitasking#iPadOS)
-
-### [macOS](https://developer.apple.com/design/human-interface-guidelines/multitasking#macOS)
-
-### [tvOS](https://developer.apple.com/design/human-interface-guidelines/multitasking#tvOS)
-
-### [visionOS](https://developer.apple.com/design/human-interface-guidelines/multitasking#visionOS)
+### visionOS
 
 **Avoid interfering with the system-provided multitasking behavior.**
 
 **Don’t pause a window’s video playback when people look away from it.**
 
 **Be prepared for situations where your audio can duck.**
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/multitasking#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/multitasking#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/multitasking#Developer-documentation)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/multitasking#Videos)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/multitasking#Change-log)
 
 ---
 

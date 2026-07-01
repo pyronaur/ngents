@@ -248,7 +248,7 @@ Result output includes:
 
 It runs registered fetches first, then `qmd update`, then `qmd embed`.
 Registered fetches run concurrently within each docs root and log progress to stderr.
-HTTP 404 responses from the built-in URL fetch handler are logged and skipped; the rest of the update continues.
+HTTP 404 responses and missing local `file:` sources from the built-in URL fetch handler are logged and skipped; the rest of the update continues.
 
 Use it when the global docs library changed and `query` needs a refreshed index.
 
@@ -266,20 +266,48 @@ Use it when the global docs library changed and `query` needs a refreshed index.
 
 ### `.docs.md`
 
-`.docs.md` is an optional hidden directory guide and metadata file.
+`.docs.md` is an optional hidden guide and metadata file for the directory that contains it.
+
+Global rules:
 
 - `.docs.md` is excluded from normal scans and lists.
-- Prefer one `.docs.md` at a meaningful topic boundary over many small child `.docs.md` files.
 - `.docs.md` does not decide whether something is a topic or path.
 - `.docs.md` does not decide whether a file belongs to a topic.
 - Display titles resolve from frontmatter `title`, then frontmatter `name`, then the raw basename.
-- `short` is the compact one-line description for indexes and compact help output.
-- `summary` is the fuller expanded description for browsing.
-- `read_when` adds browse hints.
-- `hints` adds compact skill labels in topic overviews.
-- Each `hints` key is a skill directory path relative to the `.docs.md` directory.
-- The first non-list paragraph is the fallback summary when `summary` is absent.
-- The rest of the body is rendered when the topic or path is opened.
+- `summary` falls back to the first non-list body paragraph when frontmatter `summary` is absent.
+- Body after frontmatter is rendered only when that topic or path is opened.
+
+Top-level topic `.docs.md` at `docs/topics/<topic>/.docs.md`:
+
+- `title` / `name`: topic title.
+- `short`: topic table description.
+- `summary`: topic table description only when `short` is absent.
+- `read_when`: rendered above `Topic:` in `docs <topic>`.
+- `hints`: compact skill labels for skills below the topic.
+
+Nested `.docs.md` below a topic:
+
+- `title` / `name`: focused path title or section title.
+- `short` / `summary`: focused path or skill-section metadata.
+- `read_when`: focused path or skill-section metadata.
+- `hints`: compact skill labels below that directory.
+
+`hints` format:
+
+```yaml
+hints:
+  - relative/skill-dir: compact label
+```
+
+Rules:
+
+- key: skill directory path relative to the `.docs.md` directory.
+- value: rendered compact skill label.
+- parser splits on first `:`.
+- empty key/value ignored.
+- deeper `.docs.md` hint overrides shallower hint for same skill directory.
+
+`description` is not used by `.docs.md`.
 
 ### Skills
 

@@ -3,6 +3,7 @@
 import { ArrowRight, Check, Copy, Github } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CopyStatus } from "@/lib/useCopyToClipboard";
 import { cn } from "@/lib/utils";
 
 const terminalLines = [
@@ -31,12 +32,11 @@ const terminalLines = [
   },
 ] as const;
 
-const INSTALL_COMMAND = "npx skills add raintree-technology/apple-hig-skills";
+const INSTALL_COMMAND = "npx skills add raintree-technology/hig-doctor";
 
-export default function Hero() {
+export default function Hero({ stars }: { stars: number | null }) {
   const [visibleLines, setVisibleLines] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [stars, setStars] = useState<number | null>(null);
   const prefersReducedMotion = useRef(false);
 
   useEffect(() => {
@@ -59,17 +59,6 @@ export default function Hero() {
       });
     }, 350);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    fetch("https://api.github.com/repos/raintree-technology/apple-hig-skills")
-      .then((res) => res.json())
-      .then((data) => {
-        if (typeof data.stargazers_count === "number") {
-          setStars(data.stargazers_count);
-        }
-      })
-      .catch(() => {});
   }, []);
 
   const handleCopy = useCallback(() => {
@@ -117,7 +106,7 @@ export default function Hero() {
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-6">
             <a
-              href="https://github.com/raintree-technology/apple-hig-skills"
+              href="https://github.com/raintree-technology/hig-doctor"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -151,22 +140,26 @@ export default function Hero() {
             </a>
             <span className="text-muted-foreground/30 hidden sm:inline">|</span>
             <span className="text-sm text-muted-foreground">
-              14 skills. 100+ HIG reference topics.
+              14 skills.{" "}
+              <a
+                href="/topics"
+                className="hover:text-foreground hover:underline underline-offset-4 transition-colors"
+              >
+                156 HIG reference topics
+              </a>
+              .
             </span>
           </div>
 
           <div className="inline-flex items-center gap-2 max-w-full">
             <code className="px-4 py-2.5 rounded-lg border bg-muted/50 text-sm font-mono text-muted-foreground overflow-x-auto min-w-0">
-              npx skills add raintree-technology/apple-hig-skills
+              npx skills add raintree-technology/hig-doctor
             </code>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleCopy}
-              aria-label={
-                copied ? "Copied to clipboard" : "Copy install command"
-              }
-              aria-live="polite"
+              aria-label="Copy install command"
             >
               {copied ? (
                 <Check className="h-4 w-4 text-green-500" />
@@ -174,6 +167,7 @@ export default function Hero() {
                 <Copy className="h-4 w-4" />
               )}
             </Button>
+            <CopyStatus active={copied} />
           </div>
         </div>
 

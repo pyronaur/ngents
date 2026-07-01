@@ -1,6 +1,6 @@
 // scanner.ts — Framework-agnostic project scanner
-import { readdir, readFile } from "node:fs/promises";
-import { join, relative, extname } from "node:path";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { join, relative, extname, sep } from "node:path";
 
 export interface ScannedFile {
   relativePath: string;
@@ -34,6 +34,16 @@ const IGNORED_DIRS = new Set([
   ".dart_tool", ".pub-cache", "android", "ios", "macos", "linux", "windows",
 ]);
 
+// Skip files larger than this — generated bundles, minified assets, and data
+// blobs cost memory and regex time without yielding real findings. The auditor
+// runs on arbitrary paths (including via the MCP server), so this is also a DoS
+// guard against being pointed at a multi-GB file with a code extension.
+const MAX_FILE_BYTES = 1_500_000;
+// Bound recursion depth so pathological or cyclic trees can't hang the walker.
+const MAX_DEPTH = 25;
+// Skip obviously generated files regardless of size.
+const GENERATED_FILE = /\.(min|bundle|chunk)\.(js|css|mjs|cjs)$/i;
+
 const CODE_EXTENSIONS = new Set([
   ".swift", ".tsx", ".jsx", ".ts", ".js",
   ".vue", ".svelte", ".dart", ".kt", ".java",
@@ -60,7 +70,77 @@ const CONFIG_FILES = new Set([
   "build.gradle", "build.gradle.kts", "AndroidManifest.xml",
 ]);
 
-async function walkDir(dir: string, rootDir: string, result: ScanResult): Promise<void> {
+export interface ScanOptions {
+  /** Path globs (relative to the scanned root) to skip. Merged with `.higauditignore`. */
+  exclude?: string[];
+}
+
+const IGNORE_FILE = ".higauditignore";
+
+// Convert a path glob to an anchored RegExp. Semantics (path-based, not gitignore):
+//   *   → any run of characters except "/"
+//   **  → any run of characters including "/"
+//   **/ → zero or more leading path segments
+//   ?   → a single character except "/"
+// Patterns match the POSIX relative path from the scan root.
+function globToRegExp(glob: string): RegExp {
+  const g = glob.replace(/^\.\//, "").replace(/^\/+/, "").replace(/\/+$/, "");
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    const ch = g[i];
+    if (ch === "*") {
+      if (g[i + 1] === "*") {
+        if (g[i + 2] === "/") { re += "(?:.*/)?"; i += 2; }
+        else { re += ".*"; i += 1; }
+      } else {
+        re += "[^/]*";
+      }
+    } else if (ch === "?") {
+      re += "[^/]";
+    } else if ("\\^$.|+()[]{}".includes(ch)) {
+      re += "\\" + ch;
+    } else {
+      re += ch;
+    }
+  }
+  return new RegExp("^" + re + "$");
+}
+
+async function loadIgnorePatterns(directory: string): Promise<string[]> {
+  try {
+    const content = await readFile(join(directory, IGNORE_FILE), "utf-8");
+    return content
+      .split("\n")
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && !line.startsWith("#"));
+  } catch {
+    return [];
+  }
+}
+
+function buildIgnoreMatcher(patterns: string[]): (relPath: string) => boolean {
+  const regexps = patterns.map(globToRegExp);
+  if (regexps.length === 0) return () => false;
+  return (relPath: string) => {
+    const posix = relPath.split(sep).join("/");
+    return regexps.some(re => re.test(posix));
+  };
+}
+
+// Read a UTF-8 file, skipping anything too large to be worth scanning. Returns
+// null on oversized files or read errors so callers can simply skip.
+async function readText(path: string): Promise<string | null> {
+  try {
+    const info = await stat(path);
+    if (info.size > MAX_FILE_BYTES) return null;
+    return await readFile(path, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+async function walkDir(dir: string, rootDir: string, result: ScanResult, isIgnored: (relPath: string) => boolean, depth = 0): Promise<void> {
+  if (depth > MAX_DEPTH) return;
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });
@@ -70,40 +150,49 @@ async function walkDir(dir: string, rootDir: string, result: ScanResult): Promis
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     const relPath = relative(rootDir, fullPath);
+    // Never follow symlinks: avoids escaping the scanned tree (e.g. a link to /)
+    // and breaks any directory cycles.
+    if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
       if (IGNORED_DIRS.has(entry.name)) continue;
+      if (isIgnored(relPath)) continue;
       if (entry.name.endsWith(".xcassets")) { result.assetCatalogs.push(relPath); continue; }
       if (entry.name.endsWith(".xcodeproj") || entry.name.endsWith(".xcworkspace")) { result.xcodeProjects.push(relPath); continue; }
-      await walkDir(fullPath, rootDir, result);
+      await walkDir(fullPath, rootDir, result, isIgnored, depth + 1);
     } else if (entry.isFile()) {
       const ext = extname(entry.name);
       // Skip test/spec files — they contain example code that triggers false positives
       if (/\.(test|spec)\.[^.]+$/.test(entry.name)) continue;
+      // Skip generated/minified files regardless of size
+      if (GENERATED_FILE.test(entry.name)) continue;
+      // Skip files matching .higauditignore / --exclude globs
+      if (isIgnored(relPath)) continue;
+
       const isConfig = CONFIG_FILES.has(entry.name);
+      const wantCode = CODE_EXTENSIONS.has(ext);
+      const wantStyle = STYLE_EXTENSIONS.has(ext);
+      const wantMarkup = MARKUP_EXTENSIONS.has(ext);
+      if (!isConfig && !wantCode && !wantStyle && !wantMarkup) continue;
+
+      const content = await readText(fullPath);
+      if (content === null) continue; // oversized or unreadable — skip
+      const file: ScannedFile = { relativePath: relPath, absolutePath: fullPath, content };
 
       // Config files are always collected (and may also be code)
       if (isConfig) {
-        const content = await readFile(fullPath, "utf-8");
-        const file: ScannedFile = { relativePath: relPath, absolutePath: fullPath, content };
         result.configFiles.push(file);
         if (entry.name === "Info.plist") result.infoPlistPaths.push(relPath);
         if (entry.name === "Package.swift") result.packageSwift = file;
-        // Config files with code extensions also go into codeFiles
-        if (CODE_EXTENSIONS.has(ext)) {
+        if (wantCode) {
           result.codeFiles.push(file);
           if (ext === ".swift") result.swiftFiles.push(file);
         }
-      } else if (CODE_EXTENSIONS.has(ext)) {
-        const content = await readFile(fullPath, "utf-8");
-        const file: ScannedFile = { relativePath: relPath, absolutePath: fullPath, content };
+      } else if (wantCode) {
         result.codeFiles.push(file);
         if (ext === ".swift") result.swiftFiles.push(file);
-      } else if (STYLE_EXTENSIONS.has(ext)) {
-        const content = await readFile(fullPath, "utf-8");
-        result.styleFiles.push({ relativePath: relPath, absolutePath: fullPath, content });
-      } else if (MARKUP_EXTENSIONS.has(ext)) {
-        const content = await readFile(fullPath, "utf-8");
-        const file: ScannedFile = { relativePath: relPath, absolutePath: fullPath, content };
+      } else if (wantStyle) {
+        result.styleFiles.push(file);
+      } else if (wantMarkup) {
         result.markupFiles.push(file);
         if (ext === ".storyboard" || ext === ".xib") result.storyboards.push(file);
       }
@@ -192,7 +281,7 @@ function detectFrameworks(result: ScanResult): Framework[] {
   return frameworks;
 }
 
-export async function scanProject(directory: string): Promise<ScanResult> {
+export async function scanProject(directory: string, options: ScanOptions = {}): Promise<ScanResult> {
   const result: ScanResult = {
     directory,
     frameworks: [],
@@ -207,7 +296,9 @@ export async function scanProject(directory: string): Promise<ScanResult> {
     xcodeProjects: [],
     packageSwift: null,
   };
-  await walkDir(directory, directory, result);
+  const patterns = [...(await loadIgnorePatterns(directory)), ...(options.exclude ?? [])];
+  const isIgnored = buildIgnoreMatcher(patterns);
+  await walkDir(directory, directory, result, isIgnored);
   result.frameworks = detectFrameworks(result);
   return result;
 }

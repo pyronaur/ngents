@@ -1,16 +1,16 @@
 ---
 title: "Workouts | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/workouts
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/workouts.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Workouts
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/workouts#Best-practices)
+## Best practices
 
 **In a watchOS fitness app, use workout sessions to provide useful data and relevant controls.**
 
@@ -29,16 +29,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/workouts
 **Make sure text is legible for when people are in motion.**
 
 **Use Activity rings correctly.**
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/workouts#Platform-considerations)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/workouts#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/workouts#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/workouts#Developer-documentation)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/workouts#Videos)
 
 ---
 

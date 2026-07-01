@@ -8,12 +8,14 @@ const homeNavItems = [
   { label: "Use Cases", href: "#use-cases", id: "use-cases" },
   { label: "How It Works", href: "#how-it-works", id: "how-it-works" },
   { label: "What's Included", href: "#skills", id: "skills" },
+  { label: "MCP", href: "/mcp", id: "mcp" },
   { label: "Install", href: "#install", id: "install" },
   { label: "FAQ", href: "#faq", id: "faq" },
 ];
 
 const topicNavItems = [
   { label: "Topics", href: "/topics" },
+  { label: "MCP", href: "/mcp" },
   { label: "Install", href: "/#install" },
 ];
 
@@ -148,7 +150,7 @@ export default function Header({
 
         <div className="flex items-center gap-1">
           <a
-            href="https://github.com/raintree-technology/apple-hig-skills"
+            href="https://github.com/raintree-technology/hig-doctor"
             target="_blank"
             rel="noopener noreferrer"
             className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"

@@ -1,16 +1,16 @@
 ---
 title: "AirPlay | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/airplay
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/airplay.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # AirPlay
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/airplay#Best-practices)
+## Best practices
 
 **Prefer the system-provided media player.**
 
@@ -30,13 +30,9 @@ source: https://developer.apple.com/design/human-interface-guidelines/airplay
 
 **If necessary, provide a custom interface for controlling media playback.**
 
-## [Using AirPlay icons](https://developer.apple.com/design/human-interface-guidelines/airplay#Using-AirPlay-icons)
+## Using AirPlay icons
 
-### [Black AirPlay icon](https://developer.apple.com/design/human-interface-guidelines/airplay#Black-AirPlay-icon)
-
-### [White AirPlay icon](https://developer.apple.com/design/human-interface-guidelines/airplay#White-AirPlay-icon)
-
-### [Custom color AirPlay icon](https://developer.apple.com/design/human-interface-guidelines/airplay#Custom-color-AirPlay-icon)
+### Custom color AirPlay icon
 
 **Position the AirPlay icon consistently with other technology icons.**
 
@@ -46,7 +42,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/airplay
 
 **Emphasize your app over AirPlay.**
 
-## [Referring to AirPlay](https://developer.apple.com/design/human-interface-guidelines/airplay#Referring-to-AirPlay)
+## Referring to AirPlay
 
 **Use correct capitalization when using the term _AirPlay_.**
 
@@ -57,18 +53,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/airplay
 **Use the name _Apple_ with the name _AirPlay_ if desired.**
 
 **Refer to AirPlay if appropriate and to add clarity.**
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/airplay#Platform-considerations)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/airplay#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/airplay#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/airplay#Developer-documentation)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/airplay#Videos)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/airplay#Change-log)
 
 ---
 

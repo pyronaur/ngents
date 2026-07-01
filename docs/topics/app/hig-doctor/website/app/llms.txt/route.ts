@@ -11,8 +11,12 @@ export function GET() {
 
   const byCategory = new Map<string, typeof topics>();
   for (const t of topics) {
-    if (!byCategory.has(t.categoryName)) byCategory.set(t.categoryName, []);
-    byCategory.get(t.categoryName)!.push(t);
+    let bucket = byCategory.get(t.categoryName);
+    if (!bucket) {
+      bucket = [];
+      byCategory.set(t.categoryName, bucket);
+    }
+    bucket.push(t);
   }
 
   const lines: string[] = [];
@@ -39,11 +43,13 @@ export function GET() {
   );
   lines.push("");
 
-  const sortedCategories = [...byCategory.keys()].sort();
-  for (const cat of sortedCategories) {
+  const sortedCategories = [...byCategory.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  );
+  for (const [cat, catTopics] of sortedCategories) {
     lines.push(`## ${cat}`);
     lines.push("");
-    const ts = byCategory.get(cat)!.slice().sort((a, b) => a.title.localeCompare(b.title));
+    const ts = catTopics.slice().sort((a, b) => a.title.localeCompare(b.title));
     for (const t of ts) {
       const desc = t.excerpt ? `: ${t.excerpt}` : "";
       lines.push(`- [${t.title}](${BASE_URL}/raw/${t.slug})${desc}`);
@@ -55,6 +61,9 @@ export function GET() {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=3600, s-maxage=86400",
+      // Machine-readable index for LLM retrieval, not a page meant to rank.
+      // LLM crawlers fetch it directly; keep it out of search indexes.
+      "X-Robots-Tag": "noindex",
     },
   });
 }

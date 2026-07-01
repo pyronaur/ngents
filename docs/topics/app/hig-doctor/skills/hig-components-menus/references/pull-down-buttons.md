@@ -1,16 +1,16 @@
 ---
 title: "Pull-down buttons | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Pull-down buttons
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#Best-practices)
+## Best practices
 
 **Use a pull-down button to present commands or items that are directly related to the button’s action.**
 
@@ -30,19 +30,11 @@ source: https://developer.apple.com/design/human-interface-guidelines/pull-down-
 
 **Include an interface icon with a menu item when it provides value.**
 
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#Platform-considerations)
+## Platform considerations
 
-### [iOS, iPadOS](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#iOS-iPadOS)
+### iOS, iPadOS
 
 **Consider using a More pull-down button to present items that don’t need prominent positions in the main interface.**
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#Developer-documentation)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/pull-down-buttons#Change-log)
 
 ---
 

@@ -1,16 +1,16 @@
 ---
 title: "Writing | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/writing
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/writing.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Writing
 
-## [Getting started](https://developer.apple.com/design/human-interface-guidelines/writing#Getting-started)
+## Getting started
 
 **Determine your app’s voice.**
 
@@ -20,7 +20,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/writing
 
 **Write for everyone.**
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/writing#Best-practices)
+## Best practices
 
 **Be action oriented.**
 
@@ -43,16 +43,6 @@ source: https://developer.apple.com/design/human-interface-guidelines/writing
 **Keep settings labels clear and simple.**
 
 **Show hints in text fields.**
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/writing#Platform-considerations)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/writing#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/writing#Related)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/writing#Videos)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/writing#Change-log)
 
 ---
 

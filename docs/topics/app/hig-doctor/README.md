@@ -2,16 +2,28 @@
 
 Agent-native Apple Human Interface Guidelines: a structured index of Apple's HIG delivered as Claude Skills, with an MCP server and a universal compliance auditor as the verification loop. Built for AI coding agents; usable by humans.
 
+[![GitHub stars](https://img.shields.io/github/stars/raintree-technology/hig-doctor?style=social)](https://github.com/raintree-technology/hig-doctor/stargazers)
+
 - **Skills corpus** — 14 skills and 156 reference topics covering the complete HIG (foundations, components, patterns, inputs, platforms, technologies). Snapshot dated 2025-02-02; canonical content remains at [developer.apple.com/design/human-interface-guidelines](https://developer.apple.com/design/human-interface-guidelines/).
 - **MCP server** — stdio Model Context Protocol server exposing `hig_list_skills`, `hig_lookup`, and `hig_audit` for Claude Desktop, Cursor, Windsurf, and Claude Code.
 - **Audit CLI** — universal HIG compliance scanner across 12 frameworks (SwiftUI, UIKit, React, Vue, Svelte, Angular, Compose, Android XML, React Native, Flutter, CSS, HTML). Emits severity-bucketed markdown/JSON with a pass/fail CI gate.
 
 Content is © Apple Inc.; this repository provides organization, cross-referencing, and detection rules for AI agent use. MIT-licensed for structure and tooling.
 
+## Star History
+
+<a href="https://star-history.com/#raintree-technology/hig-doctor&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=raintree-technology/hig-doctor&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=raintree-technology/hig-doctor&type=Date" />
+    <img alt="Star history chart for raintree-technology/hig-doctor" src="https://api.star-history.com/svg?repos=raintree-technology/hig-doctor&type=Date" />
+  </picture>
+</a>
+
 ## Install as a Claude Code plugin
 
 ```bash
-/plugin marketplace add raintree-technology/apple-hig-skills
+/plugin marketplace add raintree-technology/hig-doctor
 ```
 
 Or add as a git submodule into any project's `.claude/` directory.
@@ -32,7 +44,7 @@ Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_conf
   "mcpServers": {
     "hig-doctor": {
       "command": "bun",
-      "args": ["/absolute/path/to/apple-hig-skills/packages/hig-doctor/src-mcp/src/index.ts"]
+      "args": ["/absolute/path/to/hig-doctor/packages/hig-doctor/src-mcp/src/index.ts"]
     }
   }
 }
@@ -50,7 +62,7 @@ Set `HIG_SKILLS_DIR` if you relocate the `skills/` folder.
 
 ## HIG Audit CLI
 
-Scan any project for Apple HIG compliance. Works with SwiftUI, UIKit, React, Next.js, Vue, Nuxt, Svelte, SvelteKit, Angular, React Native, Flutter, Jetpack Compose, Android XML, and plain HTML/CSS. Detects 349 patterns across accessibility, color systems, typography, responsive layout, dark mode, motion, i18n, and more.
+Scan any project for Apple HIG compliance. Works with SwiftUI, UIKit, React, Next.js, Vue, Nuxt, Svelte, SvelteKit, Angular, React Native, Flutter, Jetpack Compose, Android XML, and plain HTML/CSS. Detects 348 patterns across accessibility, color systems, typography, responsive layout, dark mode, motion, i18n, and more.
 
 Requires [Bun](https://bun.sh).
 
@@ -163,7 +175,7 @@ Audit on every pull request and fail the build on critical violations.
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: raintree-technology/apple-hig-skills@main
+- uses: raintree-technology/hig-doctor@main
   with:
     directory: .
     fail-on: critical
@@ -214,7 +226,7 @@ Skills use progressive disclosure — agents load only the reference files they 
 ## Repository structure
 
 ```
-apple-hig-skills/
+hig-doctor/
 ├── .claude-plugin/marketplace.json       # Claude Code plugin manifest
 ├── skills/                                # 14 Agent Skills (SKILL.md + references/)
 ├── packages/hig-doctor/
@@ -223,7 +235,9 @@ apple-hig-skills/
 │   └── src-mcp/                           # MCP server
 ├── website/                               # Next.js site + llms.txt + /raw endpoints
 ├── demos/remotion-hig-doctor/             # Animated audit demo
-├── scripts/legal-hardening.ts             # Idempotent content attribution pass
+├── scripts/
+│   ├── legal-hardening.ts                 # Idempotent: strip Apple CDN images, insert attribution
+│   └── legal-hardening-deep.ts            # Destructive prose transform: keep headings + principles
 └── .github/workflows/annual-hig-rescan.yml
 ```
 

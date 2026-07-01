@@ -1,12 +1,12 @@
 ---
 title: "Edit menus | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/edit-menus
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/edit-menus.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
-
 
 # Edit menus
 
@@ -18,7 +18,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/edit-menus
 
   * In visionOS, people use the standard [pinch and hold](https://developer.apple.com/design/human-interface-guidelines/gestures#Standard-gestures) gesture to open the edit menu as a horizontal bar, or they can open it in a context menu.
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Best-practices)
+## Best practices
 
 **Prefer the system-provided edit menu.**
 
@@ -36,27 +36,17 @@ source: https://developer.apple.com/design/human-interface-guidelines/edit-menus
 
 **Differentiate different types of deletion commands when necessary.**
 
-## [Content](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Content)
+## Content
 
 **Create short labels for custom commands.**
 
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Platform-considerations)
+## Platform considerations
 
-### [iOS, iPadOS](https://developer.apple.com/design/human-interface-guidelines/edit-menus#iOS-iPadOS)
+### iOS, iPadOS
 
 **Ensure your edit menu works well in both styles.**
 
 **Adjust an edit menu’s placement, if necessary.**
-
-### [macOS](https://developer.apple.com/design/human-interface-guidelines/edit-menus#macOS)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Developer-documentation)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/edit-menus#Change-log)
 
 ---
 

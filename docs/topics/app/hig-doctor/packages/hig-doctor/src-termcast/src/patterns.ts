@@ -1,5 +1,7 @@
 // patterns.ts — Universal HIG pattern detection across all frameworks
-// ~450 rules covering Swift, React, Vue, Svelte, Angular, Flutter, Kotlin, Android XML, CSS, HTML
+// Rules cover Swift, React, Vue, Svelte, Angular, Flutter, Kotlin, Android XML, CSS, HTML.
+// The authoritative rule count is the exported RULE_COUNT (end of file); never
+// hardcode a count in prose — import RULE_COUNT instead.
 export type Severity = "critical" | "serious" | "moderate";
 
 export interface PatternMatch {
@@ -21,6 +23,11 @@ interface PatternRule {
   regex: RegExp;
   fileFilter?: RegExp; // only apply to files matching this pattern
   skipInBlock?: RegExp; // skip this rule when inside a CSS block matching this pattern
+  scope?: "document"; // match the whole comment-stripped source, not line-by-line.
+                      // Needed for tags that span lines and for rules that inspect
+                      // a child/sibling element (e.g. a <video> with a <track>).
+  requireAbsent?: RegExp; // document scope only: fire just once, and only if this
+                          // pattern appears nowhere in the file (file-level signal).
 }
 
 // Severity classification for concern-type rules.
@@ -42,8 +49,10 @@ const CRITICAL_CONCERNS = new Set<string>([
 ]);
 
 const SERIOUS_CONCERNS = new Set<string>([
-  "onTapGesture without traits",
-  "Image without a11y",
+  // "onTapGesture without traits", "Image without a11y", and "hover without
+  // focus" are deliberately NOT here: they fire heuristically on common,
+  // frequently-fine code, so they default to moderate instead of tripping a
+  // `--fail-on serious` CI gate.
   "isAccessibilityElement false on interactive",
   "div with onClick no role",
   "span with onClick no role",
@@ -56,7 +65,6 @@ const SERIOUS_CONCERNS = new Set<string>([
   "div as nav/header class",
   "autoplay media",
   "outline none",
-  "hover without focus",
   "v-on:click without keyboard",
   "on:click without on:keydown",
   "(click) without (keydown)",
@@ -75,7 +83,6 @@ const SWIFT = /\.swift$/;
 const WEB = /\.(tsx|jsx|html?)$/;
 const TSX_JSX = /\.(tsx|jsx)$/;
 const TS_JS = /\.(tsx|jsx|ts|js)$/;
-const CSS = /\.(css|scss|sass|less)$/;
 const VUE = /\.vue$/;
 const SVELTE = /\.svelte$/;
 const ANGULAR = /\.(ts|html)$/;
@@ -83,7 +90,6 @@ const DART = /\.dart$/;
 const KOTLIN = /\.kt$/;
 const ANDROID_XML = /\.xml$/;
 const WEB_ALL = /\.(tsx|jsx|html?|vue|svelte)$/;
-const CODE_ALL = /\.(tsx|jsx|ts|js|vue|svelte|html?)$/;
 const STYLE_ALL = /\.(css|scss|sass|less)$/;
 
 // ════════════════════════════════════════════════════════════════
@@ -189,7 +195,7 @@ const swiftRules: PatternRule[] = [
   // UIKit concerns
   { category: "foundations", subcategory: "layout", type: "concern", pattern: "hardcoded CGRect", regex: /CGRect\(\s*x:\s*\d/, fileFilter: SWIFT },
   { category: "foundations", subcategory: "layout", type: "concern", pattern: "ignoresSafeArea", regex: /\.ignoresSafeArea\(/, fileFilter: SWIFT },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "non-private @State", regex: /\b(var|let)\s+\w+.*@State\b(?!.*private)/, fileFilter: SWIFT },
+  { category: "patterns", subcategory: "state", type: "concern", pattern: "non-private @State", regex: /@State\b(?!\s+private\b)\s+(?:var|let)\b/, fileFilter: SWIFT },
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -197,7 +203,7 @@ const swiftRules: PatternRule[] = [
 // ════════════════════════════════════════════════════════════════
 const webCodeRules: PatternRule[] = [
   // ── Accessibility: Positives ────────────────────────────────
-  { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "aria-label", regex: /aria-label[=s]/, fileFilter: WEB },
+  { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "aria-label", regex: /aria-label\s*=/, fileFilter: WEB },
   { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "aria-describedby", regex: /aria-describedby/, fileFilter: WEB },
   { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "aria-live", regex: /aria-live/, fileFilter: WEB },
   { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "aria-expanded", regex: /aria-expanded/, fileFilter: WEB },
@@ -216,11 +222,15 @@ const webCodeRules: PatternRule[] = [
   { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "htmlFor/for attribute", regex: /htmlFor=|for=["']/, fileFilter: WEB_ALL },
 
   // ── Accessibility: Concerns ─────────────────────────────────
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "missing alt", regex: /<img\s[^>]*(?<!\balt=)[^>]*\/?>/, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "Image without alt", regex: /<Image\s[^>]*(?<!\balt=)[^>]*\/?>/, fileFilter: TSX_JSX },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "svg without a11y", regex: /<svg\s(?![^>]*(?:aria-label|aria-hidden|role=))/, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "div with onClick no role", regex: /<div\s[^>]*onClick[^>]*(?!.*role=)/, fileFilter: TSX_JSX },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "span with onClick no role", regex: /<span\s[^>]*onClick[^>]*(?!.*role=)/, fileFilter: TSX_JSX },
+  // Negative-attribute checks use a "tempered greedy token" — (?:(?!X)[^>])* —
+  // which walks the tag body asserting attribute X never appears before the
+  // closing >. A plain lookbehind/lookahead backtracks and matches tags that DO
+  // have the attribute (the original bug flagged <img alt="..."> as missing alt).
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "missing alt", regex: /<img\b(?:(?!\balt\s*=)[^>])*>/i, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "Image without alt", regex: /<Image\b(?:(?!\balt\s*=)[^>])*>/, fileFilter: TSX_JSX, scope: "document" },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "svg without a11y", regex: /<svg\b(?:(?!aria-label|aria-hidden|\brole\s*=)[^>])*>/, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "div with onClick no role", regex: /<div\b(?:(?!\brole\s*=)[^>])*\bonClick\b(?:(?!\brole\s*=)[^>])*>/, fileFilter: TSX_JSX, scope: "document" },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "span with onClick no role", regex: /<span\b(?:(?!\brole\s*=)[^>])*\bonClick\b(?:(?!\brole\s*=)[^>])*>/, fileFilter: TSX_JSX, scope: "document" },
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "ambiguous link text", regex: />\s*(click here|read more|learn more|here|more)\s*</i, fileFilter: WEB_ALL },
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "positive tabindex", regex: /tabIndex=\{[1-9]|tabindex="[1-9]/, fileFilter: WEB_ALL },
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "aria-hidden on focusable", regex: /aria-hidden=["']true["'][^>]*(?:<button|<a\s|<input|tabIndex)/, fileFilter: WEB_ALL },
@@ -229,11 +239,11 @@ const webCodeRules: PatternRule[] = [
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "autoFocus", regex: /autoFocus\b|autofocus\b/, fileFilter: WEB_ALL },
 
   // ── Heading & Structure ─────────────────────────────────────
-  { category: "foundations", subcategory: "structure", type: "concern", pattern: "empty heading", regex: /<h[1-6][^>]*>\s*<\/h[1-6]>/, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "structure", type: "concern", pattern: "empty button", regex: /<button[^>]*>\s*<\/button>/, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "structure", type: "concern", pattern: "div as button", regex: /<div[^>]*role=["']button["']/, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "structure", type: "concern", pattern: "div as nav/header class", regex: /<div[^>]*class(?:Name)?=["'][^"']*\b(nav|header|footer|sidebar)\b/i, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "structure", type: "concern", pattern: "missing html lang", regex: /<html(?!\s[^>]*lang=)/, fileFilter: /\.html?$/ },
+  { category: "foundations", subcategory: "structure", type: "concern", pattern: "empty heading", regex: /<h[1-6][^>]*>\s*<\/h[1-6]>/, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "structure", type: "concern", pattern: "empty button", regex: /<button[^>]*>\s*<\/button>/, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "structure", type: "concern", pattern: "div as button", regex: /<div[^>]*role=["']button["']/, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "structure", type: "concern", pattern: "div as nav/header class", regex: /<div[^>]*class(?:Name)?=["'][^"']*\b(nav|header|footer|sidebar)\b/i, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "structure", type: "concern", pattern: "missing html lang", regex: /<html(?!\s[^>]*lang=)/, fileFilter: /\.html?$/, scope: "document" },
   { category: "foundations", subcategory: "structure", type: "positive", pattern: "html lang attribute", regex: /<html\s[^>]*lang=["'][a-z]/, fileFilter: /\.html?$/ },
   { category: "foundations", subcategory: "structure", type: "positive", pattern: "landmark main", regex: /<main\b|role=["']main["']/, fileFilter: WEB_ALL },
   { category: "foundations", subcategory: "structure", type: "positive", pattern: "landmark nav", regex: /<nav\b|role=["']navigation["']/, fileFilter: WEB_ALL },
@@ -351,8 +361,8 @@ const webCodeRules: PatternRule[] = [
   { category: "technologies", subcategory: "analytics", type: "pattern", pattern: "analytics", regex: /@vercel\/analytics|gtag|GoogleAnalytics/, fileFilter: TS_JS },
 
   // ── Media accessibility ─────────────────────────────────────
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "video without track", regex: /<video\b(?![^>]*<track)/, fileFilter: WEB_ALL },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "autoplay media", regex: /\bautoplay\b|autoPlay\b/, fileFilter: WEB_ALL },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "video without track", regex: /<video\b(?:(?!<\/video>|<track\b)[\s\S])*?<\/video>/i, fileFilter: WEB_ALL, scope: "document" },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "autoplay media", regex: /\bauto[Pp]lay\b(?!\s*=\s*\{?\s*['"]?false)/, fileFilter: WEB_ALL },
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "blink element", regex: /<blink\b/, fileFilter: WEB_ALL },
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "marquee element", regex: /<marquee\b/, fileFilter: WEB_ALL },
 
@@ -381,7 +391,7 @@ const cssRules: PatternRule[] = [
   { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "focus ring styles", regex: /outline.*focus|ring-/, fileFilter: STYLE_ALL },
   { category: "foundations", subcategory: "accessibility", type: "positive", pattern: "high contrast", regex: /forced-colors|high-contrast|prefers-contrast/, fileFilter: STYLE_ALL },
   { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "outline none", regex: /outline:\s*(none|0)\b/, fileFilter: STYLE_ALL, skipInBlock: /(:focus:not\(:focus-visible\))|(@media\s+print)/ },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "hover without focus", regex: /:hover\s*\{(?![^}]*:focus)/, fileFilter: STYLE_ALL, skipInBlock: /::-webkit-scrollbar|::scrollbar/ },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "hover without focus", regex: /:hover\b/, fileFilter: STYLE_ALL, scope: "document", requireAbsent: /:focus/ },
 
   // Layout
   { category: "foundations", subcategory: "layout", type: "positive", pattern: "print styles", regex: /@media\s+print/, fileFilter: STYLE_ALL },
@@ -588,7 +598,7 @@ const reactNativeRules: PatternRule[] = [
   { category: "components-layout", subcategory: "layout", type: "pattern", pattern: "SafeAreaView", regex: /\bSafeAreaView\b/, fileFilter: TSX_JSX },
   { category: "inputs", subcategory: "gestures", type: "pattern", pattern: "Gesture handler", regex: /PanGestureHandler|TapGestureHandler|GestureDetector/, fileFilter: TSX_JSX },
   { category: "patterns", subcategory: "haptics", type: "pattern", pattern: "Haptics", regex: /Haptics\.|expo-haptics/, fileFilter: TS_JS },
-  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "nested touchables", regex: /accessible=\{true\}[^]*?<Touchable/, fileFilter: TSX_JSX },
+  { category: "foundations", subcategory: "accessibility", type: "concern", pattern: "nested touchables", regex: /accessible=\{true\}[\s\S]*?<Touchable/, fileFilter: TSX_JSX },
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -640,33 +650,91 @@ const allRules: PatternRule[] = [
   ...flutterRules,
 ];
 
+interface CommentState {
+  inBlock: boolean; // inside a /* ... */ block (CSS/SCSS/JS/Swift/Kotlin/Dart)
+  inHtml: boolean; // inside an <!-- ... --> comment (HTML/XML/Vue/Svelte)
+}
+
+// Remove comment content from a single line so rules never fire on commented-out
+// code or prose (e.g. "// disable autoplay"). String and template literals are
+// PRESERVED — their contents are exactly what many rules match on (role="button",
+// class="header", href="https://..."). Block (/* */) and HTML (<!-- -->) comment
+// state carries across lines via `state`; line (//) comments and string state are
+// line-local. This is a pragmatic lexer, not a full parser: good enough to kill
+// the dominant false-positive class without AST machinery.
+function stripComments(line: string, state: CommentState, lineComments: boolean): string {
+  let out = "";
+  let str: string | null = null; // active string delimiter, or null
+  const n = line.length;
+  let i = 0;
+  while (i < n) {
+    const c = line[i];
+    const c2 = i + 1 < n ? line[i + 1] : "";
+    if (state.inBlock) {
+      if (c === "*" && c2 === "/") { state.inBlock = false; i += 2; } else { i++; }
+      continue;
+    }
+    if (state.inHtml) {
+      if (c === "-" && c2 === "-" && line[i + 2] === ">") { state.inHtml = false; i += 3; } else { i++; }
+      continue;
+    }
+    if (str !== null) {
+      out += c;
+      if (c === "\\" && i + 1 < n) { out += c2; i += 2; continue; }
+      if (c === str) str = null;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") { str = c; out += c; i++; continue; }
+    if (c === "/" && c2 === "*") { state.inBlock = true; i += 2; continue; }
+    if (lineComments && c === "/" && c2 === "/") break; // line comment → drop the rest of the line
+    if (c === "<" && c2 === "!" && line[i + 2] === "-" && line[i + 3] === "-") { state.inHtml = true; i += 4; continue; }
+    out += c;
+    i++;
+  }
+  return out;
+}
+
 export function detectPatterns(code: string, file: string): PatternMatch[] {
   const matches: PatternMatch[] = [];
-  const lines = code.split("\n");
+  const rawLines = code.split("\n");
   const isStyleFile = /\.(css|scss|sass|less)$/.test(file);
+  // `//` is a line comment in code and in SCSS/Sass/Less, but NOT in plain CSS,
+  // HTML, or XML — where it legitimately appears in protocol-relative URLs like
+  // url(//cdn…). Gating it per-file stops the stripper from eating the rest of
+  // those lines (which previously hid real concerns sitting after such a URL).
+  const allowLineComments = !/\.(css|html?|xml|storyboard|xib)$/i.test(file);
 
-  // Track CSS block context for skipInBlock rules
-  // We maintain a stack of block-opening lines so we can check if we're inside
-  // a @media print, :focus:not(:focus-visible), or similar block
+  // Strip comments once per line (string literals preserved). The stripped text
+  // drives CSS block tracking, per-line matching, and whole-document matching;
+  // the original line is what gets reported back to the user.
+  const commentState: CommentState = { inBlock: false, inHtml: false };
+  const lines = rawLines.map(l => stripComments(l, commentState, allowLineComments));
+
+  // Pre-filter rules to those applicable to this file, then split by scope so we
+  // don't re-test every rule's fileFilter against every line.
+  const applicable = allRules.filter(r => !r.fileFilter || r.fileFilter.test(file));
+  const lineRules = applicable.filter(r => r.scope !== "document");
+  const docRules = applicable.filter(r => r.scope === "document");
+
+  // Track CSS block context for skipInBlock rules: a stack of block-opening lines
+  // so we can tell whether we're inside @media print, :focus:not(:focus-visible), etc.
   const blockContext: string[] = [];
   let braceDepth = 0;
   const blockStartDepth: number[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const lineContent = lines[i];
+    const scanLine = lines[i];
 
-    // Track CSS block nesting for context-aware rules
     if (isStyleFile) {
-      // Check if this line opens a new block (has a selector/at-rule before {)
-      const opensBlock = lineContent.includes("{");
-      const closesBlock = lineContent.includes("}");
-
+      const opensBlock = scanLine.includes("{");
+      const closesBlock = scanLine.includes("}");
       if (opensBlock) {
-        // Accumulate context: look back up to 3 lines for the selector/at-rule
-        let contextLines = lineContent;
+        // Accumulate context: look back up to 3 lines for the selector/at-rule.
+        let contextLines = scanLine;
         for (let j = Math.max(0, i - 3); j < i; j++) {
           if (!lines[j].includes("}") && !lines[j].includes("{")) {
-            contextLines = lines[j] + " " + contextLines;
+            contextLines = `${lines[j]} ${contextLines}`;
           }
         }
         blockContext.push(contextLines);
@@ -675,7 +743,6 @@ export function detectPatterns(code: string, file: string): PatternMatch[] {
       }
       if (closesBlock) {
         braceDepth = Math.max(0, braceDepth - 1);
-        // Pop blocks that have ended
         while (blockStartDepth.length > 0 && blockStartDepth[blockStartDepth.length - 1] >= braceDepth) {
           blockStartDepth.pop();
           blockContext.pop();
@@ -683,12 +750,11 @@ export function detectPatterns(code: string, file: string): PatternMatch[] {
       }
     }
 
-    for (const rule of allRules) {
-      if (rule.fileFilter && !rule.fileFilter.test(file)) continue;
-      if (rule.regex.test(lineContent)) {
-        // Check if this match should be skipped due to block context
-        if (rule.skipInBlock && isStyleFile) {
-          const inSkippedBlock = blockContext.some(ctx => rule.skipInBlock!.test(ctx));
+    for (const rule of lineRules) {
+      if (rule.regex.test(scanLine)) {
+        const skipInBlock = rule.skipInBlock;
+        if (skipInBlock && isStyleFile) {
+          const inSkippedBlock = blockContext.some((ctx) => skipInBlock.test(ctx));
           if (inSkippedBlock) continue;
         }
         matches.push({
@@ -697,12 +763,61 @@ export function detectPatterns(code: string, file: string): PatternMatch[] {
           type: rule.type,
           pattern: rule.pattern,
           line: i + 1,
-          lineContent: lineContent.trim(),
+          lineContent: rawLines[i].trim(),
           file,
           severity: rule.type === "concern" ? severityFor(rule.pattern) : undefined,
         });
       }
     }
+  }
+
+  // Document-scoped rules match against the whole comment-stripped source, so
+  // tags that wrap across lines and child/sibling relationships (e.g. a <video>
+  // with a <track>) are visible — things a per-line scan structurally cannot see.
+  if (docRules.length > 0) {
+    const stripped = lines.join("\n");
+    // Offsets of each line start, so a match index maps back to a 1-based line.
+    const lineStarts = [0];
+    for (let k = 0; k < stripped.length; k++) {
+      if (stripped[k] === "\n") lineStarts.push(k + 1);
+    }
+    const lineNumberAt = (index: number): number => {
+      let lo = 0;
+      let hi = lineStarts.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (lineStarts[mid] <= index) lo = mid;
+        else hi = mid - 1;
+      }
+      return lo + 1;
+    };
+    for (const rule of docRules) {
+      // requireAbsent: a file-level signal (e.g. ":hover styles but no :focus
+      // anywhere"). Skip when the "good" pattern is present; otherwise report a
+      // single finding at the first match.
+      if (rule.requireAbsent && rule.requireAbsent.test(stripped)) continue;
+      const flags = rule.regex.flags.includes("g") ? rule.regex.flags : rule.regex.flags + "g";
+      const re = new RegExp(rule.regex.source, flags);
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(stripped)) !== null) {
+        const lineNo = lineNumberAt(m.index);
+        matches.push({
+          category: rule.category,
+          subcategory: rule.subcategory,
+          type: rule.type,
+          pattern: rule.pattern,
+          line: lineNo,
+          lineContent: (rawLines[lineNo - 1] ?? "").trim(),
+          file,
+          severity: rule.type === "concern" ? severityFor(rule.pattern) : undefined,
+        });
+        if (rule.requireAbsent) break; // file-level: one finding is enough
+        if (m.index === re.lastIndex) re.lastIndex++; // never spin on a zero-width match
+      }
+    }
+    // Interleave document findings with line findings in source order so report
+    // excerpts read top-to-bottom.
+    matches.sort((a, b) => a.line - b.line);
   }
 
   return matches;

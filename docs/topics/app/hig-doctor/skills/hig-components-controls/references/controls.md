@@ -1,16 +1,16 @@
 ---
 title: "Controls | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/controls
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/controls.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Controls
 
-## [Anatomy](https://developer.apple.com/design/human-interface-guidelines/controls#Anatomy)
+## Anatomy
 
   * In Control Center, a control displays its symbol and, at larger sizes, its title and value.
 
@@ -18,7 +18,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/controls
 
   * On iPhone devices with a control assigned to the Action button, pressing and holding it displays the control’s symbol in the Dynamic Island, as well as its value (if present).
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/controls#Best-practices)
+## Best practices
 
 **Offer controls for actions that provide the most benefit without having to launch your app.**
 
@@ -40,21 +40,11 @@ source: https://developer.apple.com/design/human-interface-guidelines/controls
 
 **Require authentication for actions that affect security.**
 
-## [Camera experiences on a locked device](https://developer.apple.com/design/human-interface-guidelines/controls#Camera-experiences-on-a-locked-device)
+## Camera experiences on a locked device
 
 **Use the same camera UI in your app and your camera experience.**
 
 **Provide instructions for adding the control.**
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/controls#Platform-considerations)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/controls#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/controls#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/controls#Developer-documentation)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/controls#Change-log)
 
 ---
 

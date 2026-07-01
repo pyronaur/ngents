@@ -1,16 +1,16 @@
 ---
 title: "VoiceOver | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/voiceover
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/voiceover.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # VoiceOver
 
-## [Descriptions](https://developer.apple.com/design/human-interface-guidelines/voiceover#Descriptions)
+## Descriptions
 
 **Provide alternative labels for all key interface elements.**
 
@@ -20,7 +20,7 @@ source: https://developer.apple.com/design/human-interface-guidelines/voiceover
 
 **Exclude purely decorative images from VoiceOver.**
 
-## [Navigation](https://developer.apple.com/design/human-interface-guidelines/voiceover#Navigation)
+## Navigation
 
 **Use titles and headings to help people navigate your information hierarchy.**
 
@@ -30,21 +30,11 @@ source: https://developer.apple.com/design/human-interface-guidelines/voiceover
 
 **Support the VoiceOver rotor when possible.**
 
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/voiceover#Platform-considerations)
+## Platform considerations
 
-### [visionOS](https://developer.apple.com/design/human-interface-guidelines/voiceover#visionOS)
+### visionOS
 
 **Be mindful that custom gestures aren’t always accessible.**
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/voiceover#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/voiceover#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/voiceover#Developer-documentation)
-
-#### [Videos](https://developer.apple.com/design/human-interface-guidelines/voiceover#Videos)
-
-## [Change log](https://developer.apple.com/design/human-interface-guidelines/voiceover#Change-log)
 
 ---
 

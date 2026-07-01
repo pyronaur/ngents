@@ -1,38 +1,24 @@
 ---
 title: "Lockups | Apple Developer Documentation"
 source: https://developer.apple.com/design/human-interface-guidelines/lockups
+---
 
 <!-- hig-doctor:attribution -->
 > **Source**: Apple Inc. Canonical content at https://developer.apple.com/design/human-interface-guidelines/lockups.
 > This file is a structured index of that content, snapshot 2025-02-02.
 > Apple HIG text and imagery are © Apple Inc.; this repository provides organization and cross-referencing for AI agent consumption only.
 
-
 # Lockups
 
-## [Best practices](https://developer.apple.com/design/human-interface-guidelines/lockups#Best-practices)
+## Best practices
 
 **Allow adequate space between lockups.**
 
 **Use consistent lockup sizes within a row or group.**
 
-## [Cards](https://developer.apple.com/design/human-interface-guidelines/lockups#Cards)
-
-## [Caption buttons](https://developer.apple.com/design/human-interface-guidelines/lockups#Caption-buttons)
-
-## [Monograms](https://developer.apple.com/design/human-interface-guidelines/lockups#Monograms)
+## Monograms
 
 **Prefer images over initials.**
-
-## [Posters](https://developer.apple.com/design/human-interface-guidelines/lockups#Posters)
-
-## [Platform considerations](https://developer.apple.com/design/human-interface-guidelines/lockups#Platform-considerations)
-
-## [Resources](https://developer.apple.com/design/human-interface-guidelines/lockups#Resources)
-
-#### [Related](https://developer.apple.com/design/human-interface-guidelines/lockups#Related)
-
-#### [Developer documentation](https://developer.apple.com/design/human-interface-guidelines/lockups#Developer-documentation)
 
 ---
 

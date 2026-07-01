@@ -41,24 +41,29 @@ compiled output must stay excluded.
 
 ## 1) Install Or Upgrade Lint Dependencies
 
-Install these dev dependencies using the repo's existing package manager. This
-skill does not dictate package-manager choice.
+Install these dev dependencies using the repo's existing package manager and
+normal supply-chain policy. Do not bypass package-manager release-age or
+quarantine gates for this baseline.
 
-Install:
-- `dprint@latest`
-- `oxlint@latest`
-- `oxlint-tsgolint@latest` (required for Oxlint type-aware rules)
-- `oxlint-plugin-inhuman@latest` (custom strictness rules)
-- `oxlint-plugin-complexity@latest` (complexity rule plugin)
-- `jscpd@latest`
-- `knip@latest`
+Current proven baseline:
+- `dprint@0.54.0`
+- `oxlint@1.69.0`
+- `oxlint-tsgolint@0.23.0` (required for Oxlint type-aware rules)
+- `oxlint-plugin-inhuman@0.1.11` (custom strictness rules)
+- `oxlint-plugin-complexity@2.1.3` (complexity rule plugin)
+- `jscpd@5.0.6`
+- `knip@6.16.1`
+- `typescript@6.0.3` when the repo does not already own its TypeScript version
 
 Examples:
 
 ```bash
-bun add -d dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest oxlint-plugin-complexity@latest jscpd@latest knip@latest
-npm install -D dprint@latest oxlint@latest oxlint-tsgolint@latest oxlint-plugin-inhuman@latest oxlint-plugin-complexity@latest jscpd@latest knip@latest
+bun add -d dprint@0.54.0 oxlint@1.69.0 oxlint-tsgolint@0.23.0 oxlint-plugin-inhuman@0.1.11 oxlint-plugin-complexity@2.1.3 jscpd@5.0.6 knip@6.16.1
+npm install -D dprint@0.54.0 oxlint@1.69.0 oxlint-tsgolint@0.23.0 oxlint-plugin-inhuman@0.1.11 oxlint-plugin-complexity@2.1.3 jscpd@5.0.6 knip@6.16.1
 ```
+
+If the repo does not already own a TypeScript version, add `typescript@6.0.3`
+too.
 
 ## 2) Copy Config Templates
 
@@ -125,14 +130,19 @@ Mandatory config expectations:
   suite callbacks as functions and cannot distinguish suite containers from
   test cases
 - `complexity/complexity` with `cyclomatic: 15` and `cognitive: 20`
-  suite callbacks, enforce smaller `test(...)`/`it(...)` callbacks, and keep
-  local test helper functions bounded.
+- `inhuman/max-function-size` handles test function sizing: keep
+  `test(...)`/`it(...)` callbacks and local helper functions at `100` lines,
+  while allowing `describe(...)`, `suite(...)`, and `test.describe(...)` suite
+  containers up to `800` lines.
 - Oxlint enforces `curly: all` and `no-else-return` (no `else` after `return`).
 - Oxlint enforces inhuman rules:
 - `inhuman/require-guard-clauses`
 - `inhuman/no-swallowed-catch`
 - `inhuman/export-code-last`
 - `inhuman/no-empty-wrappers`
+- `inhuman/no-local-property-alias`
+- `inhuman/no-single-use-local-function`
+- `inhuman/max-function-size`
 - `inhuman/no-switch`
 - `inhuman/no-else`
 - Oxlint enforces `oxc/no-barrel-file`.
@@ -208,7 +218,10 @@ Do not call out:
 - `max-nested-callbacks: 3`: Callback nesting rapidly explodes complexity.
 - `max-classes-per-file: 1`: Multiple classes per file blurs boundaries and ownership.
 - `curly: all` and `no-else-return`: Make control flow explicit and push toward early returns.
-- `inhuman/*` rules: Enforce guard clauses, forbid swallowed errors, prevent `switch`/`else`, and forbid empty wrapper exports.
+- `inhuman/*` rules: Enforce guard clauses, forbid swallowed errors, prevent
+  `switch`/`else`, forbid empty wrapper exports, block property-read aliases,
+  prevent single-use local helper functions, and enforce callee-aware function
+  size limits.
 - `oxc/no-barrel-file`: Discourage barrels and keep exports near their definitions.
 - Import hygiene rules: Keep type-only imports explicit, prevent side-effect-only
   leftovers from inline type imports, and block duplicate or self imports.

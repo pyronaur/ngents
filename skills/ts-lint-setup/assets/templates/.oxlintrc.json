@@ -52,6 +52,24 @@
 				"inhuman/no-swallowed-catch": "error",
 				"inhuman/export-code-last": "error",
 				"inhuman/no-empty-wrappers": "error",
+				"inhuman/no-local-property-alias": "error",
+				"inhuman/no-single-use-local-function": "error",
+				"inhuman/max-function-size": [
+					"error",
+					{
+						"max-lines": 100,
+						"scoped": [
+							{
+								"inside": ["test", "it"],
+								"max-lines": 100
+							},
+							{
+								"inside": ["describe", "suite", "test.describe"],
+								"max-lines": 800
+							}
+						]
+					}
+				],
 				"inhuman/no-switch": "error",
 				"inhuman/no-else": "error",
 				"oxc/no-barrel-file": "error",

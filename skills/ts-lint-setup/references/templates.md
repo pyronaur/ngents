@@ -67,6 +67,19 @@ Allowed tweaks:
   dedicated schema-file layout.
 - Keep Oxlint type-aware wiring intact when type-aware rules are enabled.
 - Keep `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all", "fix": { "imports": "safe-fix", "variables": "suggestion" } }]`.
+- Keep the full `inhuman/*` baseline enabled:
+- `inhuman/require-guard-clauses`
+- `inhuman/no-swallowed-catch`
+- `inhuman/export-code-last`
+- `inhuman/no-empty-wrappers`
+- `inhuman/no-local-property-alias`
+- `inhuman/no-single-use-local-function`
+- `inhuman/max-function-size`
+- `inhuman/no-switch`
+- `inhuman/no-else`
+- Keep `inhuman/max-function-size` configured with `max-lines: 100`, `100`
+  for `test(...)`/`it(...)`, and `800` for `describe(...)`, `suite(...)`,
+  and `test.describe(...)`.
 - Do not add unused-binding ignore-pattern escapes unless the user explicitly
   approves a real exception.
 

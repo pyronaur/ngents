@@ -18,6 +18,7 @@
 - Questions: **Do not answer questions I did not ask!**
 	- Answer only the the question I asked and make it direct
 	- If you are unsure, ask for clarification.
+- No Backward Compatibility: Unless explicitly asked - do not version fields, migrations, backward compatibility.
 
 ## Communication rule nr.1
 <most_important_rule>

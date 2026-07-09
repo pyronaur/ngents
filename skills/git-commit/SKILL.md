@@ -8,19 +8,42 @@ disable-model-invocation: true
 
 ## Overview
 
-Produce high-signal commits that are easy to review and easy to understand later.
-Prioritize clarity and rationale quality over matching historical wording patterns.
+You write the commit message for work you just completed.
+The diff records what changed; your message records what the diff cannot show.
+The reader always has both.
 When the user says `$git-commit chunks`, propose multiple commit chunks grouped by coherent areas of code instead of a single commit.
 
-## Commit Message Quality Bar
+## Message Goal
 
-Every non-merge commit message must answer "why" either:
-- explicitly: direct rationale language (`because`, `so that`, `to`, `in order to`, `to avoid`, `to prevent`)
-- implicitly: clear intent and effect that make the rationale obvious from the bullet itself
+A commit message where every sentence gives the reader a fact they could not reconstruct from the diff alone.
 
-When in doubt, make the why explicit.
+## Success Criteria
+
+The body covers whichever of these have an answer from this work:
+- the observation or requirement that started the work and its mechanism, naming the code path involved
+- anything believed at the start that turned out to be wrong
+- any approach that did not survive: what it was, why it was insufficient, and in one clause how that shaped the final change
+- any external contract or constraint that had to be learned for the change to be correct
+- the reason behind each decision a reviewer would question
+- any test decision the test code itself does not explain
+
+A criterion with no answer contributes nothing. A change with no such facts gets a title only.
+
+## Writing Constraints
+
+- State findings as past events (what was observed, what failed), never as timeless rules; "results must be discarded" hides how it was learned.
+- Every "because" must be a reason you observed, read, or decided during this work. If you are inferring a reason in hindsight, verify it in the code or docs before writing it. If you cannot verify it, state the fact without the reason.
+- No self-narration ("first I", "then I"). Facts about the code and the problem, not a story about the author.
+- Short sentences, active voice, no em dashes.
+- Length follows the fact count. A commit message is a text field with no size limit.
+
+## Output Shape
+
+Title: imperative, states the outcome, short, no trailing period.
+Body: blank line after the title, then plain paragraphs, one fact per paragraph, no labels or headers.
 
 ## Workflow
+
 1. Review the current diff
 - Read staged, unstaged, and untracked (new file) changes.
 - Note that you might not be the only one making changes, always be cautious.
@@ -28,16 +51,11 @@ When in doubt, make the why explicit.
 - Do not label a file “unrelated” until you’ve reviewed its diff or content.
 - Never commit unexpected changes you did not make.
 
-2. Inspect commit style
-- Read recent commits to understand conventions that matter for tooling and history.
-- Keep conventions that improve readability; do not copy weak patterns.
-- If local style conflicts with the quality bar, follow the quality bar.
-
-3. Choose proposal mode
+2. Choose proposal mode
 - Default mode: prepare a single-commit proposal.
 - `$git-commit chunks` mode: prepare a multi-commit chunk proposal.
 
-4. Prepare the proposal
+3. Prepare the proposal
 - Use this skill for one commit at a time.
 - You MUST ALWAYS present the proposal and ask for approval before committing.
 - Exception: if the user invokes this skill and says `ok` in the same message, treat that as pre-approval for the proposal.
@@ -50,8 +68,8 @@ When in doubt, make the why explicit.
 ## Single commit:
 
 <Title>
-- <Bullet 1>
-- <Bullet 2>
+
+<Body paragraphs>
 
 Files:
 - <path>
@@ -62,36 +80,35 @@ Files:
 ## Commit chunks:
 
 ### Chunk 1: <Title>
-- <Bullet 1>
-- <Bullet 2>
+
+<Body paragraphs>
 
 Files:
 - <path>
 - <path>
 
 ### Chunk 2: <Title>
-- <Bullet 1>
-- <Bullet 2>
+
+<Body paragraphs>
 
 Files:
 - <path>
 - <path>
 </chunk_commit_example>
 
-5. Validate staging after approval
+4. Validate staging after approval
 - After the user approves the plan, stage only the intended files.
 - Verify the staged diff before committing.
 - Keep unrelated edits unstaged.
 - In `$git-commit chunks` mode, stage and commit one approved chunk at a time.
 
-6. Compose the message
-- Subject: imperative, concise, no trailing period.
-- Body: blank line, then `-` bullets.
-- Each bullet starts with a verb and is a single sentence.
-- At least one bullet must communicate rationale, explicitly or implicitly.
-- Use 1-5 bullets based on the size and complexity of the change.
-- Cover the important parts of the change instead of forcing a fixed bullet count.
-- Keep lines reasonably short.
+5. Compose the message
+- Follow Message Goal, Success Criteria, Writing Constraints, and Output Shape above.
+
+6. Final check before proposing
+- For each sentence: could the reader derive it from the diff alone? If yes, delete it.
+- For each success criterion that had an answer: is it in the body? If not, add it.
+- For each stated reason: can you point to where you learned it? If not, cut the reason and keep the fact.
 
 7. Commit safely
 - Prefer a heredoc with `-F -` to avoid escaped `\n`:
@@ -100,49 +117,23 @@ Files:
 git commit -F - <<'EOF'
 Subject in imperative mood
 
-- Bullet one
-- Bullet two
+First body paragraph.
+
+Second body paragraph.
 EOF
 ```
 
-8. Why-check before commit
-- Ask: "Could a reviewer answer why this change exists from this message alone?"
-- If no, rewrite the body before committing.
-
-9. Amend only when asked
+8. Amend only when asked
 - If the user asks to fix an existing commit message, use `git commit --amend -F - <<'EOF' ... EOF`.
 - Otherwise, do not amend.
 
-10. Post-commit sanity check
+9. Post-commit sanity check
 - After committing, run `git status -sb` to confirm expected remaining changes before proceeding.
 - In `$git-commit chunks` mode, repeat the staging, verification, commit, and sanity check flow for each approved chunk.
 
-## Quick Template
-
-```text
-<Subject>
-
-- <Key point 1>
-- <Key point 2>
-...
-```
-
-## Good vs Weak Bodies
-
-Good:
-- Replace wrapper test targets with direct `ios test` usage to match current workflow.
-- Keep SwiftLint analyzer `xcodebuild` step because compiler logs are still required.
-
-Weak:
-- Update tests.
-- Clean up code.
-
 ## Notes
 
-- Favor clarity over cleverness; optimize for future readability.
 - If automated tools touched many files, validate that those changes are actually present in the diff and propose a separate commit or explicitly confirm the user wants them included.
 - In `$git-commit chunks` mode, optimize for reviewable groups of code, not maximum commit count.
 - Never propose hunk-based chunking.
-- If commit examples include a prefix or scope, use it consistently.
-- If the repo uses single-line subjects only, omit the body.
 - Never offer to push commits. Only discuss or run push operations when the user explicitly asks to push.

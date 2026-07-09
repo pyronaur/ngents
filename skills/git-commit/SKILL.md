@@ -15,18 +15,20 @@ When the user says `$git-commit chunks`, propose multiple commit chunks grouped 
 
 ## Message Goal
 
-A commit message where every sentence gives the reader a fact they could not reconstruct from the diff alone.
+A commit message records what was learned while doing the work.
+Every sentence gives the reader a fact they could not reconstruct from the diff alone.
 
 ## Success Criteria
 
-The body covers whichever of these have an answer from this work:
-- the observation or requirement that started the work and its mechanism, naming the code path involved
-- anything believed at the start that turned out to be wrong
-- any approach that did not survive: what it was, why it was insufficient, and in one clause how that shaped the final change
-- any external contract or constraint that had to be learned for the change to be correct
-- the reason behind each decision a reviewer would question
-- any test decision the test code itself does not explain
+The body covers whichever of these have an answer from this work, in priority order:
+1. the learning: anything believed at the start that turned out to be wrong, what was learned instead, and what proved it
+2. the observation or requirement that started the work and its mechanism, naming the code path involved
+3. any approach that did not survive: what it was, why it was insufficient, and in one clause how that shaped the final change
+4. any external contract or constraint that had to be read for the change to be correct
+5. the reason behind a decision a reviewer would question, favoring reasons nothing else records (no test, no comment)
 
+When trimming, cut from the bottom of this list, never the top.
+A test change earns a sentence only when it is itself a learning.
 A criterion with no answer contributes nothing. A change with no such facts gets a title only.
 
 ## Writing Constraints
@@ -40,7 +42,7 @@ A criterion with no answer contributes nothing. A change with no such facts gets
 ## Output Shape
 
 Title: imperative, states the outcome, short, no trailing period.
-Body: blank line after the title, then plain paragraphs, one fact per paragraph, no labels or headers.
+Body: blank line after the title, then plain paragraphs, one fact per paragraph. No labels, headers, or bullet lists.
 
 ## Workflow
 

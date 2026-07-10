@@ -1,6 +1,7 @@
 ---
 name: auto-code-review
 description: Run Codex code review after substantial code changes. Use after making more than 50 lines of code changes, changes spanning 5 or more code files, or any risky shared-behavior refactor; captures the full `codex review` transcript while showing only the actionable review block.
+disable-model-invocation: true
 ---
 
 # Auto Code Review

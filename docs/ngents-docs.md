@@ -73,7 +73,7 @@ docs topic [topic] [path]
 docs query [--limit <n>] <query...> | status
 docs park <name> [path]
 docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]
-docs update
+docs update [--force]
 ```
 
 ## QMD collection metadata cache
@@ -246,7 +246,11 @@ Result output includes:
 
 `update` refreshes the same global QMD index that `docs query` reads.
 
-It runs registered fetches first, then `qmd update`, then `qmd embed`.
+It refreshes registered fetches that have not been checked successfully within the last 24 hours,
+then runs `qmd update` and `qmd embed`.
+Successful fetches store their check time in the owning `.docs-fetch.json`.
+A missing target is refreshed regardless of its stored check time.
+Use `docs update --force` to refresh every registered fetch before reindexing.
 Registered fetches run concurrently within each docs root and log progress to stderr.
 HTTP 404 responses and missing local `file:` sources from the built-in URL fetch handler are logged and skipped; the rest of the update continues.
 

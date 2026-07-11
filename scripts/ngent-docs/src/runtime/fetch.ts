@@ -120,6 +120,7 @@ function isFetchManifestEntry(value: unknown): value is FetchManifestEntry {
 		&& typeof value.target === "string"
 		&& typeof value.handler === "string"
 		&& typeof value.hash === "string"
+		&& (value.checkedAt === undefined || typeof value.checkedAt === "string")
 		&& (value.root === undefined || typeof value.root === "string")
 		&& (value.transform === undefined || typeof value.transform === "string");
 }
@@ -419,6 +420,7 @@ export async function runFetchDefinition(
 	return {
 		...definition.entry,
 		hash: nextHash,
+		checkedAt: new Date().toISOString(),
 	};
 }
 

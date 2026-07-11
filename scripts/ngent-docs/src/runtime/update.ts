@@ -7,8 +7,8 @@ function fail(message: string): never {
 	throw runtimeError(message);
 }
 
-export async function runDocsUpdate(): Promise<void> {
-	const fetchResult = await runRegisteredFetches(process.cwd());
+export async function runDocsUpdate(options: { force?: boolean } = {}): Promise<void> {
+	const fetchResult = await runRegisteredFetches(process.cwd(), options);
 
 	updateLog.qmdStep("update");
 	const updateResult = await runQmd(["update"], { streamOutput: true });

@@ -20,6 +20,7 @@ import {
 } from "./helpers/docs-cli-fixture.ts";
 
 type FetchManifestEntry = {
+	checkedAt?: string;
 	handler: string;
 	hash: string;
 	root?: string;
@@ -45,6 +46,7 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 		}
 
 		const source = Reflect.get(entry, "source");
+		const checkedAt = Reflect.get(entry, "checkedAt");
 		const target = Reflect.get(entry, "target");
 		const handler = Reflect.get(entry, "handler");
 		const hash = Reflect.get(entry, "hash");
@@ -53,6 +55,7 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 		if (
 			typeof source !== "string" || typeof target !== "string" || typeof handler !== "string"
 			|| typeof hash !== "string"
+			|| (checkedAt !== undefined && typeof checkedAt !== "string")
 			|| (root !== undefined && typeof root !== "string")
 			|| (transform !== undefined && typeof transform !== "string")
 		) {
@@ -61,6 +64,7 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 
 		return {
 			source,
+			...(typeof checkedAt === "string" ? { checkedAt } : {}),
 			target,
 			handler,
 			hash,
@@ -343,7 +347,7 @@ test("docs fetch stores and replays root and transform options through docs upda
 					}),
 				},
 			);
-			const updateResult = await runDocsCli(["update"], {
+			const updateResult = await runDocsCli(["update", "--force"], {
 				cwd: repoDir,
 				env: withEnv(env, {
 					DOCS_TEST_FETCH_HASH: "hash-2",
@@ -379,7 +383,7 @@ test("docs update reruns registered fetch entries before qmd refresh", async () 
 					}),
 				},
 			);
-			const updateResult = await runDocsCli(["update"], {
+			const updateResult = await runDocsCli(["update", "--force"], {
 				cwd: repoDir,
 				env: withEnv(env, {
 					DOCS_TEST_FETCH_HASH: "hash-2",
@@ -398,6 +402,96 @@ test("docs update reruns registered fetch entries before qmd refresh", async () 
 			expect(logLines.indexOf("previous=hash-1")).toBeLessThan(
 				logLines.indexOf("--index ngents-docs update"),
 			);
+		});
+});
+
+test("docs update skips recently checked fetches while refreshing the docs index", async () => {
+	await withDocsCliWorkspace("docs-update-fresh-fetch-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const fetchLog = path.join(tempDir, "fetch.log");
+			const qmdLog = path.join(tempDir, "qmd.log");
+			const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+			await seedFakeQmd(binDir);
+			await writeText(path.join(targetPath, "source.md"), "# Existing\n");
+			await writeFetchManifest(repoDir, [{
+				source: "https://example.com/source",
+				target: path.posix.join("topics", TEST_TOPIC_NAME, "remote-bundle"),
+				handler: await writeFetchHandler(binDir, "fake-fetch-handler"),
+				hash: "hash-1",
+				checkedAt: "2999-01-01T00:00:00.000Z",
+			}]);
+
+			const result = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_FETCH_HASH: "hash-2",
+					DOCS_TEST_FETCH_LOG: fetchLog,
+					DOCS_TEST_QMD_LOG: qmdLog,
+				}),
+			});
+
+			expect(result.exitCode).toBe(0);
+			expect(await readTextOrEmpty(fetchLog)).toBe("");
+			expect(await readText(qmdLog)).toContain("--index ngents-docs update");
+		});
+});
+
+test("docs update refreshes fetches with invalid check timestamps", async () => {
+	await withDocsCliWorkspace("docs-update-invalid-fetch-check-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const fetchLog = path.join(tempDir, "fetch.log");
+			const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+			await seedFakeQmd(binDir);
+			await writeText(path.join(targetPath, "source.md"), "# Existing\n");
+			await writeFetchManifest(repoDir, [{
+				source: "https://example.com/source",
+				target: path.posix.join("topics", TEST_TOPIC_NAME, "remote-bundle"),
+				handler: await writeFetchHandler(binDir, "fake-fetch-handler"),
+				hash: "hash-1",
+				checkedAt: "invalid",
+			}]);
+
+			const result = await runDocsCli(["update"], {
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_FETCH_HASH: "hash-2",
+					DOCS_TEST_FETCH_LOG: fetchLog,
+				}),
+			});
+			const manifest = readFetchManifestEntries(await readText(fetchManifestPath(repoDir)));
+
+			expect(result.exitCode).toBe(0);
+			expect(manifest[0]?.hash).toBe("hash-2");
+		});
+});
+
+test("docs update force refreshes recently checked fetches", async () => {
+	await withDocsCliWorkspace("docs-update-force-fresh-fetch-",
+		async ({ tempDir, repoDir, binDir, env }) => {
+			const fetchLog = path.join(tempDir, "fetch.log");
+			const targetPath = fetchTargetPath(repoDir, "remote-bundle");
+			await seedFakeQmd(binDir);
+			await writeText(path.join(targetPath, "source.md"), "# Existing\n");
+			await writeFetchManifest(repoDir, [{
+				source: "https://example.com/source",
+				target: path.posix.join("topics", TEST_TOPIC_NAME, "remote-bundle"),
+				handler: await writeFetchHandler(binDir, "fake-fetch-handler"),
+				hash: "hash-1",
+				checkedAt: "2999-01-01T00:00:00.000Z",
+			}]);
+
+			const result = await runDocsCli(["update", "--force"], {
+				cwd: repoDir,
+				env: withEnv(env, {
+					DOCS_TEST_FETCH_HASH: "hash-2",
+					DOCS_TEST_FETCH_LOG: fetchLog,
+				}),
+			});
+			const manifest = readFetchManifestEntries(await readText(fetchManifestPath(repoDir)));
+
+			expect(result.exitCode).toBe(0);
+			expect(await readText(fetchLog)).toContain("previous=hash-1");
+			expect(manifest[0]?.hash).toBe("hash-2");
 		});
 });
 
@@ -542,7 +636,7 @@ test("docs fetch preserves relative transform paths in the manifest and resolves
 			const manifestEntries = readFetchManifestEntries(
 				await readText(fetchManifestPath(repoDir)),
 			);
-			const updateResult = await runDocsCli(["update"], {
+			const updateResult = await runDocsCli(["update", "--force"], {
 				cwd: repoDir,
 				env: withEnv(env, {
 					DOCS_TEST_FETCH_HASH: "hash-2",

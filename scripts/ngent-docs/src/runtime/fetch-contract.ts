@@ -9,6 +9,7 @@ export type FetchManifestEntry = {
 	root?: string;
 	transform?: string;
 	hash: string;
+	checkedAt?: string;
 };
 
 export type FetchManifest = {

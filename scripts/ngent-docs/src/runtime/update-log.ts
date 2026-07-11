@@ -42,6 +42,13 @@ export function registeredFetches(count: number): void {
 	write("docs update", `${pc.blue("registered fetches")} ${pc.yellow(String(count))}`);
 }
 
+export function freshFetchesSkipped(count: number): void {
+	if (count === 0) {
+		return;
+	}
+	write("docs update", `${pc.blue("fresh fetches skipped")} ${pc.yellow(String(count))}`);
+}
+
 export function unsafeFetchEntry(message: string): void {
 	write("docs update", pc.red(message));
 }

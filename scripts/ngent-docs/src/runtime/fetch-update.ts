@@ -1,3 +1,5 @@
+import { access } from "node:fs/promises";
+
 import {
 	fetchEntryLabel,
 	listFetchDefinitions,
@@ -11,6 +13,8 @@ import {
 	writeFetchManifest,
 } from "./fetch.ts";
 import * as updateLog from "./update-log.ts";
+
+const FETCH_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
 
 type FetchOutcome =
 	| {
@@ -74,6 +78,22 @@ async function runFetchEntry(definition: ValidatedFetchDefinition): Promise<Fetc
 	}
 }
 
+async function isFresh(definition: ValidatedFetchDefinition, now: number): Promise<boolean> {
+	if (!definition.entry.checkedAt) {
+		return false;
+	}
+	const checkedAt = Date.parse(definition.entry.checkedAt);
+	if (Number.isNaN(checkedAt) || checkedAt <= now - FETCH_FRESHNESS_MS) {
+		return false;
+	}
+	try {
+		await access(definition.absoluteTargetPath);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 async function runFetchGroup(
 	docsRoot: string,
 	definitions: ValidatedFetchDefinition[],
@@ -95,6 +115,7 @@ async function runFetchGroup(
 
 export async function runRegisteredFetches(
 	projectDir: string,
+	options: { force?: boolean } = {},
 ): Promise<{ skippedMissingSources: string[]; skippedUnsafeEntries: string[] }> {
 	const definitions = await listFetchDefinitions(projectDir);
 	const skippedUnsafeEntries: string[] = [];
@@ -117,7 +138,22 @@ export async function runRegisteredFetches(
 		};
 	}
 
-	const groupedDefinitions = groupFetchDefinitions(validDefinitions);
+	const definitionsToFetch = options.force
+		? validDefinitions
+		: (await Promise.all(
+			validDefinitions.map(async definition =>
+				await isFresh(definition, Date.now()) ? null : definition
+			),
+		)).filter((definition): definition is ValidatedFetchDefinition => definition !== null);
+	updateLog.freshFetchesSkipped(validDefinitions.length - definitionsToFetch.length);
+	if (definitionsToFetch.length === 0) {
+		return {
+			skippedMissingSources: [],
+			skippedUnsafeEntries,
+		};
+	}
+
+	const groupedDefinitions = groupFetchDefinitions(definitionsToFetch);
 	const outcomes = (
 		await Promise.all(
 			[...groupedDefinitions].map(([docsRoot, group]) => runFetchGroup(docsRoot, group)),

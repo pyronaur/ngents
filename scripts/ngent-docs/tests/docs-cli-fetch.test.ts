@@ -15,6 +15,7 @@ import {
 } from "./helpers/docs-cli-fixture.ts";
 
 type FetchManifestEntry = {
+	checkedAt?: string;
 	handler: string;
 	hash: string;
 	root?: string;
@@ -40,6 +41,7 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 		}
 
 		const source = Reflect.get(entry, "source");
+		const checkedAt = Reflect.get(entry, "checkedAt");
 		const target = Reflect.get(entry, "target");
 		const handler = Reflect.get(entry, "handler");
 		const hash = Reflect.get(entry, "hash");
@@ -48,6 +50,7 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 		if (
 			typeof source !== "string" || typeof target !== "string" || typeof handler !== "string"
 			|| typeof hash !== "string"
+			|| (checkedAt !== undefined && typeof checkedAt !== "string")
 			|| (root !== undefined && typeof root !== "string")
 			|| (transform !== undefined && typeof transform !== "string")
 		) {
@@ -56,6 +59,7 @@ function readFetchManifestEntries(input: string): FetchManifestEntry[] {
 
 		return {
 			source,
+			...(typeof checkedAt === "string" ? { checkedAt } : {}),
 			target,
 			handler,
 			hash,
@@ -140,6 +144,7 @@ test("docs fetch creates a local manifest entry and saves the returned hash", as
 				target: `topics/${TEST_TOPIC_NAME}/remote-bundle`,
 				handler: handlerPath,
 				hash: "hash-1",
+				checkedAt: expect.any(String),
 			},
 		]);
 		expect(
@@ -179,6 +184,7 @@ test("docs fetch writes a single staged file directly to a markdown file target"
 			target: path.posix.join("topics", TEST_TOPIC_NAME, "single-doc.md"),
 			handler: "docs-url-file-fetch",
 			hash: expect.any(String),
+			checkedAt: expect.any(String),
 		});
 	});
 });

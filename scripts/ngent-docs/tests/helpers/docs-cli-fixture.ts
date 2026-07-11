@@ -117,6 +117,7 @@ function globalDocsPathForOutputImpl(homeDir: string, ...segments: string[]): st
 async function writeFetchManifestImpl(
 	repoDir: string,
 	entries: Array<{
+		checkedAt?: string;
 		handler: string;
 		hash: string;
 		source: string;

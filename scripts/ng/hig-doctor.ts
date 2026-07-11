@@ -5,8 +5,9 @@
  * @usage ng hig-doctor [directory]
  */
 import { access, readFile, realpath } from 'node:fs/promises';
-import path, { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { homedir } from 'node:os';
+import path, { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 type MatchType = 'pattern' | 'positive' | 'concern';
 
@@ -193,13 +194,15 @@ async function resolveModulePath(moduleDir: string, baseName: string, preferredE
 	throw new Error(`Unable to resolve hig-doctor module "${baseName}" from ${moduleDir}`);
 }
 
-function bundledModuleDir(): string {
-	const scriptDir = dirname(fileURLToPath(import.meta.url));
-	return resolve(scriptDir, '../../docs/topics/app/hig-doctor/packages/hig-doctor/src-termcast/src');
+function externalModuleDir(): string {
+	return resolve(
+		homedir(),
+		'.docs/external/topics/app/hig-doctor/packages/hig-doctor/src-termcast/src',
+	);
 }
 
 async function loadHigDoctorModules(): Promise<HigDoctorModules> {
-	const moduleDir = await realpath(bundledModuleDir());
+	const moduleDir = await realpath(externalModuleDir());
 	const preferredExt = '.ts';
 
 	const scannerPath = await resolveModulePath(moduleDir, 'scanner', preferredExt);

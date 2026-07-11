@@ -4,14 +4,14 @@
 			"source": "https://raw.githubusercontent.com/airbnb/swift/master/README.md",
 			"target": "topics/app/guidelines/airbnb-swift-style-guide.md",
 			"handler": "docs-url-file-fetch",
-			"hash": "3af39c2b6a36d61af3e6e6eacf9496c57f98847ccd41b0897e74bfa52e1b410b"
+			"hash": "090ac6031099f7db1c351a4bfb2b410f441b5fa8f19c7d6f4ba4aad8acf8bc90"
 		},
 		{
 			"source": "https://www.swift.org/documentation/api-design-guidelines/",
 			"target": "topics/app/guidelines/swift-api-design-guidelines.md",
 			"handler": "docs-url-file-fetch",
 			"transform": "html-md",
-			"hash": "d2d4d41964a6eda57af05d7bca14ff006bae4c48fce73a1bc4eefeacd719e5f3"
+			"hash": "64eca18b9ec031d87dd4094995914928de0949174fef57d48a8c677b57df9171"
 		},
 		{
 			"source": "https://github.com/raintree-technology/hig-doctor",
@@ -25,7 +25,7 @@
 			"target": "topics/app/skills/maestro/references",
 			"handler": "docs-git-fetch",
 			"transform": "../scripts/docs-drivers/maestro-import.sh",
-			"hash": "4c135af86821d0fa1c7c45870d3b093ecceb04270bcd92610df086ac3a50c5db"
+			"hash": "24443935757322f7b2ef004c386952b34ea3bb4660ae2bb00af8625b4d4e72f7"
 		},
 		{
 			"source": "https://github.com/TimBroddin/app-store-aso-skill",
@@ -39,7 +39,7 @@
 			"target": "topics/asc/cli",
 			"handler": "docs-git-fetch",
 			"root": "skills",
-			"hash": "6583ac3d32edb849c00da1fd8975a0ddc280f9aefab7c271928ef8403517b748"
+			"hash": "5eb94d734f3592818876d5b111825cf43679e599e65e66e88ed04ec84cd5ca22"
 		}
 	]
 }

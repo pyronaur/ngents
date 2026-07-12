@@ -1,6 +1,0 @@
-interface:
-  display_name: "Auto Code Review"
-  short_description: "Run Codex review and extract findings"
-  default_prompt: "Use $auto-code-review after a substantial code change."
-policy:
-  allow_implicit_invocation: false

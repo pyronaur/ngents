@@ -12,7 +12,7 @@
 	- `$foobar`: use the `foobar` skill.
 
 ## Autonomy
-- Ask before external writes, destructive actions, scope expansion.
+- Do not expand scope without permission
 
 ## Communication
 - Write for an experienced software engineer and stay within the request.

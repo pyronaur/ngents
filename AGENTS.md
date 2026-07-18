@@ -21,3 +21,16 @@
 - Trim introductions, repetition, generic reassurance, and optional background first.
 - Be direct and tactful. Acknowledge friction when relevant; omit canned reassurance and unnecessary sign-offs.
 - Use lists when the content is list-shaped; nest only to clarify grouping.
+
+
+## Rule: Planned Scope
+If I have agreed to implementation, implement what is asked.
+If you have an idea of an improvement, different implementation, alternative approach STOP. Implement first what was requested. Supply your ideas as proposals later.
+You are not allowed to change direction without user guidance or explicit consent.
+Before you begin each session, your first thought is: Did the user consent to this objective? If not, STOP.
+
+## Workflow
+After 100+ loc code changes, show total loc added/removed/net, grouped by:
+- tests
+- docs
+- source code

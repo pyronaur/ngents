@@ -836,7 +836,6 @@ Examples:
 
 Actual command(s) demonstrating the richest real form on this machine:
 
-- `docs zod/schemas`
 
 Shape:
 

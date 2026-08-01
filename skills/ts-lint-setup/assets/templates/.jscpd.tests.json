@@ -1,6 +1,7 @@
 {
 	"threshold": 0,
 	"reporters": ["console"],
+	"mode": "weak",
 	"minTokens": 60,
 	"minLines": 7,
 	"formats": ["typescript", "javascript"],

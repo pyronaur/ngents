@@ -1,0 +1,70 @@
+{
+  $use: "./node_modules/.bin",
+
+  ts_format: {
+    name: "Check TypeScript and JavaScript formatting",
+    match: [
+      "!*",
+      "**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+      "dprint.json",
+    ],
+    run: "dprint fmt",
+  },
+
+  ts_lint: {
+    name: "Lint TypeScript and JavaScript",
+    match: [
+      "!*",
+      "**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+      ".oxlintrc.json",
+      "package.json",
+      "tsconfig*.json",
+    ],
+    run: {
+      label: "TypeScript lint",
+      cmd: "oxlint --fix --type-aware --tsconfig tsconfig.json --deny-warnings .",
+      guidance: [
+        "Fix the reported lint issue. If every clean fix would harm the design, stop and describe the conflict before adding an exception.",
+      ],
+    },
+  },
+
+  ts_dupes: {
+    name: "Detect TypeScript and JavaScript duplication",
+    match: [
+      "!*",
+      "src/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+      "test/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+      "scripts/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+      ".jscpd.json",
+      ".jscpd.tests.json",
+      ".jscpd.schemas.json",
+    ],
+    run: [
+      {
+        label: "Source duplication",
+        cmd: "jscpd --no-tips --config .jscpd.json",
+      },
+      {
+        label: "Test duplication",
+        cmd: "jscpd --no-tips --config .jscpd.tests.json",
+      },
+      {
+        label: "Runtime schema duplication",
+        cmd: "jscpd --no-tips --config .jscpd.schemas.json",
+      },
+    ],
+  },
+
+  ts_unused: {
+    name: "Check unused TypeScript and JavaScript runtime code",
+    match: [
+      "!*",
+      "src/**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}",
+      "knip.json",
+      "package.json",
+      "tsconfig.json",
+    ],
+    run: "knip --production --no-progress",
+  },
+}

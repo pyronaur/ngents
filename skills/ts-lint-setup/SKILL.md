@@ -1,330 +1,76 @@
 ---
 name: ts-lint-setup
-description: Set up or upgrade strict TypeScript/JavaScript linting with Oxlint (type-aware), dprint (formatter), jscpd (0% duplication), and knip, routed through `gate`. Use when a repo needs lint tooling installed, Gatefile validation wired, or lint configuration standardized without silencing rules.
+description: Set up, review, or update strict TypeScript/JavaScript linting with Oxlint, dprint, jscpd, Knip, and Gatefile.
 disable-model-invocation: true
 ---
 
 # TS Lint Setup
+This skill provides the shared baseline for strict TypeScript/JavaScript linting. Use it as a guide to policy and coverage, then fit the files, globs, entries, and config placement to the project.
+Use `references/configuration.md` to distinguish policy changes from equivalent project-layout changes.
 
-This skill is the shared, maintained baseline for strict TypeScript/JavaScript
-lint setup across projects. Treat it as the current best-known default, not as
-a verbatim file-layout recipe.
+## Set up or update
+A practical sequence:
+1. Inspect the package manager, existing TypeScript version, source and test layout, generated output, lint config, package scripts, and Gatefile.
+2. Install or upgrade the lint packages through the project package manager.
+3. Copy the relevant assets for a new setup; merge them with existing config during an update.
+4. Adapt project-specific paths, globs, entries, ignores, and config placement with `references/configuration.md`.
+5. Adapt `assets/templates/.gatefile.json5` to the project’s Gatefile conventions.
+6. Run the chosen Gatefile path and distinguish policy differences from existing code findings.
 
-When applying this skill to a repo:
-- preserve the meaning of the policy, not the literal path names or file layout
-- adapt config placement, globs, and entry points to the repo structure
-- report only meaningful deltas when comparing a repo to this skill
+During an update, compare the existing config with the assets by meaning. Keep the project’s layout and compatible project-specific checks. Update scripts, CI, docs, or agent instructions when they call a command that changed.
 
-Meaningful deltas:
-- rule presence or absence
-- rule values
-- custom rule messages
-- duplication thresholds
-- formatter/linter coverage intent
-- whether tests are linted and how they are configured
+A review uses the same comparison and verification without installing packages or editing files.
 
-Usually not meaningful by themselves:
-- repo root vs subdirectory config placement
-- different but equivalent path globs
-- project-specific directory names
+## Packages
+Install or upgrade:
+- `dprint`
+- `oxlint`
+- `oxlint-tsgolint`
+- `oxlint-plugin-inhuman`
+- `oxlint-plugin-complexity`
+- `jscpd`
+- `knip`
 
-Follow this workflow to install lint tooling, copy the shared baseline
-templates, adapt them to the repo, wire lint through Gatefile, and verify the
-chosen Gatefile setup.
+Let the project package manager and dependency policy choose releases.
+Keep the project’s TypeScript dependency; add `typescript` when the project does not have one.
 
-Do not weaken lint rules. Do not add exclusions to hide lint violations. Do not
-raise source or test duplication thresholds.
-Lint scope must target real TypeScript/JavaScript source code. When a repo has
-tests, tests should be linted too, but test scope may use separate config/rules
-from runtime source. Temporary files, weak sources (for example JSON), and
-compiled output must stay excluded.
-
-## 1) Install Or Upgrade Lint Dependencies
-
-Install these dev dependencies using the repo's existing package manager and
-normal supply-chain policy. Do not bypass package-manager release-age or
-quarantine gates for this baseline.
-
-Current proven baseline:
-- `dprint@0.54.0`
-- `oxlint@1.69.0`
-- `oxlint-tsgolint@0.23.0` (required for Oxlint type-aware rules)
-- `oxlint-plugin-inhuman@0.1.11` (custom strictness rules)
-- `oxlint-plugin-complexity@2.1.3` (complexity rule plugin)
-- `jscpd@5.0.6`
-- `knip@6.16.1`
-- `typescript@6.0.3` when the repo does not already own its TypeScript version
-
-Examples:
-
-```bash
-bun add -d dprint@0.54.0 oxlint@1.69.0 oxlint-tsgolint@0.23.0 oxlint-plugin-inhuman@0.1.11 oxlint-plugin-complexity@2.1.3 jscpd@5.0.6 knip@6.16.1
-npm install -D dprint@0.54.0 oxlint@1.69.0 oxlint-tsgolint@0.23.0 oxlint-plugin-inhuman@0.1.11 oxlint-plugin-complexity@2.1.3 jscpd@5.0.6 knip@6.16.1
-```
-
-If the repo does not already own a TypeScript version, add `typescript@6.0.3`
-too.
-
-## 2) Copy Config Templates
-
-Copy the templates into the repo root:
-- `assets/templates/dprint.json` -> `dprint.json`
-- `assets/templates/.oxlintrc.json` -> `.oxlintrc.json`
-- `assets/templates/.jscpd.json` -> `.jscpd.json`
-- `assets/templates/.jscpd.tests.json` -> `.jscpd.tests.json` when the repo has tests
-- `assets/templates/.jscpd.schemas.json` -> `.jscpd.schemas.json` when the repo uses schemas
-- `assets/templates/knip.json` -> `knip.json`
-
-See `references/templates.md` for allowed tweaks.
-
-Mandatory config expectations:
-- dprint is the formatter.
-- Oxlint is the linter and runs in type-aware mode.
-- Lint scope targets real TypeScript/JavaScript source files.
-- Tests are linted when the repo has tests.
-- Runtime source and tests may use separate config or rule values when that
-  improves signal. Keep that separation explicit.
-- Group TypeScript/JavaScript files into explicit lint buckets based on the
-  repo's layout and risk profile:
-- main shipped source
+## Coverage
+Start with the project’s real TypeScript/JavaScript files, then group them by responsibility:
+- shipped source
 - tests
-- dev-only scripts and small utilities
-- any other project-specific bucket
-- Every real TypeScript/JavaScript file belongs to a bucket unless the project
-  explicitly accepts a documented exception with user approval.
-- Exclude temporary directories, weak sources (for example JSON), and compiled
-  output directories.
-- In multi-language repos, keep this lint policy scoped to TypeScript/JavaScript
-  instead of unrelated language sources.
-- Keep excludes minimal and evidence-based. For every include/ignore line you
-  add, verify the path/pattern exists in the repo (excluding `node_modules`).
-  If the match count is `0`, do not add that line.
-- Do not pre-add framework-specific directories or filename patterns unless the
-  project actually contains them.
-- Adapt paths and globs to the repo. Different directory names or config
-  locations are not meaningful deltas by themselves.
-- Oxlint enables these plugins: `eslint`, `typescript`, `unicorn`, `oxc`,
-  `import`, plus the JS plugins `oxlint-plugin-inhuman` and
-  `oxlint-plugin-complexity`.
-- Oxlint enforces import hygiene rules:
-- `typescript/consistent-type-imports` with `{ "fixStyle": "inline-type-imports" }`
-- `typescript/no-import-type-side-effects`
-- `import/no-duplicates`
-- `import/no-self-import`
-- Oxlint enforces `eslint/no-unused-vars: ["error", { "args": "after-used", "vars": "all", "caughtErrors": "all", "fix": { "imports": "safe-fix", "variables": "suggestion" } }]`.
-- Do not add unused-binding ignore-pattern escapes without explicit user
-  approval.
-- Oxlint enforces the strict `max-*` guardrails:
-- `max-depth: 3`
-- `max-params: 3`
-- `max-lines: 500`
-- `max-lines-per-function: 100`
-- `max-statements: 32`
-- `max-nested-callbacks: 3`
-- `max-classes-per-file: 1` (ignore expressions)
-- Oxlint test overrides keep:
-- `max-depth: 3`
-- `max-params: 3`
-- `max-lines: 800`
-- built-in `max-lines-per-function: off` because it counts `describe(...)`
-  suite callbacks as functions and cannot distinguish suite containers from
-  test cases
-- `complexity/complexity` with `cyclomatic: 15` and `cognitive: 20`
-- `inhuman/max-function-size` handles test function sizing: keep
-  `test(...)`/`it(...)` callbacks and local helper functions at `100` lines,
-  while allowing `describe(...)`, `suite(...)`, and `test.describe(...)` suite
-  containers up to `800` lines.
-- Oxlint enforces `curly: all` and `no-else-return` (no `else` after `return`).
-- Oxlint enforces inhuman rules:
-- `inhuman/require-guard-clauses`
-- `inhuman/no-swallowed-catch`
-- `inhuman/export-code-last`
-- `inhuman/no-empty-wrappers`
-- `inhuman/no-local-property-alias`
-- `inhuman/no-single-use-local-function`
-- `inhuman/max-function-size`
-- `inhuman/no-switch`
-- `inhuman/no-else`
-- Oxlint enforces `oxc/no-barrel-file`.
-- Oxlint enforces cleanup/style rules:
-- `typescript/no-unnecessary-type-constraint`
-- `typescript/no-useless-empty-export`
-- `eslint/no-unneeded-ternary`
-- `eslint/no-useless-concat`
-- `unicorn/prefer-array-flat-map`
-- `unicorn/no-abusive-eslint-disable`
-- Oxlint enforces `complexity/complexity` with `cyclomatic: 10` and
-  `cognitive: 10`.
-- Oxlint enforces banned-type rules:
-- `typescript/no-wrapper-object-types`
-- `typescript/no-restricted-types` for:
-- `object` with message: `Use a specific object shape. If the data is already typed, prefer generics. Reserve unknown as a last resort for incoming external data before validation.`
-- `Object` with the same message
-- `Function` with message: `Declare the callable signature explicitly.`
-- Oxlint enforces type-aware assertion safety rules:
-- `typescript/consistent-type-assertions` with `{ "assertionStyle": "never" }`
-- `typescript/no-non-null-assertion`
-- `typescript/no-unnecessary-type-assertion`
-- `typescript/no-unsafe-type-assertion`
-- `typescript/non-nullable-type-assertion-style`
-- `as const` remains allowed; ban `as SomeType` and other type assertions.
-- `jscpd` runtime/source config keeps:
-- `threshold: 0`
-- `minTokens: 40`
-- `minLines: 3`
-- `jscpd` test config keeps:
-- `threshold: 0`
-- `minTokens: 60`
-- `minLines: 7`
-- If the project uses schemas such as Zod, Effect Schema, TypeBox, or another
-  runtime schema library, define schemas in dedicated schema files and check
-  schema duplication separately.
-- `jscpd` schema config keeps:
-- `threshold: 2`
-- `mode: strict`
-- `minTokens: 20`
-- `minLines: 3`
-- Knip runs in production mode and treats shipped runtime code as the dead-code
-  boundary.
-- Knip keeps `entry` minimal, sets `includeEntryExports: true`, and uses
-  explicit runtime `project` globs.
-- Do not set Knip `project` to `tsconfig.json`. Knip `project` is the reportable
-  file universe, not the TypeScript typecheck universe. Broad tsconfigs that
-  include tests can keep dead runtime code alive.
-- Test-only usage does not justify runtime code. If tests need a helper-only
-  surface, keep that surface explicit instead of letting tests define runtime
-  reachability.
-- Gatefile should own lint routing and decide when lint runs from the diff.
-- Consult `$gatefile` before changing `.gatefile.json5`.
+- development scripts and small utilities
+- project-specific groups that need distinct treatment
 
-When comparing a repo to this skill, call out only actual config differences:
-- changed rule values
-- changed thresholds
-- added or missing rules
-- changed custom messages
-- different source/test coverage intent
+Tests can use separate config or overrides when that improves the signal. Keep the separation explicit.
 
-Do not call out:
-- equivalent path/glob differences
-- root vs subdirectory config placement
+Keep temporary files, weak sources such as JSON, dependencies, and compiled output outside this policy. In a multi-language repository, leave unrelated languages alone.
 
-### Why These Guardrails Exist
+Inventory the extensions used by authored TypeScript/JavaScript files before adapting templates. Treat asset extension lists as candidates; copied config contains only extensions present in the project.
 
-- `max-depth: 3`: Deep nesting hides the happy path and correlates with bugs.
-- `max-params: 3`: Many parameters usually signal weak abstractions and fragile call sites.
-- `max-lines: 500`: Very long files become dumping grounds and are hard to review.
-- `max-lines-per-function: 100`: Long functions mix concerns and are risky to change.
-- `max-statements: 32`: Too many statements usually means “does too much.”
-- `max-nested-callbacks: 3`: Callback nesting rapidly explodes complexity.
-- `max-classes-per-file: 1`: Multiple classes per file blurs boundaries and ownership.
-- `curly: all` and `no-else-return`: Make control flow explicit and push toward early returns.
-- `inhuman/*` rules: Enforce guard clauses, forbid swallowed errors, prevent
-  `switch`/`else`, forbid empty wrapper exports, block property-read aliases,
-  prevent single-use local helper functions, and enforce callee-aware function
-  size limits.
-- `oxc/no-barrel-file`: Discourage barrels and keep exports near their definitions.
-- Import hygiene rules: Keep type-only imports explicit, prevent side-effect-only
-  leftovers from inline type imports, and block duplicate or self imports.
-- Cleanup/style rules: Remove empty export noise, unnecessary type constraints,
-  weak ternaries, useless string concat, abusive lint suppression, and prefer
-  `flatMap` over `map(...).flat()` style chains.
-- `complexity/complexity`: Keep control-flow complexity from drifting into opaque code paths.
-- Banned-type rules: Push code away from vague placeholder types and toward
-  specific shapes, generics, and explicit callable signatures.
-- Type-aware assertion rules: Ban `as SomeType` style casts, keep `as const`, and prevent unsafe casts and non-null assertions from hiding type risk.
-- source/test `jscpd threshold: 0`: Duplication multiplies maintenance cost and causes drift.
-- schema-specific duplication: A low nonzero threshold can focus review on
-  repeated contract shapes without treating every small schema fragment as a
-  source duplicate.
+Put one project’s filenames, entries, and generated paths in its copied config rather than the shared assets. Account for every authored TypeScript/JavaScript file in the intended lint bucket unless the user accepts a documented exception.
 
-## 3) Wire Lint Through Gatefile
+## Gatefile
+Gatefile owns lint routing and decides when each proof runs from the diff. The included asset covers the common setup; read `$gatefile` when the project needs a different integration.
+See the Gatefile section in `references/configuration.md` for command, selector, and mutation guidance.
 
-Use Gatefile as the public validation surface for lint routing.
-
-Required outcomes:
-- Add or update lint-related gate entries in `.gatefile.json5`.
-- Keep lint scope ownership in lint config files, not in AGENTS prose.
-- Prefer running the concrete lint commands directly in Gatefile.
-- Mutating format/lint gates are allowed when that is the repo convention.
-  Validate the intended behavior instead of forcing read-only check commands.
-- Only use an existing repo entrypoint when it is already the real
-  source-of-truth command for that proof, not a wrapper added just for Gatefile.
-- Do not add custom orchestrators such as `.lint/run.ts`.
-- Do not add `make`-based lint wrappers.
-
-Gatefile guidance:
-- Select lint gates from real TypeScript/JavaScript source paths and lint
-  config files whose content can change lint results.
-- Build each gate selector for that gate's exact proof surface. Do not reuse one
-  broad match list across multiple gates.
-- A gate match should include only files whose changed content can change that
-  exact command's result on the next `gate` run.
-- Do not include package manifests or lockfiles in a gate match unless that gate
-  command reads them directly on every run or the gate itself performs the
-  install step that materializes their effect.
-- Do not treat invocation wrappers as selector inputs. Follow `$gatefile`
-  guidance for selector design.
-- Use simple gate keys that identify the proof without redundant package
-  prefixes.
-- Use human-readable gate names that describe what the gate actually does.
-- A gate name should tell a reader the action and subject clearly enough that
-  they do not need to inspect `run` to understand the proof.
-- Keep output terse and evidence-based.
-- If the repo needs a lint-only proof path during setup, expose it as a normal
-  gate key so it can be exercised with `gate run <key>`.
-- Put lint edge-case guidance on the failing Gatefile lint step with
-  `guidance`, not in AGENTS prose or skill text. See
-  `references/templates.md` for the pattern.
-
-## 4) Verify Gatefile Setup
-
-During setup, verify that the repo's chosen Gatefile caller or integration
-routes the lint gates correctly. When directly checking CLI wiring, use:
-
+## Verify
+Run the project’s normal Gatefile path:
 ```bash
 gate
 ```
 
-If the repo exposes a dedicated lint gate, you may also use:
-
+When the project exposes a lint-only gate, a targeted run can prove its wiring:
 ```bash
 gate run <lint-key>
 ```
 
-This skill explicitly allows a targeted gate run during setup when you need to
-prove the lint wiring directly.
+Confirm that each command scans the intended files.
 
-Validation rules:
-- Validate the repo's intended gate behavior. If a gate is designed to fix,
-  format, or otherwise mutate, validate that behavior instead of forcing a
-  check-only substitute.
-- Expect failures in existing repos. Report the most important failures.
-- Do not silence or weaken rules to make the run pass.
+Existing projects may fail on code findings. Report those findings without changing policy to make the run pass.
 
-## Project-Specific Values
-
-Templates must remain generic. Do not add repo-specific ignores, file names, or
-entry points. Always update these values per repo:
-- `knip.json` `entry`
-- `knip.json` `project` explicit runtime source globs. Do not point it at
-  `tsconfig.json`.
-- `jscpd` source/test `path` or equivalent scope fields
-- `jscpd` schema `path`, `pattern`, or equivalent scope fields when the project
-  uses schema files
-- Any ignore patterns for known generated artifacts
-- Lint include/ignore patterns to match the repo's source and test layout while
-  excluding tmp/weak sources/compiled output
-- Every ignore pattern must be justified by an actual project match; remove
-  zero-match patterns (for example, no `*.spec.*` ignore when there are zero
-  spec files).
-
-## Guardrails
-
-- Never raise source/test duplication thresholds.
-- Never add exclusions to hide lint complaints.
-- Never disable lint rules without explicit user approval.
-- Never silently blur runtime-source and test scopes. If tests are linted, use
-  explicit test config or test-specific rule overrides.
-- Never widen lint scope to temporary files, weak sources, or compiled output
-  just to increase coverage.
-- Prefer incremental, reviewable config/script changes before auto-fixing.
+## Keep the baseline intact
+- do not weaken or disable shared lint rules without user approval
+- do not add exclusions to hide findings
+- do not raise source or test duplication thresholds
+- keep test and runtime-source policy explicit
+- prefer reviewable config and routing changes before any requested auto-fix

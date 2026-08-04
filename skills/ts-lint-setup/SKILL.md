@@ -1,6 +1,6 @@
 ---
 name: ts-lint-setup
-description: Set up, review, or update strict TypeScript/JavaScript linting with Oxlint, dprint, jscpd, Knip, and Gatefile.
+description: Set up, review, or update strict TypeScript/JavaScript linting with Oxlint, dprint, jscpd, Dupehound, Knip, and Gatefile.
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,7 @@ Use `references/configuration.md` to distinguish policy changes from equivalent 
 
 ## Set up or update
 A practical sequence:
-1. Inspect the package manager, existing TypeScript version, source and test layout, generated output, lint config, package scripts, and Gatefile.
+1. Inspect the package manager, existing TypeScript version, source and test layout, generated output, lint config, package scripts, Gatefile, and local trunk branch.
 2. Install or upgrade the lint packages through the project package manager.
 3. Copy the relevant assets for a new setup; merge them with existing config during an update.
 4. Adapt project-specific paths, globs, entries, ignores, and config placement with `references/configuration.md`.
@@ -33,6 +33,8 @@ Install or upgrade:
 
 Let the project package manager and dependency policy choose releases.
 Keep the project’s TypeScript dependency; add `typescript` when the project does not have one.
+
+The setup assumes the system `dupehound` command exists on `PATH`; it is not a project package.
 
 ## Coverage
 Start with the project’s real TypeScript/JavaScript files, then group them by responsibility:

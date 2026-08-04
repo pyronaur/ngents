@@ -29,6 +29,20 @@
     },
   },
 
+  // This reviews committed main...HEAD changes, not the caller's dirty path set.
+  // Run for both dirty and clean trees so branch review does not depend on local path routing.
+  branch_touched_dupes: {
+    name: "Detect duplication in code touched by this branch",
+    match: ["*", "!*"],
+    run: {
+      label: "Touched-code duplication",
+      cmd: "dupehound check --diff main --expand-touched .",
+      guidance: [
+        "Review the reported functions through their owning types and call paths. Refactor only when they share one mechanism or policy.",
+      ],
+    },
+  },
+
   ts_dupes: {
     name: "Detect TypeScript and JavaScript duplication",
     match: [

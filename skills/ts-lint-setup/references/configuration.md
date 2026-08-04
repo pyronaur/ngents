@@ -63,6 +63,13 @@ Adapt schema paths and patterns only when the project has schema files. When sch
 
 Tests can live in dedicated directories, beside source, or both. Use paths and patterns that match the project instead of adding framework conventions in advance.
 
+## Dupehound
+Dupehound owns structural duplication involving functions touched by the committed branch. jscpd remains the current-tree source, test, and schema clone check.
+
+The template compares committed `HEAD` with the local trunk and expands touched functions to their clone families. Its catch-all clean/dirty selector reflects that Git-history input rather than a path-routed dirty set.
+
+Adapt the base revision when the project’s local trunk is not `main`. Dupehound scans every supported language below the command path, so this gate is repository-wide in a multi-language project.
+
 ## Knip
 `assets/templates/knip.json` defines the shipped-runtime reachability boundary.
 Keep entries limited to real production entry points and project globs limited to runtime source. A broad tsconfig can include tests and development files, which can make dead runtime code appear reachable.

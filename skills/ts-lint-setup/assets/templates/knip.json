@@ -1,6 +1,0 @@
-{
-	"includeEntryExports": true,
-	"entry": ["src/index.ts!"],
-	"project": ["src/**/*.ts!"],
-	"ignore": ["dist", "build", "coverage"]
-}

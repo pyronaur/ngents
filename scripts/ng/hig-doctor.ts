@@ -197,7 +197,7 @@ async function resolveModulePath(moduleDir: string, baseName: string, preferredE
 function externalModuleDir(): string {
 	return resolve(
 		homedir(),
-		'.docs/external/topics/app/hig-doctor/packages/hig-doctor/src-termcast/src',
+		'.docs/external/topics/apple/hig-doctor/packages/core/src',
 	);
 }
 
@@ -319,7 +319,7 @@ function writeIssueSummary(categories: CategorySummary[]): void {
 
 	const skills = [...new Set(categories.map(category => category.skillName))].sort();
 	for (const skill of skills) {
-		process.stderr.write(`Relevant HIG skill: ${skill} — docs topic app hig-doctor\n`);
+		process.stderr.write(`Relevant HIG skill: ${skill} — docs topic apple hig-doctor\n`);
 	}
 }
 

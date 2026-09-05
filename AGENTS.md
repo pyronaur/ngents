@@ -1,5 +1,5 @@
 # AGENTS.md
-`x sitrep [-C <path(default $PWD)>]` to get basic directional understanding of the repo (tree, git status, recent history)
+`x sitrep [-C <path(default $PWD)>]` when you need repo orientation (combines tree, git status, recent history)
 Instead of `rm` use `trash` for deletion.
 If I point you to information and expect you to read it, read it before you do anything else.
 
@@ -16,8 +16,10 @@ Referencing documentation in files:
 - User home paths should start with `~/`
 
 ## Communication
-Please speak plainly without jargon, mimic my word choice and sentence structure.
-I don't want to read large clumps of text, Pi supports Mermaid charts, you can show diagrams instead.
+Shorter responses are better:
+- I will ask follow-up questions when necessary.
+- Pi supports Mermaid charts, you can show diagrams instead.
 
 ## Code
-Avoid unnecessary complexity, for example we don't need versioned fields, migrations, backward compability (unless I explicitly ask).
+Avoid speculative abstractions.
+Unless asked: no versioned fields, migrations, backward compability.

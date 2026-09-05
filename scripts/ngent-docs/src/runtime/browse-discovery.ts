@@ -265,6 +265,7 @@ async function readSectionEntry(
 async function readTopicContribution(
 	docsRoot: string,
 	topicName: string,
+	fallbackTitle = topicName,
 ): Promise<TopicContribution | null> {
 	const topicDir = normalizePath(path.join(docsRoot, TOPICS_DIR, topicName));
 	if (!(await isDirectory(topicDir))) {
@@ -283,7 +284,7 @@ async function readTopicContribution(
 	return {
 		name: topicName,
 		absolutePath: topicDir,
-		title: guide.title ?? topicName,
+		title: guide.title ?? fallbackTitle,
 		short: guide.short,
 		summary: guide.summary,
 		guideBody: guide.guideBody,
@@ -292,6 +293,28 @@ async function readTopicContribution(
 		markdownEntries,
 		sectionEntries,
 	};
+}
+
+async function readNestedTopicContributions(
+	docsRoot: string,
+	topicName: string,
+): Promise<TopicContribution[]> {
+	if (topicName.includes("/")) {
+		return [];
+	}
+
+	const contributions: TopicContribution[] = [];
+	for (const parentTopicName of await listTopLevelTopics(docsRoot)) {
+		const contribution = await readTopicContribution(
+			docsRoot,
+			path.posix.join(parentTopicName, topicName),
+			topicName,
+		);
+		if (contribution) {
+			contributions.push(contribution);
+		}
+	}
+	return contributions;
 }
 
 async function buildIndexData(docsRoots: string[]): Promise<IndexData> {
@@ -398,12 +421,19 @@ async function readMergedTopic(
 	topicName: string,
 ): Promise<MergedTopic | null> {
 	const contributions: TopicContribution[] = [];
+	const rootsWithoutExactTopic: string[] = [];
 
 	for (const docsRoot of docsRoots) {
 		const contribution = await readTopicContribution(docsRoot, topicName);
 		if (contribution) {
 			contributions.push(contribution);
+			continue;
 		}
+		rootsWithoutExactTopic.push(docsRoot);
+	}
+
+	for (const docsRoot of rootsWithoutExactTopic) {
+		contributions.push(...await readNestedTopicContributions(docsRoot, topicName));
 	}
 
 	if (contributions.length === 0) {

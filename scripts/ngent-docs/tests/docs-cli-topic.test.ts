@@ -87,6 +87,37 @@ test("docs topic merges local and global topic contributions", async () => {
 	});
 });
 
+test("docs bare topic merges exact and nested basename topic contributions", async () => {
+	await withDocsCliWorkspace("docs-topic-nested-merge-", async ({ repoDir, homeDir, env }) => {
+		await writeText(
+			globalDocsPath(homeDir, "topics", "agents", TEST_TOPIC_NAME, "upstream.md"),
+			[
+				"---",
+				"title: Upstream Platform",
+				"summary: Upstream platform reference.",
+				"---",
+				"",
+				"# Upstream Platform",
+				"",
+			].join("\n"),
+		);
+
+		const result = await runDocsCli([TEST_TOPIC_NAME], { cwd: repoDir, env });
+		const normalizedStdout = normalizedPathForOutput(result.stdout);
+
+		expect(result.exitCode).toBe(0);
+		expect(normalizedStdout).toContain(`${topicDocsPathForOutput(repoDir)}/`);
+		expect(normalizedStdout).toContain(
+			`${
+				normalizedPathForOutput(
+					globalDocsPath(homeDir, "topics", "agents", TEST_TOPIC_NAME),
+				)
+			}/`,
+		);
+		expect(result.stdout).toContain("upstream.md - Upstream platform reference.");
+	});
+});
+
 test("docs topic overview renders grouped docs and skills without a Subtrees block", async () => {
 	await withDocsCliWorkspace(
 		"docs-topic-recursive-overview-",

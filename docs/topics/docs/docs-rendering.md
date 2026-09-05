@@ -42,6 +42,7 @@ Topic selectors resolve in this order:
 3. one value matching an exact parked collection name -> **Collection Topic Index**
 4. two values where the first value is an exact topic and the second is a topic path -> **Topic Focus** or **Topic Skill Detail**
 
+A bare topic name uses each docs root's exact topic when present, otherwise matching one-level nested topics.
 A topic wins over a collection for `docs topic <name>`. A collection wins over a topic for `docs <name>`.
 The special topic name `.` is a valid merged global topic selector.
 

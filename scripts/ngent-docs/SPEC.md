@@ -105,7 +105,8 @@ Represents all contributions for one topic name across merged docs roots.
 
 Current decisions:
 
-- Topics are merged by topic directory name.
+- Each docs root contributes an exact topic match when present.
+- Otherwise, a bare topic name includes matching one-level nested topics from that root.
 - The overview title uses the first non-empty contribution title, else the
   topic name.
 

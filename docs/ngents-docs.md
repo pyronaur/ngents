@@ -149,6 +149,7 @@ Callers choose the selector mode, but they do not independently decide whether a
 `topic` browses topics only.
 
 - It merges same-name local and global topic contributions.
+- A bare topic name uses each docs root's exact topic when present, otherwise matching one-level nested topics; `docs pi` can therefore merge `topics/pi` with `topics/agents/pi`.
 - It accepts an optional topic-relative path selector.
 - When the selector matches a parked collection name and not a topic name, it lists only the topics from that parked collection.
 - It is the main browse surface for grouped reusable knowledge.

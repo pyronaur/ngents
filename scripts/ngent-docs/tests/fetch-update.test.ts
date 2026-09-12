@@ -24,8 +24,14 @@ async function withDocuments(
 	}) => Promise<void>,
 ): Promise<void> {
 	await withTempDir("docs-update-", async projectDir => {
-		const originalEnv = process.env;
-		process.env = { HOME: projectDir, TMPDIR: projectDir, PATH: "", NO_COLOR: "1" };
+		// Preserve Node's environment object so child processes receive these values.
+		for (const key of Object.keys(process.env)) {
+			vi.stubEnv(key, undefined);
+		}
+		vi.stubEnv("HOME", projectDir);
+		vi.stubEnv("TMPDIR", projectDir);
+		vi.stubEnv("PATH", "");
+		vi.stubEnv("NO_COLOR", "1");
 		try {
 			const root = path.join(projectDir, "docs");
 			await writeText(path.join(root, "guide.md"), "# Saved edition\n");
@@ -38,7 +44,7 @@ async function withDocuments(
 				targetArg: path.join(root, "guide.md"),
 			});
 		} finally {
-			process.env = originalEnv;
+			vi.unstubAllEnvs();
 		}
 	});
 }
@@ -87,8 +93,7 @@ test("A forced update replaces a recently checked document", async () => {
 	});
 });
 
-// Known bug: the handler accepts the old hash without restoring the missing target.
-test.fails("An update restores a missing target with an unchanged source", async () => {
+test("An update restores a missing target with an unchanged source", async () => {
 	await withDocuments(async paths => {
 		await runDocsFetch({ ...paths, handler: "url" });
 		await rename(paths.targetArg, path.join(paths.projectDir, "removed.md"));

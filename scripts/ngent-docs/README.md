@@ -34,14 +34,14 @@ make verify
 - `bin/docs.ts` process entrypoint
 - `src/core/command-dispatch.ts` Commander bootstrap and top-level CLI dispatch
 - `src/core/command-definition.ts` command definition and registration contract
-- `src/commands/` command modules for `ls`, `park`, `topic`, `query`, and `update`
+- `src/commands/` command modules for `fetch`, `ls`, `park`, `topic`, and `update`
 - `src/runtime/browse*.ts` docs/topic discovery, parsing, and rendering
 - `src/runtime/help.ts` root and ops help entrypoints
 - `src/runtime/root-help-template.ts` Liquid help-template renderer
 - `templates/root-help.md` editable browse-help template
 - `templates/ops-help.md` editable ops-help template
 - `docs/ngents-docs.md` product documentation: purpose, principles, usage, and behavior
-- `tests/` CLI-facing and root-help coverage
+- `tests/` module-contract coverage
 
 ## Command Contract
 

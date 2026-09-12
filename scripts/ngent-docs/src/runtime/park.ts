@@ -3,10 +3,9 @@ import path from "node:path";
 
 import { runtimeError } from "../core/errors.ts";
 import browseContracts from "./browse-contracts.ts";
+import { addDocsCollection, docsRegistryPath } from "./collections.ts";
 import commandTemplate from "./command-template.ts";
-import { addQmdCollection, invalidateQmdCollectionsCache, listQmdCollectionsFresh } from "./qmd.ts";
 import templateOutput from "./template-output.ts";
-import { runDocsUpdate } from "./update.ts";
 
 const {
 	EXCLUDED_DIRS,
@@ -128,21 +127,7 @@ export async function runDocsPark(positionals: string[]): Promise<void> {
 		fail(`Not a docs root: ${directoryDisplayPath(docsRoot)}`);
 	}
 
-	const collections = await listQmdCollectionsFresh();
-	const nameMatch = collections.find(collection => collection.name === collectionName);
-	if (nameMatch) {
-		fail(`Docs collection already parked: ${collectionName}`);
-	}
-
-	const docsRootPath = path.resolve(docsRoot);
-	const pathMatch = collections.find(collection => path.resolve(collection.path) === docsRootPath);
-	if (pathMatch) {
-		fail(`Docs root already parked as "${pathMatch.name}": ${directoryDisplayPath(docsRoot)}`);
-	}
-
-	await addQmdCollection(collectionName, docsRoot);
-	await invalidateQmdCollectionsCache();
-	await runDocsUpdate();
+	await addDocsCollection(docsRegistryPath(), collectionName, docsRoot);
 	templateOutput.printRenderedTemplate(commandTemplate.renderParkTemplate({
 		message_line: `Parked "${collectionName}" at ${directoryDisplayPath(docsRoot)}`,
 		view: "success",

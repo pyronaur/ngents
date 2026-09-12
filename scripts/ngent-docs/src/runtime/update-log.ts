@@ -53,14 +53,6 @@ export function unsafeFetchEntry(message: string): void {
 	write("docs update", pc.red(message));
 }
 
-export function qmdStep(step: "update" | "embed"): void {
-	write("docs update", `${pc.magenta("qmd")} ${pc.blue(step)} ${pc.dim("start")}`);
-}
-
-export function qmdCacheInvalidated(): void {
-	write("docs update", `${pc.magenta("qmd")} ${pc.green("cache invalidated")}`);
-}
-
 export function skippedMissingSources(count: number): void {
 	write("docs update", `${pc.yellow("skipped missing fetch sources")} ${pc.yellow(String(count))}`);
 }

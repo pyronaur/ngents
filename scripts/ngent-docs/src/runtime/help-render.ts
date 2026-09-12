@@ -53,8 +53,6 @@ function rootHelpTemplateContext(
 		ls_command: rootHelpCommandLines.ls,
 		ls_usage: rootHelpUsageLines.ls,
 		overview_heading_line: heading(2, "Overview & Organization"),
-		query_heading_line: heading(3, "Query"),
-		query_usage: rootHelpUsageLines.query,
 		show_docs_index: options.includeDocsIndex && docsGroups.length > 0,
 		topic_command: rootHelpCommandLines.topic,
 		title_line: heading(1, "docs"),

@@ -479,10 +479,11 @@ export async function readParkedCollectionSelector(
 
 export async function resolveDocsSelectorRoute(input: {
 	currentDir: string;
+	registryPath?: string;
 	mode: DocsSelectorRouteMode;
 	selector: string | null;
 }): Promise<DocsSelectorRoute> {
-	const sources = await discoverDocsSources(normalizePath(input.currentDir));
+	const sources = await discoverDocsSources(normalizePath(input.currentDir), input.registryPath);
 	if (input.mode === "root" && input.selector) {
 		return resolveRootSelectorRoute(sources, input.selector);
 	}

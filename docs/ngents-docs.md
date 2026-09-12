@@ -33,8 +33,7 @@ The intended workflow is:
 
 1. Browse local and global docs with `docs`.
 2. Read the most promising files.
-3. Fall back to semantic search only when browse-first discovery is not enough.
-4. Read source code after the documentation domain is clear.
+3. Read source code after the documentation domain is clear.
 
 The `docs` command is the entrypoint for that flow.
 
@@ -49,10 +48,9 @@ That gives agents one stable convention instead of project-specific guessing.
 The `docs` command intentionally merges project-local and global documentation where that is useful.
 That lets a project inherit reusable knowledge without copying it into every repository.
 
-### Browse before query
+### Browse for context
 
 `ls` and `topic` are the primary discovery surfaces.
-`query` exists for cases where quick browse-first inspection does not surface the right document quickly enough.
 
 ### Topics and skills
 
@@ -70,21 +68,15 @@ docs help
 docs <where>
 docs ls [where...]
 docs topic [topic] [path]
-docs query [--limit <n>] <query...> | status
 docs park <name> [path]
 docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]
 docs update [--force]
 ```
 
-## QMD collection metadata cache
+## Parked docs registry
 
-Global docs collection metadata is cached for 1 hour.
-
-- The cache stores the parked QMD collection metadata used to discover global docs roots.
-- Fresh cache entries are reused immediately.
-- Expired cache entries are reused immediately and refreshed in the background.
-- `docs update` clears this metadata cache.
-- `docs query` still runs a fresh QMD search; the cache only covers collection metadata lookup.
+`~/.ngents/local/docs/collections.json` owns global docs registrations as an array of `name` and absolute `path` records.
+`park` saves registrations atomically; browsing and fetch discovery read this registry directly.
 
 ## Help behavior
 
@@ -99,8 +91,7 @@ Global docs collection metadata is cached for 1 hour.
 - `docs <command> --help` prints usage for that command.
 - `docs <where>` opens a topic, a registered docs root, or a browse selector when the input starts with a non-command token.
 - Multi-token root input such as `docs pi pi-current-config` is tried as a slash-joined selector before command parsing.
-- Unknown multi-token root input such as `docs maestro ios ui` stays a usage failure and does not auto-run `query`.
-- That recovery path prints the exact `docs query <terms...>` command to rerun, and then prints the same browse-first root help shape as `docs --help`.
+- Unknown multi-token root input such as `docs maestro ios ui` stays a usage failure and prints the same browse-first root help shape as `docs --help`.
 - Successful docs browse views render with `Docs` titles.
 - Successful topic views render with `Topic:` titles.
 
@@ -136,7 +127,7 @@ Callers choose the selector mode, but they do not independently decide whether a
 `docs <where>` resolves non-command selector input in a more helpful order.
 
 - It accepts parked names, exact topic names, exact registered docs names, `docs/...` selectors, split selector tokens such as `docs pi pi-current-config`, `<docs-root>/<file.md>` selectors, `<parked-collection>/<docs-root[/subpath]>` selectors, explicit docs paths, and workspace paths that contain `docs/`.
-- Root command names still win, so `docs topic` and `docs query` keep their command behavior.
+- Root command names still win, so `docs topic` keeps its command behavior.
 - Parked collection names win before topics.
 - Bare parked collection selectors show that collection's topics and docs together.
 - When an exact topic name and an exact registered docs name overlap, it renders the topic first and the matching docs subtree after it.
@@ -192,24 +183,6 @@ Callers choose the selector mode, but they do not independently decide whether a
 - `docs ls architecture/decisions`
 - `docs ls docs/subdir`
 
-### `query`
-
-`query` is the fallback discovery surface when browse-first inspection is not enough.
-
-- It searches all collections in the dedicated `ngents-docs` QMD index.
-- Collections are added with `docs park`.
-- It does not search the current project's docs directory.
-- It supports `--limit <n>` to cap results.
-- `docs query status` shows the wrapper config and underlying QMD status.
-- It prints formatted results for fast terminal follow-up.
-
-Result output includes:
-
-- the QMD title
-- a short file summary when available
-- the absolute file path, with a line range when QMD exposes one
-- a lightly cleaned snippet for quick follow-up reading
-
 ## Operations behavior
 
 ### `park`
@@ -222,7 +195,7 @@ Result output includes:
 - Otherwise the supplied path itself is treated as the docs root.
 - It fails when the name is already taken.
 - It fails when the docs root is already parked under another name.
-- It runs `qmd collection add`, then refreshes the dedicated docs index with `update` and `embed`.
+- It saves the name and canonical docs path in the parked docs registry.
 
 ### `fetch`
 
@@ -245,17 +218,13 @@ Result output includes:
 
 ### `update`
 
-`update` refreshes the same global QMD index that `docs query` reads.
-
-It refreshes registered fetches that have not been checked successfully within the last 24 hours,
-then runs `qmd update` and `qmd embed`.
+`update` refreshes registered fetches that have not been checked successfully within the last 24 hours.
 Successful fetches store their check time in the owning `.docs-fetch.json`.
 A missing target is refreshed regardless of its stored check time.
-Use `docs update --force` to refresh every registered fetch before reindexing.
+Use `docs update --force` to refresh every registered fetch.
 Registered fetches run concurrently within each docs root and log progress to stderr.
 HTTP 404 responses and missing local `file:` sources from the built-in URL fetch handler are logged and skipped; the rest of the update continues.
 
-Use it when the global docs library changed and `query` needs a refreshed index.
 
 ## Docs model
 
@@ -348,8 +317,5 @@ docs fetch https://example.com/spec docs/external/spec
 docs topic qmd
 docs topic qmd references
 docs topic platform docs/guides
-docs query shell environment policy
-docs query --limit 3 swiftui scroll view best practices
-docs query status
 docs update
 ```

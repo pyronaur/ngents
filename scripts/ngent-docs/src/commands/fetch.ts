@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { defineCommand } from "../core/command-definition.ts";
 import { docsCommandUsage } from "../core/usage.ts";
+import { discoverDocsSources } from "../runtime/browse-sources.ts";
 import { runDocsFetch } from "../runtime/fetch.ts";
 
 const fetchOptionsSchema = z.object({
@@ -35,8 +36,10 @@ export const fetchCommand = defineCommand({
 			throw new Error("docs fetch requires <source> and <path>");
 		}
 
+		const sources = await discoverDocsSources(projectDir);
 		await runDocsFetch({
 			projectDir,
+			docsRoots: sources.mergedDocsRoots,
 			source,
 			targetArg: targetPath,
 			handler: options.handler,

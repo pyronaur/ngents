@@ -1,16 +1,6 @@
-import type { MarkdownEntry, TopicIndexRow } from "../../src/runtime/browse-contracts.ts";
-import { platformTopicFixture, topicIndexRows } from "./topic.fixture.ts";
+import type { MarkdownEntry } from "../../src/runtime/browse-contracts.ts";
 
 export const docsRootHelpFixture = {
-	topics: [
-		...topicIndexRows,
-		{
-			name: "qmd",
-			title: "QMD",
-			short: "local search docs",
-			summary: "Local QMD reference for CLI search and SDK integration.",
-		},
-	] satisfies TopicIndexRow[],
 	docs: [
 		{
 			absolutePath: "/fixture/repo/docs/long-summary.md",
@@ -62,40 +52,4 @@ export const docsRootHelpFixture = {
 			readWhen: [],
 		},
 	] satisfies MarkdownEntry[],
-	collectionSelector: {
-		selector: "machine",
-		topics: topicIndexRows,
-		docs: [
-			{
-				absolutePath: "/fixture/home/.ngents/docs/browser/cdp.md",
-				relativePath: "browser/cdp.md",
-				title: "CDP",
-				short: "Chrome CDP instructions",
-				summary: "Need to start, stop, or inspect the local Chrome CDP session.",
-				readWhen: [],
-			},
-		] satisfies MarkdownEntry[],
-	},
-	combinedSelector: {
-		selector: "platform",
-		topic: platformTopicFixture.topic,
-		docs: [
-			{
-				absolutePath: "/fixture/repo/docs/platform/local-browser.md",
-				relativePath: "platform/local-browser.md",
-				title: "Local Browser",
-				short: "local browser docs",
-				summary: "Repo-local platform browser notes.",
-				readWhen: [],
-			},
-			{
-				absolutePath: "/fixture/home/.ngents/docs/platform/cdp.md",
-				relativePath: "platform/cdp.md",
-				title: "CDP",
-				short: "Chrome CDP instructions",
-				summary: "Need to start, stop, or inspect the local Chrome CDP session.",
-				readWhen: [],
-			},
-		] satisfies MarkdownEntry[],
-	},
 };

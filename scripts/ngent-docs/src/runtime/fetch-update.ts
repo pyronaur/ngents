@@ -78,14 +78,18 @@ async function runFetchEntry(definition: ValidatedFetchDefinition): Promise<Fetc
 	}
 }
 
-async function isFresh(definition: ValidatedFetchDefinition, now: number): Promise<boolean> {
-	if (!definition.entry.checkedAt) {
-		return false;
-	}
-	const checkedAt = Date.parse(definition.entry.checkedAt);
-	if (Number.isNaN(checkedAt) || checkedAt <= now - FETCH_FRESHNESS_MS) {
-		return false;
-	}
+function needsFetchRefresh(input: {
+	checkedAt?: string;
+	targetExists: boolean;
+	now: number;
+	force?: boolean;
+}): boolean {
+	const checkedAt = Date.parse(input.checkedAt ?? "");
+	return !!input.force || !input.targetExists || !Number.isFinite(checkedAt)
+		|| checkedAt > input.now || checkedAt <= input.now - FETCH_FRESHNESS_MS;
+}
+
+async function targetExists(definition: ValidatedFetchDefinition): Promise<boolean> {
 	try {
 		await access(definition.absoluteTargetPath);
 		return true;
@@ -114,10 +118,10 @@ async function runFetchGroup(
 }
 
 export async function runRegisteredFetches(
-	projectDir: string,
+	docsRoots: string[],
 	options: { force?: boolean } = {},
 ): Promise<{ skippedMissingSources: string[]; skippedUnsafeEntries: string[] }> {
-	const definitions = await listFetchDefinitions(projectDir);
+	const definitions = await listFetchDefinitions(docsRoots);
 	const skippedUnsafeEntries: string[] = [];
 	const validDefinitions: ValidatedFetchDefinition[] = [];
 	updateLog.registeredFetches(definitions.length);
@@ -142,7 +146,13 @@ export async function runRegisteredFetches(
 		? validDefinitions
 		: (await Promise.all(
 			validDefinitions.map(async definition =>
-				await isFresh(definition, Date.now()) ? null : definition
+				needsFetchRefresh({
+						checkedAt: definition.entry.checkedAt,
+						targetExists: await targetExists(definition),
+						now: Date.now(),
+					})
+					? definition
+					: null
 			),
 		)).filter((definition): definition is ValidatedFetchDefinition => definition !== null);
 	updateLog.freshFetchesSkipped(validDefinitions.length - definitionsToFetch.length);

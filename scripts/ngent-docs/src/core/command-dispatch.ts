@@ -18,7 +18,7 @@ async function createProgram(projectDir: string): Promise<Command> {
 	const program = new Command();
 	program
 		.name("docs")
-		.description("Browse docs and run global vector search.")
+		.description("Browse local and global documentation.")
 		.helpOption("--help", "Display help for command.")
 		.configureOutput({
 			writeErr: () => {},
@@ -120,7 +120,6 @@ async function readMultiTokenUnknownCommandRecovery(
 	return [
 		error.message.trim(),
 		"`docs <where>` could not open that selector.",
-		`Use \`docs query ${argv.join(" ")}\` to search by multiple terms.`,
 		rootHelp,
 	].join("\n\n");
 }

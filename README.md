@@ -26,7 +26,7 @@ It contains the rules, docs, and reusable skills that shape how the agent behave
 This is where I keep the common scripts that agents can self-improve over time. Still WIP.
 
 - `scripts/ngent-docs/`  
-  Standalone Node/NPM command package for `docs`, including compact root help, `docs ls` docs browsing, `docs topic` topic browsing, and `docs query` global QMD-backed search.
+  Standalone Node/NPM command package for browsing local and global documentation.
 
 - `scripts/ng/`  
   User-facing `ng` command entrypoints such as `ng bins`, `ng cpdir`, and `ng hig-doctor`.

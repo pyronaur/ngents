@@ -66,6 +66,31 @@ async function prepareReplacementTarget(targetPath: string): Promise<void> {
 	await mkdir(path.dirname(targetPath), { recursive: true });
 }
 
+function writeProcessStream(
+	stream: NodeJS.WriteStream,
+	text: string,
+	options: {
+		isBroken: () => boolean;
+		setBroken: () => void;
+	},
+): void {
+	ensureProcessStdioHandlesBrokenPipe();
+	if (options.isBroken() || stream.destroyed || text.length === 0) {
+		return;
+	}
+
+	stream.write(text, (error?: Error | null) => {
+		if (!error) {
+			return;
+		}
+		if (isErrnoException(error) && error.code === "EPIPE") {
+			options.setBroken();
+			return;
+		}
+		throw error;
+	});
+}
+
 export function expandHomePath(value: string): string {
 	const homeDir = process.env.HOME;
 	if (!homeDir) {
@@ -236,30 +261,5 @@ export function ensureProcessStdioHandlesBrokenPipe(): void {
 	});
 	process.stderr.on("close", () => {
 		stderrBrokenPipe = true;
-	});
-}
-
-export function writeProcessStream(
-	stream: NodeJS.WriteStream,
-	text: string,
-	options: {
-		isBroken: () => boolean;
-		setBroken: () => void;
-	},
-): void {
-	ensureProcessStdioHandlesBrokenPipe();
-	if (options.isBroken() || stream.destroyed || text.length === 0) {
-		return;
-	}
-
-	stream.write(text, (error?: Error | null) => {
-		if (!error) {
-			return;
-		}
-		if (isErrnoException(error) && error.code === "EPIPE") {
-			options.setBroken();
-			return;
-		}
-		throw error;
 	});
 }

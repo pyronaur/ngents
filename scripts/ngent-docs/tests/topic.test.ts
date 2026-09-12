@@ -3,7 +3,7 @@ import path from "node:path";
 import { assert, expect, test } from "vitest";
 
 import { resolveDocsSelectorRoute } from "../src/runtime/browse-route.ts";
-import { resolveTopicSections } from "../src/runtime/topic.ts";
+import { resolveTopicSections } from "../src/runtime/browse-topic-sections.ts";
 import { withTempDir, writeText } from "./helpers/fs.ts";
 
 test("An exact topic path returns only that section from each docs root", async () => {

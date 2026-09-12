@@ -1,14 +1,14 @@
-import { access, copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { toDocsError } from "../core/errors.ts";
-import { mergeFetchedMarkdownFrontMatter } from "./fetch-frontmatter.ts";
 import {
 	makeTempDir,
 	replaceDirectory,
 	replaceFile,
 	runTransform,
 } from "./fetch-handler-support.ts";
+import { materializeTransformOutput, mergeMarkdownFileTarget } from "./fetch-transform-output.ts";
 
 async function listRegularFiles(directoryPath: string): Promise<string[]> {
 	const entries = await readdir(directoryPath, { withFileTypes: true });
@@ -33,21 +33,6 @@ async function copyTargetFile(targetPath: string, sourcePath: string): Promise<v
 	await rm(targetPath, { force: true, recursive: true });
 	await mkdir(path.dirname(targetPath), { recursive: true });
 	await copyFile(sourcePath, targetPath);
-}
-
-async function mergeMarkdownFileTarget(input: {
-	targetPath: string;
-	incomingContent: string;
-}): Promise<string> {
-	let localContent: string | null = null;
-	if (await pathExists(input.targetPath)) {
-		localContent = await readFile(input.targetPath, "utf8");
-	}
-
-	return mergeFetchedMarkdownFrontMatter({
-		localContent,
-		incomingContent: input.incomingContent,
-	});
 }
 
 async function materializeFileTarget(input: {
@@ -105,64 +90,6 @@ async function runFetchTransform(input: {
 	};
 }
 
-function validateTransformOutput(input: {
-	command: string;
-	fileTarget: boolean;
-	inputFiles: string[];
-	outputFiles: string[];
-	stdout: string;
-}): { wroteOutputFiles: boolean; wroteStdout: boolean } {
-	const wroteStdout = input.stdout.length > 0;
-	const wroteOutputFiles = input.outputFiles.length > 0;
-
-	if (wroteStdout && wroteOutputFiles) {
-		throw new Error(
-			`Fetch transform must write either stdout or output files, not both: ${input.command}`,
-		);
-	}
-	if (!wroteOutputFiles && !wroteStdout) {
-		throw new Error(
-			`Fetch transform must write output files or stdout: ${input.command}`,
-		);
-	}
-	if (wroteStdout && input.inputFiles.length !== 1) {
-		throw new Error(
-			`Fetch transform stdout-only mode requires exactly one staged file: ${input.command}`,
-		);
-	}
-	if (input.fileTarget && wroteOutputFiles) {
-		throw new Error(
-			`Fetch file target mode does not support directory output transforms: ${input.command}`,
-		);
-	}
-
-	return {
-		wroteOutputFiles,
-		wroteStdout,
-	};
-}
-
-async function materializeTransformOutput(input: {
-	fileTarget: boolean;
-	outputDirectory: string;
-	targetPath: string;
-	stdout: string;
-	wroteStdout: boolean;
-}): Promise<void> {
-	if (input.fileTarget) {
-		const contents = await mergeMarkdownFileTarget({
-			targetPath: input.targetPath,
-			incomingContent: input.stdout,
-		});
-		await replaceFile(input.targetPath, contents);
-		return;
-	}
-	if (input.wroteStdout) {
-		await writeFile(path.join(input.outputDirectory, "README.md"), input.stdout);
-	}
-	await replaceDirectory(input.targetPath, input.outputDirectory);
-}
-
 export async function pathExists(filePath: string): Promise<boolean> {
 	try {
 		await access(filePath);
@@ -204,19 +131,11 @@ export async function materializeHandlerOutput(input: {
 			targetPath: input.targetPath,
 			root: input.root,
 		});
-		const validated = validateTransformOutput({
-			command: input.transform,
-			fileTarget,
-			inputFiles: result.inputFiles,
-			outputFiles: result.outputFiles,
-			stdout: result.stdout,
-		});
 		await materializeTransformOutput({
-			fileTarget,
+			...result,
+			command: input.transform,
 			outputDirectory: transformOutputDir,
 			targetPath: input.targetPath,
-			stdout: result.stdout,
-			wroteStdout: validated.wroteStdout,
 		});
 	} finally {
 		await rm(transformOutputDir, { force: true, recursive: true });

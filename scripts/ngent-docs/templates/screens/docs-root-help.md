@@ -7,7 +7,6 @@ docs organizes project local and global documentation optimized for information 
 - All topics & docs are kept in and organized in `docs` directories
 - `docs` includes project documentation, notes, etc. It also includes global machine documentation, flows, patterns, available tools, etc.
 - `docs/topics` includes larger organized sets of documentation within the given topic - useful to keep `docs` lean.
-- `query` indexes everything in global `docs/**` for lookup when quick scan with `ls` and `topic` doesn't include promising results at a glance. `query` doesn't index project docs directory.
 
 {{ browse_heading_line }}
 docs <where>
@@ -40,12 +39,6 @@ docs ./docs/file.md
 {{ ls_command }} .
 {{ ls_command }} local setup
 {{ ls_command }} docs/subdir
-
-{{ query_heading_line }}
-{{ query_usage }}
-
-Use this to search through parked global docs collections with semantic search fast.
-Returns matches optimized for quick context gathering with cat/sed followups.
 
 {{ topics_heading_line }}
 {{ topic_usage }}

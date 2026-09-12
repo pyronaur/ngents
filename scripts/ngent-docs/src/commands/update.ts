@@ -10,7 +10,7 @@ const updateOptionsSchema = z.object({
 
 export const updateCommand = defineCommand({
 	path: ["update"],
-	description: "Refresh registered fetches, then the global docs QMD index and embeddings.",
+	description: "Refresh registered fetches.",
 	usage: docsCommandUsage.update,
 	configure: command => {
 		command.option("--force", "Refresh registered fetches regardless of freshness.");

@@ -1,26 +1,15 @@
 import { runtimeError } from "../core/errors.ts";
-import browseContracts, {
-	type MergedTopic,
-	type SectionEntry,
-} from "./browse-contracts.ts";
+import browseContracts from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
 import browseRender from "./browse-render.ts";
 import { readParkedCollectionSelector } from "./browse-route.ts";
 import { discoverDocsSources } from "./browse-sources.ts";
-import { availableSectionKeys } from "./browse-topic-sections.ts";
+import { readTopicOrFail, resolveTopicSections } from "./browse-topic-sections.ts";
 
 const { normalizePath } = browseContracts;
 
 function fail(message: string): never {
 	throw runtimeError(message);
-}
-
-function formatAvailableItems(label: string, items: string[]): string {
-	if (items.length === 0) {
-		return `${label}: [none]`;
-	}
-
-	return `${label}:\n${items.map(item => `- ${item}`).join("\n")}`;
 }
 
 function ensureDocsRoots(docsRoots: string[], currentDir: string): void {
@@ -29,58 +18,6 @@ function ensureDocsRoots(docsRoots: string[], currentDir: string): void {
 	}
 
 	fail(`Docs root not found: ${currentDir}`);
-}
-
-async function readTopicOrFail(docsRoots: string[], requestedTopic: string): Promise<MergedTopic> {
-	const topic = await browseDiscovery.readMergedTopic(docsRoots, requestedTopic);
-	if (topic) {
-		return topic;
-	}
-
-	const index = await browseDiscovery.buildIndexData(docsRoots);
-	fail(
-		`Unknown topic "${requestedTopic}". ${
-			formatAvailableItems("Available topics", index.topics.map(row => row.name))
-		}`,
-	);
-}
-
-function matchingSections(topic: MergedTopic, requestedPath: string): SectionEntry[] {
-	const sections: SectionEntry[] = [];
-
-	function collectMatches(section: SectionEntry): void {
-		if (section.key === requestedPath) {
-			sections.push(section);
-		}
-		for (const child of section.children) {
-			collectMatches(child);
-		}
-	}
-
-	for (const contribution of topic.contributions) {
-		for (const section of contribution.sectionEntries) {
-			collectMatches(section);
-		}
-	}
-
-	return sections;
-}
-
-function sectionsOrFail(
-	topic: MergedTopic,
-	requestedTopic: string,
-	requestedPath: string,
-): SectionEntry[] {
-	const sections = matchingSections(topic, requestedPath);
-	if (sections.length > 0) {
-		return sections;
-	}
-
-	fail(
-		`Unknown path "${requestedPath}" for topic "${requestedTopic}". ${
-			formatAvailableItems("Available", availableSectionKeys(topic))
-		}`,
-	);
 }
 
 async function printTopicOrParkedCollection(
@@ -137,7 +74,7 @@ export async function runDocsTopic(positionals: string[]): Promise<void> {
 		return;
 	}
 
-	const topic = await readTopicOrFail(sources.mergedDocsRoots, requestedTopic);
-	const sections = sectionsOrFail(topic, requestedTopic, requestedSection);
+	const sections = await resolveTopicSections(sources.mergedDocsRoots, requestedTopic,
+		requestedSection);
 	browseRender.printFocusedSection({ key: requestedSection, sections, topicName: requestedTopic });
 }

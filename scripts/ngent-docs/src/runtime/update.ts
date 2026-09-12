@@ -1,6 +1,6 @@
 import { runtimeError } from "../core/errors.ts";
+import { discoverDocsSources } from "./browse-sources.ts";
 import { runRegisteredFetches } from "./fetch-update.ts";
-import { invalidateQmdCollectionsCache, runQmd } from "./qmd.ts";
 import * as updateLog from "./update-log.ts";
 
 function fail(message: string): never {
@@ -8,22 +8,8 @@ function fail(message: string): never {
 }
 
 export async function runDocsUpdate(options: { force?: boolean } = {}): Promise<void> {
-	const fetchResult = await runRegisteredFetches(process.cwd(), options);
-
-	updateLog.qmdStep("update");
-	const updateResult = await runQmd(["update"], { streamOutput: true });
-	if (updateResult.exitCode !== 0) {
-		fail(updateResult.stderr.trim() || updateResult.stdout.trim() || "qmd update failed");
-	}
-
-	updateLog.qmdStep("embed");
-	const embedResult = await runQmd(["embed"], { streamOutput: true });
-	if (embedResult.exitCode !== 0) {
-		fail(embedResult.stderr.trim() || embedResult.stdout.trim() || "qmd embed failed");
-	}
-
-	await invalidateQmdCollectionsCache();
-	updateLog.qmdCacheInvalidated();
+	const sources = await discoverDocsSources(process.cwd());
+	const fetchResult = await runRegisteredFetches(sources.mergedDocsRoots, options);
 
 	if (fetchResult.skippedUnsafeEntries.length > 0) {
 		const count = fetchResult.skippedUnsafeEntries.length;

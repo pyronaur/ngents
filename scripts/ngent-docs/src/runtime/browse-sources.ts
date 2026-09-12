@@ -4,7 +4,7 @@ import path from "node:path";
 import { runtimeError } from "../core/errors.ts";
 import browseContracts, { type DocsSources } from "./browse-contracts.ts";
 import browseDiscovery from "./browse-discovery.ts";
-import { isQmdRequiredError, listQmdCollections, type QmdCollection } from "./qmd.ts";
+import { type DocsCollection, docsRegistryPath, listDocsCollections } from "./collections.ts";
 
 const { META_FILE, directoryDisplayPath, normalizePath, sameFileName } = browseContracts;
 
@@ -74,7 +74,7 @@ function findContainingDocsRoot(directoryPath: string): string | null {
 	}
 }
 
-function normalizeCollection(collection: QmdCollection): { docsRoot: string; name: string } {
+function normalizeCollection(collection: DocsCollection): { docsRoot: string; name: string } {
 	return {
 		name: collection.name,
 		docsRoot: normalizePath(collection.path),
@@ -190,29 +190,26 @@ export function isBrowseSelectorNotFoundError(
 	return error instanceof BrowseSelectorNotFoundError;
 }
 
-export async function discoverDocsSources(currentDir: string): Promise<DocsSources> {
+export async function discoverDocsSources(
+	currentDir: string,
+	registryPath = docsRegistryPath(),
+): Promise<DocsSources> {
 	const normalizedCurrentDir = normalizePath(currentDir);
 	const repoRoot = await browseDiscovery.discoverRepoRoot(normalizedCurrentDir);
 	const localDocsRoots = await browseDiscovery.discoverDocsRoots(repoRoot ?? normalizedCurrentDir);
 
 	const globalDocsCollections: Array<{ name: string; docsRoot: string }> = [];
 	const globalDocsRoots: string[] = [];
-	try {
-		const collections = await listQmdCollections();
-		for (const collection of collections) {
-			const normalizedCollection = normalizeCollection(collection);
-			const { docsRoot } = normalizedCollection;
-			if (!(await isDirectory(docsRoot))) {
-				continue;
-			}
+	const collections = await listDocsCollections(registryPath);
+	for (const collection of collections) {
+		const normalizedCollection = normalizeCollection(collection);
+		const { docsRoot } = normalizedCollection;
+		if (!(await isDirectory(docsRoot))) {
+			continue;
+		}
 
-			globalDocsCollections.push(normalizedCollection);
-			globalDocsRoots.push(docsRoot);
-		}
-	} catch (error) {
-		if (!isQmdRequiredError(error)) {
-			throw error;
-		}
+		globalDocsCollections.push(normalizedCollection);
+		globalDocsRoots.push(docsRoot);
 	}
 
 	return {

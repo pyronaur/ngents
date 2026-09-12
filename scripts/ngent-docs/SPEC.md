@@ -5,7 +5,7 @@
 This document records the current rendering contract for the browse-oriented
 parts of the `docs` CLI in `scripts/ngent-docs`.
 
-It is based on the implementation and the CLI-facing tests. It focuses on
+It is based on the implementation and module-contract tests. It focuses on
 current behavior and on decisions that are explicit in code, not on intended
 future behavior.
 
@@ -151,8 +151,7 @@ Current decisions:
   shape without the docs index.
 - Unknown multi-token root input is tried first as a slash-joined root selector,
   then stays a usage failure when that selector is not found.
-- That recovery path suggests the exact `docs query <terms...>` rerun command
-  and appends the same browse-first root help shape as `docs --help`.
+- That recovery path appends the same browse-first root help shape as `docs --help`.
 - Browse-first root help does not explain `park`, `fetch`, or `update` beyond a
   one-line pointer to `docs --ops-help`.
 - `docs --ops-help` renders the operations manual for `park`, `fetch`, and

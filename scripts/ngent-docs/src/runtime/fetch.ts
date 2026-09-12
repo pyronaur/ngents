@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 
 import { runtimeError } from "../core/errors.ts";
 import browseContracts from "./browse-contracts.ts";
-import { discoverDocsSources } from "./browse-sources.ts";
 import {
 	BUILTIN_GIT_FETCH_HANDLER,
 	BUILTIN_URL_FILE_FETCH_HANDLER,
@@ -165,13 +164,13 @@ async function canonicalizePath(filePath: string): Promise<string> {
 async function resolveFetchTarget(
 	projectDir: string,
 	targetArg: string,
+	docsRoots: string[],
 ): Promise<ResolvedFetchTarget> {
-	const sources = await discoverDocsSources(projectDir);
 	const resolvedTarget = await canonicalizePath(
 		normalizePath(path.resolve(projectDir, expandHomePath(targetArg))),
 	);
 	const canonicalDocsRoots = await Promise.all(
-		sources.mergedDocsRoots.map(async docsRoot => ({
+		docsRoots.map(async docsRoot => ({
 			original: docsRoot,
 			canonical: await canonicalizePath(docsRoot),
 		})),
@@ -407,7 +406,7 @@ export async function runFetchDefinition(
 		definition: {
 			source: definition.entry.source,
 			target: definition.absoluteTargetPath,
-			previousHash: definition.entry.hash,
+			previousHash: await fileExists(definition.absoluteTargetPath) ? definition.entry.hash : "",
 			root: definition.entry.root,
 			transform: definition.entry.transform
 				? resolveStoredCommand(definition.entry.transform, definition.docsRoot)
@@ -424,11 +423,10 @@ export async function runFetchDefinition(
 	};
 }
 
-export async function listFetchDefinitions(projectDir: string): Promise<RunFetchDefinition[]> {
-	const sources = await discoverDocsSources(projectDir);
+export async function listFetchDefinitions(docsRoots: string[]): Promise<RunFetchDefinition[]> {
 	const definitions: RunFetchDefinition[] = [];
 
-	for (const docsRoot of sources.mergedDocsRoots) {
+	for (const docsRoot of docsRoots) {
 		const manifest = await readFetchManifest(docsRoot);
 		for (const entry of manifest.entries) {
 			definitions.push({
@@ -449,6 +447,7 @@ export async function listFetchDefinitions(projectDir: string): Promise<RunFetch
 
 export async function runDocsFetch(input: {
 	projectDir: string;
+	docsRoots: string[];
 	source: string;
 	targetArg: string;
 	handler: string;
@@ -456,7 +455,8 @@ export async function runDocsFetch(input: {
 	transform?: string;
 	force?: boolean;
 }): Promise<void> {
-	const resolvedTarget = await resolveFetchTarget(input.projectDir, input.targetArg);
+	const resolvedTarget = await resolveFetchTarget(input.projectDir, input.targetArg,
+		input.docsRoots);
 	if (resolvedTarget.targetRelativePath === ".") {
 		throw runtimeError(
 			`Fetch target must be a docs path inside a discovered docs root: ${input.targetArg}`,

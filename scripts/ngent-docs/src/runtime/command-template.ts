@@ -27,11 +27,6 @@ const TOPIC_SCREEN_TEMPLATE = {
 	scoped_browser: "screens/topic-scoped-browser.md",
 } as const;
 
-const QUERY_SCREEN_TEMPLATE = {
-	results: "screens/query-results.md",
-	status: "screens/query-status.md",
-} as const;
-
 export type DocsTemplateDocsGroup = {
 	entry_lines: string[];
 	heading_line: string;
@@ -60,8 +55,6 @@ export type DocsTemplateRootHelpContext = {
 	ls_command: string;
 	ls_usage: string;
 	overview_heading_line: string;
-	query_usage: string;
-	query_heading_line: string;
 	show_docs_index: boolean;
 	topic_command: string;
 	title_line: string;
@@ -171,24 +164,6 @@ type TopicTemplateContext =
 	| TopicTemplateOverviewContext
 	| TopicTemplateScopedBrowserContext;
 
-export type QueryTemplateResultsContext = {
-	view: "results";
-	results: Array<{
-		heading_line: string;
-		overview_line: string | null;
-		path_line: string;
-		snippet_lines: string[];
-	}>;
-	tip_line: string;
-};
-
-type QueryTemplateStatusContext = {
-	view: "status";
-	lines: string[];
-};
-
-type QueryTemplateContext = QueryTemplateResultsContext | QueryTemplateStatusContext;
-
 type ParkTemplateContext = {
 	view: "success";
 	message_line: string;
@@ -253,13 +228,6 @@ function renderTopicTemplate(
 	return renderTemplate(context, TOPIC_SCREEN_TEMPLATE[context.view], options);
 }
 
-function renderQueryTemplate(
-	context: QueryTemplateContext,
-	options: RenderOptions = {},
-): string {
-	return renderTemplate(context, QUERY_SCREEN_TEMPLATE[context.view], options);
-}
-
 function renderParkTemplate(
 	context: ParkTemplateContext,
 	options: RenderOptions = {},
@@ -272,6 +240,5 @@ export default {
 	renderDocsTemplate,
 	renderLsTemplate,
 	renderParkTemplate,
-	renderQueryTemplate,
 	renderTopicTemplate,
 };

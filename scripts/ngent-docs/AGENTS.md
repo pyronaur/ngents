@@ -30,19 +30,12 @@ pre-resolve topics, docs roots, files, or parked collections in parallel paths.
 
 ## Testing Philosophy
 
-Tests must verify observable behavior at the CLI surface:
-
-1. Command routing and help behavior.
-2. Flag parsing and coercion behavior.
-3. Command output contracts in text and JSON modes.
-4. Exit behavior for usage/runtime failures.
+Tests verify module contracts, not the CLI boundary.
+Use explicit inputs and fixture-owned state; assert domain outcomes instead of rendered prose.
 
 For bugs:
 - Add a failing path test first.
 - Fix the bug.
 - Re-run tests and verify pass.
 
-Priority order:
-1. Integration tests at the CLI surface.
-2. Contract tests where boundaries need explicit verification.
-3. UI/E2E tests only when explicitly required.
+Prefer the smallest meaningful module contract.

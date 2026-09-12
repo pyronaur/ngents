@@ -105,9 +105,9 @@
 	},
 
 	test: {
-		name: "Run ngent-docs CLI behavior tests",
+		name: "Run ngent-docs module contract tests",
 		cwd: "./scripts/ngent-docs",
-		// Vitest exercises CLI behavior from source, tests, templates, and snapshots.
+		// Vitest exercises module contracts from source, tests, templates, and snapshots.
 		match: [
 			"!*",
 			"scripts/ngent-docs/{bin,src,tests,templates}/**/*",

@@ -20,6 +20,6 @@ Use this to register and refresh fetched docs through an external handler.
 {{ update_heading_line }}
 {{ update_usage }}
 
-Use this to refresh registered fetches, then rebuild the global docs QMD index and embeddings.
+Use this to refresh registered fetches.
 
 For command-specific syntax details, use each command's `--help`.

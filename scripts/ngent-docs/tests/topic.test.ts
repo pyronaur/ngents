@@ -3,7 +3,66 @@ import path from "node:path";
 import { assert, expect, test } from "vitest";
 
 import { resolveDocsSelectorRoute } from "../src/runtime/browse-route.ts";
+import { resolveTopicSections } from "../src/runtime/topic.ts";
 import { withTempDir, writeText } from "./helpers/fs.ts";
+
+test("An exact topic path returns only that section from each docs root", async () => {
+	await withTempDir("docs-topic-focus-", async tempDir => {
+		const root = await realpath(tempDir);
+		const localDocs = path.join(root, "project", "docs");
+		const globalDocs = path.join(root, "library", "docs");
+		const localSection = path.join(localDocs, "topics", "platform", "docs", "guides");
+		const globalSection = path.join(globalDocs, "topics", "platform", "docs", "guides");
+		const localFile = path.join(localSection, "setup.md");
+		const globalFile = path.join(globalSection, "deploy.md");
+		await writeText(localFile, "# Setup\n");
+		await writeText(globalFile, "# Deploy\n");
+		await writeText(path.join(localDocs, "topics", "platform", "tools", "guides", "other.md"),
+			"# Same directory name, different topic path\n");
+		await writeText(path.join(globalDocs, "topics", "platform", "docs", "guides-extra", "other.md"),
+			"# Same path prefix, different section\n");
+		await writeText(path.join(localDocs, "topics", "other", "docs", "guides", "other.md"),
+			"# Same path, different topic\n");
+
+		const sections = await resolveTopicSections([localDocs, globalDocs], "platform", "docs/guides");
+
+		expect(sections).toHaveLength(2);
+		expect(sections).toEqual(expect.arrayContaining([
+			expect.objectContaining({
+				key: "docs/guides",
+				absolutePath: localSection,
+				markdownEntries: [expect.objectContaining({ absolutePath: localFile })],
+			}),
+			expect.objectContaining({
+				key: "docs/guides",
+				absolutePath: globalSection,
+				markdownEntries: [expect.objectContaining({ absolutePath: globalFile })],
+			}),
+		]));
+	});
+});
+
+test("An unknown topic path fails with available paths from each docs root", async () => {
+	await withTempDir("docs-topic-focus-", async tempDir => {
+		const root = await realpath(tempDir);
+		const localDocs = path.join(root, "project", "docs");
+		const globalDocs = path.join(root, "library", "docs");
+		await writeText(path.join(localDocs, "topics", "platform", "docs", "guides", "setup.md"),
+			"# Setup\n");
+		await writeText(path.join(globalDocs, "topics", "platform", "tools", "reference", "usage.md"),
+			"# Usage\n");
+
+		// A directory basename is not an exact topic-relative path.
+		const result = resolveTopicSections([localDocs, globalDocs], "platform", "guides");
+
+		await expect(result).rejects.toMatchObject({
+			name: "RuntimeError",
+			exitCode: 1,
+			message: expect.stringContaining("docs/guides"),
+		});
+		await expect(result).rejects.toThrow("tools/reference");
+	});
+});
 
 async function withTopicProject(
 	run: (fixture: {

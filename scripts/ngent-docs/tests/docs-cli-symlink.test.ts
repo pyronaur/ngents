@@ -1,22 +1,29 @@
-import { symlink } from "node:fs/promises";
+import { mkdir, realpath, symlink } from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-import { runDocsCli } from "./helpers/cli.ts";
-import { withDocsCliWorkspace, writeText } from "./helpers/docs-cli-fixture.ts";
+import { resolveDocsSelectorRoute } from "../src/runtime/browse-route.ts";
+import { withTempDir, writeText } from "./helpers/fs.ts";
 
-test("docs ls lists a symlinked nested docs root once", async () => {
-	await withDocsCliWorkspace(
-		"docs-ls-symlinked-root-",
-		async ({ repoDir, env }) => {
-			await writeText(path.join(repoDir, "myapp", "docs", "foo.md"), "# Foo\n");
-			await symlink(path.join("myapp", "docs"), path.join(repoDir, "docs"), "dir");
+test("A symlinked nested docs root contributes its document once", async () => {
+	await withTempDir("docs-symlink-", async tempDir => {
+		const currentDir = await realpath(tempDir);
+		const registryPath = path.join(currentDir, "collections.json");
+		await mkdir(path.join(currentDir, ".git"));
+		await writeText(registryPath, "[]");
+		await writeText(path.join(currentDir, "myapp", "docs", "guide.md"), "# Guide\n");
+		await symlink(path.join("myapp", "docs"), path.join(currentDir, "docs"), "dir");
 
-			const result = await runDocsCli(["ls"], { cwd: repoDir, env });
+		const route = await resolveDocsSelectorRoute({
+			currentDir,
+			registryPath,
+			mode: "docs",
+			selector: null,
+		});
 
-			expect(result.exitCode).toBe(0);
-			expect(result.stdout.match(/foo\.md/gu)).toHaveLength(1);
-		},
-		{ seedLocalDocsRepo: false, seedGlobalDocsHome: false, seedGlobalDocsIndex: false },
-	);
+		expect(route).toMatchObject({
+			kind: "docs",
+			view: { kind: "browse", docs: [{ relativePath: "guide.md" }] },
+		});
+	});
 });

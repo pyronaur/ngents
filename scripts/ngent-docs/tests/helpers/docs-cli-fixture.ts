@@ -106,10 +106,6 @@ function globalDocsPathImpl(homeDir: string, ...segments: string[]): string {
 	return path.join(homeDir, ".ngents", "docs", ...segments);
 }
 
-function topicDocsPathForOutputImpl(repoDir: string, ...segments: string[]): string {
-	return normalizedPathForOutputImpl(topicDocsPathImpl(repoDir, ...segments));
-}
-
 function globalDocsPathForOutputImpl(homeDir: string, ...segments: string[]): string {
 	return normalizedPathForOutputImpl(globalDocsPathImpl(homeDir, ...segments));
 }
@@ -234,72 +230,6 @@ async function withHttpServerImpl<T>(
 	}
 }
 
-async function seedSkillBackedSectionImpl(repoDir: string): Promise<void> {
-	const sectionDir = path.join(repoDir, "docs", "topics", TEST_TOPIC_NAME, "hig-doctor");
-	const skillDir = path.join(sectionDir, "skills", "hig-components-content");
-	await writeText(
-		path.join(sectionDir, "usage.md"),
-		[
-			"---",
-			"title: HIG Doctor Usage",
-			"summary: Run the HIG skill set against the current app before broader Apple docs.",
-			"---",
-			"",
-			"# HIG Doctor Usage",
-			"",
-			"Use this directory before falling back to raw references.",
-			"",
-		].join("\n"),
-	);
-	await writeText(
-		path.join(skillDir, "SKILL.md"),
-		[
-			"---",
-			"name: hig-components-content",
-			"title: Apple HIG: Content Components",
-			"description: Apple Human Interface Guidelines for content display components.",
-			"---",
-			"",
-			"# Apple HIG: Content Components",
-			"",
-			"Reference index:",
-			"- [Alpha](references/alpha.md)",
-			"- [Beta](references/beta.md)",
-			"",
-		].join("\n"),
-	);
-	await writeText(
-		path.join(skillDir, "references", "alpha.md"),
-		[
-			"---",
-			"title: Alpha",
-			"summary: Alpha reference.",
-			"---",
-			"",
-			"# Alpha",
-			"",
-			"Alpha reference body.",
-			"",
-		].join("\n"),
-	);
-	await writeText(
-		path.join(skillDir, "references", "beta.md"),
-		[
-			"---",
-			"title: Beta",
-			"summary: Beta reference.",
-			"---",
-			"",
-			"# Beta",
-			"",
-			"Beta reference body.",
-			"",
-		].join("\n"),
-	);
-	await writeText(path.join(sectionDir, "package.json"),
-		"{\n  \"name\": \"hidden-root-file\"\n}\n");
-}
-
 function docsEnvImpl(homeDir: string, binDir?: string): NodeJS.ProcessEnv {
 	return {
 		HOME: homeDir,
@@ -379,9 +309,7 @@ export const hasHeading = hasHeadingImpl;
 export const nonEmptySectionLines = nonEmptySectionLinesImpl;
 export const normalizedPathForOutput = normalizedPathForOutputImpl;
 export const runFetchHandlerCli = runFetchHandlerCliImpl;
-export const seedSkillBackedSection = seedSkillBackedSectionImpl;
 export const topicDocsPath = topicDocsPathImpl;
-export const topicDocsPathForOutput = topicDocsPathForOutputImpl;
 export const withDocsCliWorkspace = withDocsCliWorkspaceImpl;
 export const withHttpServer = withHttpServerImpl;
 export const writeFetchHandler = writeFetchHandlerImpl;

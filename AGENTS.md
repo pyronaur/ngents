@@ -1,7 +1,7 @@
 # AGENTS.md
 `x sitrep [-C <path(default $PWD)>]` when you need repo orientation (combines tree, git status, recent history)
 Instead of `rm` use `trash` for deletion.
-If I point you to information and expect you to read it, read it before you do anything else.
+If I point you to new information and expect you to read it, read it before you do anything else.
 
 ## Docs
 When I provide `##documentation` index, proactively read relevant files.

@@ -4,6 +4,7 @@ Instead of `rm` use `trash` for deletion.
 If I point you to new information and expect you to read it, read it before you do anything else.
 
 ## Docs
+Save the hassle: before you search through source code - ensure you've read the relevant documentation.
 When I provide `##documentation` index, proactively read relevant files.
 When documentation is `#injected` directly:
 - Re-read if it's a reminder and you need to refresh your memory

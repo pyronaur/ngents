@@ -1,3 +1,4 @@
+import os from "node:os";
 import path from "node:path";
 
 import pc from "picocolors";
@@ -122,12 +123,20 @@ function toDisplayPath(value: string): string {
 	return value.replaceAll("\\", POSIX_SEP);
 }
 
+function homeRelativePath(value: string): string {
+	const home = toDisplayPath(os.homedir());
+	if (value === home) {
+		return "~";
+	}
+	return value.startsWith(`${home}${POSIX_SEP}`) ? `~${value.slice(home.length)}` : value;
+}
+
 function normalizePath(value: string): string {
 	return toDisplayPath(path.resolve(value));
 }
 
 function directoryDisplayPath(value: string): string {
-	const normalized = toDisplayPath(value);
+	const normalized = homeRelativePath(toDisplayPath(value));
 	if (normalized === POSIX_SEP || normalized.endsWith(POSIX_SEP)) {
 		return normalized;
 	}
@@ -272,6 +281,7 @@ export default {
 	firstContentParagraph,
 	hasHiddenOrExcludedSegment,
 	heading,
+	homeRelativePath,
 	normalizeInlineText,
 	normalizePath,
 	printLine,

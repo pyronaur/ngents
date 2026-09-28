@@ -164,6 +164,12 @@ type TopicTemplateContext =
 	| TopicTemplateOverviewContext
 	| TopicTemplateScopedBrowserContext;
 
+type RecentTemplateContext = {
+	view: "recent";
+	sections: DocsTemplateExpandedDocsGroup[];
+	title_line: string;
+};
+
 type ParkTemplateContext = {
 	view: "success";
 	message_line: string;
@@ -235,10 +241,18 @@ function renderParkTemplate(
 	return renderTemplate(context, "screens/park-success.md", options);
 }
 
+function renderRecentTemplate(
+	context: RecentTemplateContext,
+	options: RenderOptions = {},
+): string {
+	return renderTemplate(context, "screens/recent.md", options);
+}
+
 export default {
 	createCommandLiquidEngine,
 	renderDocsTemplate,
 	renderLsTemplate,
 	renderParkTemplate,
+	renderRecentTemplate,
 	renderTopicTemplate,
 };

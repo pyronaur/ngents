@@ -34,7 +34,8 @@ make verify
 - `bin/docs.ts` process entrypoint
 - `src/core/command-dispatch.ts` Commander bootstrap and top-level CLI dispatch
 - `src/core/command-definition.ts` command definition and registration contract
-- `src/commands/` command modules for `fetch`, `ls`, `park`, `topic`, and `update`
+- `src/commands/` command modules for `fetch`, `ls`, `park`, `recent`, `topic`, and `update`
+- `src/runtime/recent*.ts` session-log scanning, the incremental read index, and recent-docs ranking
 - `src/runtime/browse*.ts` docs/topic discovery, parsing, and rendering
 - `src/runtime/help.ts` root and ops help entrypoints
 - `src/runtime/root-help-template.ts` Liquid help-template renderer

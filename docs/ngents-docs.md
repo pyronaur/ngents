@@ -67,6 +67,7 @@ docs --ops-help
 docs help
 docs <where>
 docs ls [where...]
+docs recent
 docs topic [topic] [path]
 docs park <name> [path]
 docs fetch <source> <path> --handler <command> [--root <subpath>] [--transform <command>] [--force]
@@ -155,6 +156,26 @@ Callers choose the selector mode, but they do not independently decide whether a
 - Templateable topic skill sections use `{$name}` in `Path:` and `Open:` lines, followed by `{$name} = entry name without leading $`.
 - Skill entries render `$<skill.name>` and put optional hint or description text on an indented next line.
 - Exact paths such as `docs/guides` or `hig-doctor/skills/hig-components-content` can be focused directly.
+
+### `recent`
+
+`recent` lists docs agents read in past sessions, most recently read first.
+
+- It follows move-to-front order: a doc moves to the top whenever an agent reads it, and unused docs sink.
+- `This project` lists docs read in sessions started inside the current repo root, or the current directory outside a repo.
+- `Global` lists docs under parked global docs roots read in any session, minus docs already listed for the project.
+- Each entry shows the doc description, when it was last read, and how many sessions read it.
+- Reads come from Claude Code (`~/.claude/projects`), Codex (`~/.codex/sessions`, `~/.codex/archived_sessions`), and pi (`~/.pi/agent/sessions`) logs.
+- A read is a file-read tool call or a shell `cat`, `sed`, `head`, `tail`, `nl`, `bat`, `less`, `more`, or `docs` call on a `.md` path. Shell reads follow `cd`.
+- A doc is a `.md` file inside a `docs/` directory or a parked docs root. `SKILL.md`, missing files, and paths under `archive`, `research`, `node_modules`, `.git`, `.tmp`, or `tmp` are left out.
+- pi session folders outside the home directory are temp-directory runs and are skipped.
+- Symlinked paths collapse onto the real file path.
+
+The index lives at `~/.ngents/local/docs/recent-index.json` and is rebuildable.
+It keeps one record per log: size, mtime, the byte offset scanning reached, the session cwd, and the docs it read with last-read time and count.
+Each run lists the logs, skips unchanged ones, reads grown logs from their saved offset, rescans logs that shrank, and drops logs that disappeared.
+A partly written last line is left for the next run.
+The first run reads every log; later runs only read new bytes.
 
 ### Selector scope examples
 

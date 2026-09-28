@@ -4,6 +4,7 @@ import type { CommandDefinition } from "../core/contracts.ts";
 import { fetchCommand } from "./fetch.ts";
 import { lsCommand } from "./ls.ts";
 import { parkCommand } from "./park.ts";
+import { recentCommand } from "./recent.ts";
 import { topicCommand } from "./topic.ts";
 import { updateCommand } from "./update.ts";
 
@@ -11,6 +12,7 @@ export const commandDefinitions: CommandDefinition<ZodType>[] = [
 	fetchCommand,
 	lsCommand,
 	parkCommand,
+	recentCommand,
 	topicCommand,
 	updateCommand,
 ];

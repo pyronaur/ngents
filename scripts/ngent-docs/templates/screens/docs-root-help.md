@@ -17,6 +17,8 @@ It may open a topic like `docs <topic>` or a docs view like `docs <docs-root>`.
 
 `{{ ls_command }} [where...]` browses docs only.
 
+`docs recent` lists the docs agents read most recently, in this project and globally.
+
 `[where...]` may be:
 - `.`
 - `global`

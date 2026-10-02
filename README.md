@@ -31,9 +31,6 @@ This is where I keep the common scripts that agents can self-improve over time. 
 - `scripts/ng/`  
   User-facing `ng` command entrypoints such as `ng bins`, `ng cpdir`, and `ng hig-doctor`.
 
-- `scripts/cdp/`  
-  Shared-browser lifecycle entrypoints for `cdp start`, `cdp status`, and `cdp stop`.
-
 The point of this directory is to keep small, practical automation close to the instructions and docs it supports.
 
 ## Who This Is For
